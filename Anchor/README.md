@@ -32,8 +32,16 @@ cd Anchor
 open Package.swift            # Xcode 15+ opens SwiftPM projects natively
 ```
 
-You'll see two schemes in Xcode: `AnchorApp` and `AnchorHelper`. Hit ▶ to
-run AnchorApp — it'll show up in the menu bar.
+You'll see three schemes in Xcode: `AnchorApp`, `AnchorHelper`, and
+`AnchorHelperPoke`. Hit ▶ on `AnchorApp` to run the menubar app.
+
+`AnchorHelperPoke` is a dev-only CLI tool that connects to the running
+helper and exercises the XPC protocol (arm → disarm, prints snapshots
+received back). Use it to verify the XPC pipe end-to-end:
+
+```bash
+swift build && "$(swift build --show-bin-path)/AnchorHelperPoke"
+```
 
 ## Build the .app bundle
 
@@ -89,10 +97,13 @@ production. Concretely:
 | `AnchorHelper/PhotoCapture.swift` | **STUB** — needs week-4 implementation |
 | `AnchorHelper/BluetoothObserver.swift` | **STUB** — needs week-3 implementation |
 | `AnchorApp/AnchorApp.swift` | Real entry point |
-| `AnchorApp/MenuBarController.swift` | Real menubar; XPC wiring TODO |
+| `AnchorApp/MenuBarController.swift` | Real menubar, XPC-driven state refresh |
+| `AnchorApp/HelperClient.swift` | Real — NSXPCConnection, bidirectional |
+| `AnchorApp/HelperManager.swift` | Real — SMAppService register + LWCR refresh |
 | `AnchorApp/SettingsRoot.swift` | Shell — tabs render, contents are placeholders |
+| `AnchorHelper/XPCService.swift` | Real — NSXPCListener + per-conn bridge |
 | Onboarding | Not started — week 5 |
-| XPC layer | Not started — week 3 |
+| XPC layer | **Done — week 3** |
 
 Refer to the OpenSpec `tasks.md` for the week-by-week build plan.
 

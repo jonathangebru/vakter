@@ -13,24 +13,39 @@ final class MenuBarController {
 
     private let item: NSStatusItem
     private var currentState: AnchorState = .unarmed
+    private var currentMode: AnchorMode = .normal
     private let helperManager: HelperManager?
+    private let helperClient: HelperClient?
 
-    init(helperManager: HelperManager? = nil) {
+    init(
+        helperManager: HelperManager? = nil,
+        helperClient: HelperClient? = nil
+    ) {
         self.helperManager = helperManager
+        self.helperClient = helperClient
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refresh()
 
         item.button?.target = self
         item.button?.action = #selector(handleClick)
 
-        // TODO(week-3): subscribe to helper-daemon snapshots via XPC and
-        // update `currentState` + refresh on changes.
+        // Hook the XPC client: every snapshot push from the helper refreshes
+        // our local state and re-renders the menubar shield.
+        helperClient?.onSnapshot = { [weak self] snapshot in
+            guard let self = self else { return }
+            self.currentState = snapshot.state
+            self.currentMode = snapshot.mode
+            self.refresh()
+        }
     }
 
     @objc private func handleClick() {
         let menu = NSMenu()
 
-        let header = NSMenuItem(title: "Anchor — \(currentState.rawValue)", action: nil, keyEquivalent: "")
+        let header = NSMenuItem(
+            title: "Anchor — \(currentState.rawValue) (mode: \(currentMode.displayName))",
+            action: nil, keyEquivalent: ""
+        )
         header.isEnabled = false
         menu.addItem(header)
 
@@ -89,15 +104,21 @@ final class MenuBarController {
     }
 
     @objc private func toggleArm() {
-        // TODO(week-3): wire to helper XPC.
-        NSLog("[MenuBar] arm/disarm clicked (XPC not yet wired)")
+        guard let client = helperClient else { return }
+        if currentState == .unarmed {
+            NSLog("[MenuBar] → helper.arm()")
+            client.arm()
+        } else {
+            NSLog("[MenuBar] → helper.disarm()")
+            client.disarm()
+        }
     }
 
     @objc private func pickMode(_ sender: NSMenuItem) {
         guard let raw = sender.representedObject as? String,
               let mode = AnchorMode(rawValue: raw) else { return }
-        NSLog("[MenuBar] mode picked: %@", mode.rawValue)
-        // TODO(week-3): tell helper.
+        NSLog("[MenuBar] → helper.setMode(%@)", mode.rawValue)
+        helperClient?.setMode(mode)
     }
 
     @objc private func openSettings() {

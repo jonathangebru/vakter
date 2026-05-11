@@ -36,9 +36,10 @@ for observer in observers {
     }
 }
 
-// TODO(week-3): stand up the XPC listener exposing AnchorHelperProtocol so
-// the menubar app can subscribe to snapshots and send control messages.
-// See `Sources/AnchorShared/XPCProtocol.swift`.
+// Stand up the XPC listener so the menubar app can subscribe to snapshots
+// and dispatch arm/disarm/setMode commands.
+let xpc = XPCService(stateMachine: stateMachine)
+xpc.start()
 
 NSLog("[Anchor.helper] ready — running run loop")
 RunLoop.main.run()

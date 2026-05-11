@@ -29,7 +29,7 @@ final class HotkeyObserver: AnchorSignalObserver {
     func start(_ emit: @escaping (AnchorSignal) -> Void) {
         self.emit = emit
 
-        var hotKeyID = EventHotKeyID(signature: OSType(0x414E4348), id: 1) // "ANCH"
+        let hotKeyID = EventHotKeyID(signature: OSType(0x414E4348), id: 1) // "ANCH"
         let keyCode: UInt32 = UInt32(kVK_ANSI_L)
         let modifiers: UInt32 = UInt32(cmdKey | controlKey | optionKey)
 

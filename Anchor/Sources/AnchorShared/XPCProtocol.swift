@@ -1,41 +1,54 @@
 import Foundation
 
+// MARK: - Helper-exposed interface (app calls these)
+
 /// The XPC protocol the helper daemon exposes to the menubar app.
 ///
-/// All methods are async. The helper is the source of truth for state;
-/// the app is a thin observer + control surface.
+/// All payloads are JSON-encoded for forward compatibility — we can evolve
+/// the schema without breaking the @objc protocol shape.
 @objc public protocol AnchorHelperProtocol {
 
-    // MARK: Observation
+    // MARK: One-shot queries
 
-    /// Returns the helper's current state, mode, and last event.
+    /// Returns the helper's current snapshot (state + mode + last event).
+    /// Reply data is a JSON-encoded `AnchorSnapshot`.
     func currentSnapshot(reply: @escaping (Data) -> Void)
 
-    /// Subscribe to state changes. The helper invokes `reply` every time
-    /// the state changes, including immediately on subscription.
-    /// Cancellation = the connection going away.
-    func subscribe(reply: @escaping (Data) -> Void)
+    /// Runs the pre-flight security checklist on demand.
+    /// Reply data is a JSON-encoded `PreflightResult` (defined later).
+    func runPreflight(reply: @escaping (Data) -> Void)
 
     // MARK: Control
 
-    /// Arm the system. Same effect as the hotkey or menubar click.
+    /// Arm the system. The helper performs the action; reply indicates whether
+    /// the arming succeeded (e.g. fails if already armed or mid-grace).
     func arm(reply: @escaping (Bool) -> Void)
 
-    /// Request disarm. Will fail if the user has not authenticated.
-    /// The helper performs the auth check internally.
+    /// Request disarm. The helper performs the auth check (Touch ID/password)
+    /// internally; if auth fails or no auth was supplied, returns false.
     func disarm(reply: @escaping (Bool) -> Void)
 
-    /// Switch the active mode.
+    /// Switch the active mode. `raw` is `AnchorMode.rawValue`.
     func setMode(_ raw: String, reply: @escaping (Bool) -> Void)
 
-    /// Enter Loaner mode with the given trust window (seconds).
+    /// Enter Loaner mode with the given trust window in seconds.
     func enterLoaner(seconds: Double, reply: @escaping (Bool) -> Void)
-
-    /// Run the pre-flight security checklist and return a JSON-encoded result.
-    func runPreflight(reply: @escaping (Data) -> Void)
 }
 
-/// Snapshot payload (JSON-encoded across XPC).
+// MARK: - App-exposed interface (helper calls these back)
+
+/// The XPC protocol the menubar app exposes to the helper, so the helper
+/// can push state changes proactively instead of forcing the app to poll.
+@objc public protocol AnchorAppProtocol {
+
+    /// Helper invokes this whenever the state, mode, or loaner expiry changes.
+    /// Payload is a JSON-encoded `AnchorSnapshot`.
+    func snapshotChanged(_ data: Data)
+}
+
+// MARK: - Snapshot payload
+
+/// State of the helper at a point in time. Sent across XPC as JSON.
 public struct AnchorSnapshot: Codable, Sendable, Equatable {
     public let state: AnchorState
     public let mode: AnchorMode
@@ -53,5 +66,33 @@ public struct AnchorSnapshot: Codable, Sendable, Equatable {
         self.mode = mode
         self.lastEvent = lastEvent
         self.loanerExpiresAt = loanerExpiresAt
+    }
+}
+
+// MARK: - Helpers for JSON-across-XPC
+
+public enum AnchorXPC {
+
+    public static let encoder: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        return e
+    }()
+
+    public static let decoder: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
+
+    /// Encode any Codable into the `Data` payload form the XPC methods use.
+    public static func encode<T: Encodable>(_ value: T) -> Data {
+        (try? encoder.encode(value)) ?? Data()
+    }
+
+    /// Decode a payload from XPC into a typed value, or nil on failure.
+    public static func decode<T: Decodable>(_ type: T.Type, from data: Data) -> T? {
+        guard !data.isEmpty else { return nil }
+        return try? decoder.decode(type, from: data)
     }
 }

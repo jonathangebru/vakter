@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var menuBarController: MenuBarController?
     private var helperManager: HelperManager?
+    private var helperClient: HelperClient?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[Anchor] launched")
@@ -36,8 +37,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         helper.ensureRegistered()
         helperManager = helper
 
-        menuBarController = MenuBarController(helperManager: helper)
+        // Open an XPC connection to the running helper. NSXPCConnection lazy-
+        // resolves the Mach service name, so this is safe to call even if the
+        // helper hasn't quite finished spawning yet — first request will
+        // block until the listener is up.
+        let client = HelperClient()
+        client.connect()
+        helperClient = client
 
-        // TODO(week-5): if first run, present OnboardingView in a window.
+        menuBarController = MenuBarController(
+            helperManager: helper,
+            helperClient: client
+        )
     }
 }

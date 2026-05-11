@@ -13,6 +13,9 @@ let package = Package(
 
         // The background daemon. Wrapped into the helper LaunchAgent.
         .executable(name: "AnchorHelper", targets: ["AnchorHelper"]),
+
+        // Dev-only CLI poker that exercises the XPC protocol. Not shipped.
+        .executable(name: "AnchorHelperPoke", targets: ["AnchorHelperPoke"]),
     ],
     targets: [
         // Shared protocol + types used by both the app and the helper.
@@ -44,6 +47,12 @@ let package = Package(
             dependencies: ["AnchorShared"],
             path: "Sources/AnchorHelper",
             exclude: ["Resources"]
+        ),
+
+        .executableTarget(
+            name: "AnchorHelperPoke",
+            dependencies: ["AnchorShared"],
+            path: "Sources/AnchorHelperPoke"
         ),
     ]
 )

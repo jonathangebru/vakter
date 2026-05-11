@@ -28,6 +28,11 @@ final class StateMachine {
     private let photos: PhotoCapturing
     private let log: EventLogStore
 
+    /// Subscribers (typically the menubar app) that want a callback every
+    /// time the snapshot changes. The XPC service owns these; we keep a
+    /// weak-ish reference via a closure so the service can manage lifetimes.
+    private var snapshotObservers: [@Sendable (AnchorSnapshot) -> Void] = []
+
     init(
         audio: AudioControlling = AudioController(),
         photos: PhotoCapturing = PhotoCapture(),
@@ -36,6 +41,43 @@ final class StateMachine {
         self.audio = audio
         self.photos = photos
         self.log = log
+    }
+
+    // MARK: Snapshot publishing
+
+    /// Current snapshot — what we publish over XPC.
+    func snapshot() -> AnchorSnapshot {
+        lock.lock(); defer { lock.unlock() }
+        return AnchorSnapshot(
+            state: state,
+            mode: mode,
+            lastEvent: nil,                   // TODO: surface the latest event
+            loanerExpiresAt: loanerExpiresAt
+        )
+    }
+
+    /// Register a closure called every time the snapshot changes. Returns
+    /// nothing — the caller is expected to keep its own reference to the
+    /// closure's owning object. Lifetimes are tied to XPC connections.
+    func addObserver(_ block: @escaping @Sendable (AnchorSnapshot) -> Void) {
+        lock.lock(); defer { lock.unlock() }
+        snapshotObservers.append(block)
+        // Fire immediately so new subscribers get current state.
+        let snap = AnchorSnapshot(
+            state: state, mode: mode,
+            lastEvent: nil, loanerExpiresAt: loanerExpiresAt
+        )
+        DispatchQueue.global().async { block(snap) }
+    }
+
+    private func publishSnapshot() {
+        let snap = AnchorSnapshot(
+            state: state, mode: mode,
+            lastEvent: nil, loanerExpiresAt: loanerExpiresAt
+        )
+        for block in snapshotObservers {
+            DispatchQueue.global().async { block(snap) }
+        }
     }
 
     // MARK: Signal entry point
@@ -76,17 +118,21 @@ final class StateMachine {
     }
 
     func setMode(_ next: AnchorMode) {
-        lock.lock(); defer { lock.unlock() }
+        lock.lock()
         mode = next
         NSLog("[StateMachine] mode → %@", next.rawValue)
+        lock.unlock()
+        publishSnapshot()
     }
 
     func enterLoaner(window: LoanerTrustWindow) {
-        lock.lock(); defer { lock.unlock() }
+        lock.lock()
         mode = .loaner
         let expiry = Date().addingTimeInterval(window.rawValue)
         loanerExpiresAt = expiry
         scheduleLoanerExpiry(at: expiry)
+        lock.unlock()
+        publishSnapshot()
     }
 
     // MARK: Internal transition
@@ -98,6 +144,7 @@ final class StateMachine {
 
         NSLog("[StateMachine] %@ → %@ (trigger=%@)",
               prev.rawValue, next.rawValue, trigger?.rawValue ?? "nil")
+        defer { publishSnapshot() }
 
         switch next {
         case .unarmed:
