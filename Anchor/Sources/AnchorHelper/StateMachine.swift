@@ -105,9 +105,38 @@ final class StateMachine {
              (.alarm, .screenUnlocked):
             transition(to: .unarmed, trigger: .userAction)
 
+        // Wake-from-sleep while protected = fire alarm immediately.
+        // This is the belt-and-braces fallback against Apple Silicon
+        // clamshell-close-on-battery sleep ignoring our SleepGuard.
+        // If the system slept while .armed or .grace, the grace timer
+        // is stale; the moment we resume, the alarm starts.
+        case (.armed, .systemWake),
+             (.grace, .systemWake):
+            NSLog("[StateMachine] systemWake while protected — firing alarm")
+            transition(to: .alarm, trigger: trigger(for: signal))
+
+        // Wake-from-sleep while already alarming: re-trigger so the audio
+        // engine restarts after sleep-induced audio teardown.
+        case (.alarm, .systemWake):
+            NSLog("[StateMachine] systemWake during alarm — restarting alarm audio")
+            audio.stopAlarm()
+            audio.startAlarm(audible: ModeParameters.parameters(for: mode).audible)
+
         // Anything else: ignore.
         default:
             break
+        }
+    }
+
+    /// Map a signal to a trigger that the event log can record. Only used
+    /// for signals that don't already provide one via `AnchorSignal.asTrigger`.
+    private func trigger(for signal: AnchorSignal) -> AnchorTrigger? {
+        if let direct = signal.asTrigger { return direct }
+        switch signal {
+        case .systemWake: return .lidClose  // best fit; the actual cause
+                                            // was usually a lid-close-then-
+                                            // wake sequence
+        default: return nil
         }
     }
 

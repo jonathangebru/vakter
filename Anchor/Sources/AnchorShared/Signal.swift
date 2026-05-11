@@ -23,12 +23,21 @@ public enum AnchorSignal: Sendable, Equatable {
     /// trust this as our disarm signal too — no second prompt needed.
     case screenUnlocked
 
+    /// The system has resumed from sleep. Fired by `WakeObserver` whenever
+    /// the kernel sends `kIOMessageSystemHasPoweredOn`. If we were in
+    /// `.armed` or `.grace` when sleep happened, the grace timer is stale
+    /// — the only sane response is to fire the alarm immediately. This is
+    /// the belt-and-braces fallback against SleepGuard assertions that
+    /// the firmware ignored (Apple Silicon clamshell-close on battery).
+    case systemWake
+
     /// Should this signal transition us from `.armed` to `.grace`?
     public var triggersGrace: Bool {
         switch self {
         case .lidClosed, .powerDisconnected, .bluetoothTrustLost, .powerButtonBrief:
             return true
-        case .lidOpened, .powerConnected, .bluetoothTrustGained, .hotkeyArm, .screenUnlocked:
+        case .lidOpened, .powerConnected, .bluetoothTrustGained, .hotkeyArm,
+             .screenUnlocked, .systemWake:
             return false
         }
     }

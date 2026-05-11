@@ -33,6 +33,7 @@ let observers: [AnchorSignalObserver] = [
     BluetoothObserver(),
     hotkey,
     ScreenLockObserver(),
+    WakeObserver(),
 ]
 
 for observer in observers {
