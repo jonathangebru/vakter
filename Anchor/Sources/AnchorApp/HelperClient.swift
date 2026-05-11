@@ -103,6 +103,24 @@ final class HelperClient: NSObject, AnchorAppProtocol {
         }
     }
 
+    // MARK: - Diagnostics
+
+    /// Fire the real alarm subsystem (siren + voice + audio override) for
+    /// `seconds`, then auto-restore. Doesn't change state.
+    func testAlarm(seconds: Double = 3.0) {
+        helperProxy()?.testAlarm(seconds: seconds) { ok in
+            NSLog("[HelperClient] testAlarm reply: %@", ok ? "ok" : "rejected")
+        }
+    }
+
+    /// Inject a synthetic lid-close signal — drives ARMED → GRACE → ALARM
+    /// without physically closing the lid.
+    func simulateLidClose() {
+        helperProxy()?.simulateLidClose { ok in
+            NSLog("[HelperClient] simulateLidClose reply: %@", ok ? "ok" : "rejected")
+        }
+    }
+
     func requestSnapshotNow() {
         helperProxy()?.currentSnapshot { [weak self] data in
             guard let snap = AnchorXPC.decode(AnchorSnapshot.self, from: data) else { return }

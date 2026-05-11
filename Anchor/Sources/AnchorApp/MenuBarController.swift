@@ -87,6 +87,24 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
+        // Diagnostics submenu — Test alarm + Simulate trigger.
+        let diagItem = NSMenuItem(title: "Diagnostics", action: nil, keyEquivalent: "")
+        let diagMenu = NSMenu(title: "Diagnostics")
+        let test = NSMenuItem(title: "Test alarm (3 sec)",
+                              action: #selector(testAlarm),
+                              keyEquivalent: "")
+        test.target = self
+        diagMenu.addItem(test)
+        let simulate = NSMenuItem(title: "Simulate lid-close trigger",
+                                  action: #selector(simulateTrigger),
+                                  keyEquivalent: "")
+        simulate.target = self
+        diagMenu.addItem(simulate)
+        diagItem.submenu = diagMenu
+        menu.addItem(diagItem)
+
+        menu.addItem(.separator())
+
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
@@ -101,6 +119,16 @@ final class MenuBarController {
 
     @objc private func openHelperApproval() {
         helperManager?.openLoginItemsSettings()
+    }
+
+    @objc private func testAlarm() {
+        NSLog("[MenuBar] → helper.testAlarm(3s)")
+        helperClient?.testAlarm(seconds: 3.0)
+    }
+
+    @objc private func simulateTrigger() {
+        NSLog("[MenuBar] → helper.simulateLidClose()")
+        helperClient?.simulateLidClose()
     }
 
     @objc private func toggleArm() {

@@ -10,6 +10,12 @@ protocol AudioControlling {
     func playDisarmChirp()
     func startAlarm(audible: Bool)
     func stopAlarm()
+
+    /// Fire the full alarm subsystem (siren + voice + system-audio override
+    /// to internal speakers at max volume) for `duration` seconds, then
+    /// auto-stop and restore prior audio state. Used by the Diagnostics
+    /// menu "Test alarm" item. Independent of the state machine.
+    func playTestAlarm(duration: TimeInterval)
 }
 
 /// The Anchor alarm audio engine.
@@ -24,7 +30,7 @@ protocol AudioControlling {
 ///   2. Force volume → 100%, unmute, route to internal speakers
 ///   3. Start the siren on a loop and inject voice utterances every ~4s
 ///   4. On `stopAlarm()`: restore everything to the snapshot
-final class AudioController: AudioControlling {
+final class AudioController: AudioControlling, @unchecked Sendable {
 
     private let engine = AVAudioEngine()
     private let synth = AVSpeechSynthesizer()
@@ -34,6 +40,10 @@ final class AudioController: AudioControlling {
     private struct Snapshot {
         let volume: Float32
         let muted: UInt32
+        /// The default-output device that was active before the alarm took
+        /// over (e.g. AirPods, external speakers). Restored on disarm so
+        /// audio routing returns to normal.
+        let priorDefaultOutput: AudioObjectID
     }
     private var snapshot: Snapshot?
 
@@ -83,6 +93,15 @@ final class AudioController: AudioControlling {
         NSLog("[Audio] alarm stopped")
     }
 
+    func playTestAlarm(duration: TimeInterval) {
+        NSLog("[Audio] TEST alarm — running real subsystem for %.1fs", duration)
+        startAlarm(audible: true)
+        DispatchQueue.global().asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.stopAlarm()
+            NSLog("[Audio] TEST alarm — finished, audio restored")
+        }
+    }
+
     // MARK: System audio override (CoreAudio)
 
     private func snapshotSystemAudio() {
@@ -91,23 +110,101 @@ final class AudioController: AudioControlling {
         var mute: UInt32 = 0
         _ = readFloat32(dev, selector: kAudioDevicePropertyVolumeScalar, scope: kAudioDevicePropertyScopeOutput, &vol)
         _ = readUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, &mute)
-        snapshot = Snapshot(volume: vol, muted: mute)
-        NSLog("[Audio] snapshot: vol=%.2f mute=%u", vol, mute)
+        snapshot = Snapshot(volume: vol, muted: mute, priorDefaultOutput: dev)
+        NSLog("[Audio] snapshot: vol=%.2f mute=%u priorDev=%u", vol, mute, dev)
     }
 
     private func forceMaxOutput() {
+        // Step 1: force the system default output device to the built-in
+        // speakers, in case the user has AirPods / external speakers active.
+        // We don't want the alarm playing quietly into a thief's earbuds.
+        if let internalSpeakers = internalSpeakersDevice() {
+            setDefaultOutputDevice(internalSpeakers)
+            NSLog("[Audio] default output → internal speakers (id=%u)", internalSpeakers)
+        } else {
+            NSLog("[Audio] WARN: could not locate internal speakers; alarm plays through current default")
+        }
+
+        // Step 2: unmute and max volume on the (now-current) default device.
+        // On Apple Silicon Macs, the master-element volume on
+        // `kAudioObjectPropertyElementMain` (formerly Master) is often a
+        // no-op for output devices — the device exposes per-channel
+        // volume only. So we write to ALL elements: Main + every channel
+        // we can find (typically 1 = left, 2 = right). Belt-and-braces.
         guard let dev = defaultOutputDevice() else { return }
-        _ = writeUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, 0)
-        _ = writeFloat32(dev, selector: kAudioDevicePropertyVolumeScalar, scope: kAudioDevicePropertyScopeOutput, 1.0)
-        // TODO(week-4): if non-internal device is default, switch to internal
-        // speakers via kAudioHardwarePropertyDefaultOutputDevice.
+
+        // Unmute, then read back to verify.
+        var muteBefore: UInt32 = 0
+        _ = readUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, &muteBefore)
+        let muteWriteOK = writeUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, 0)
+        var muteAfter: UInt32 = 99
+        _ = readUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, &muteAfter)
+        NSLog("[Audio] mute: %u→%u (write ok=%@)", muteBefore, muteAfter, muteWriteOK ? "yes" : "no")
+
+        // Volume write across master + per-channel elements.
+        let beforeMaster = readScalar(dev, element: kAudioObjectPropertyElementMain)
+        var anySucceeded = false
+        for element: UInt32 in [kAudioObjectPropertyElementMain, 1, 2] {
+            let ok = writeScalar(dev, value: 1.0, element: element)
+            if ok { anySucceeded = true }
+        }
+        let afterMaster = readScalar(dev, element: kAudioObjectPropertyElementMain)
+        let afterCh1    = readScalar(dev, element: 1)
+        let afterCh2    = readScalar(dev, element: 2)
+        NSLog("[Audio] forceMax: any-write=%@ master %.2f→%.2f ch1=%.2f ch2=%.2f",
+              anySucceeded ? "yes" : "no",
+              beforeMaster, afterMaster, afterCh1, afterCh2)
+
+        // Also crank the AVAudioEngine's own mixer — defensive, since the
+        // engine's per-node volume multiplies the system volume.
+        engine.mainMixerNode.outputVolume = 1.0
     }
 
     private func restoreSystemAudio() {
-        guard let snap = snapshot, let dev = defaultOutputDevice() else { return }
-        _ = writeFloat32(dev, selector: kAudioDevicePropertyVolumeScalar, scope: kAudioDevicePropertyScopeOutput, snap.volume)
-        _ = writeUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, snap.muted)
+        guard let snap = snapshot else { return }
+        // Restore volume + mute on whichever device is currently default
+        // BEFORE switching back, so the internal-speakers state is left
+        // identical to how the user typically uses it.
+        if let dev = defaultOutputDevice() {
+            for element: UInt32 in [kAudioObjectPropertyElementMain, 1, 2] {
+                _ = writeScalar(dev, value: snap.volume, element: element)
+            }
+            _ = writeUInt32(dev, selector: kAudioDevicePropertyMute, scope: kAudioDevicePropertyScopeOutput, snap.muted)
+        }
+        // Then switch the default output back to what it was (e.g. AirPods).
+        if snap.priorDefaultOutput != 0 {
+            setDefaultOutputDevice(snap.priorDefaultOutput)
+            NSLog("[Audio] default output restored to id=%u", snap.priorDefaultOutput)
+        }
         snapshot = nil
+    }
+
+    // Channel-aware helpers for volume reads/writes.
+    private func readScalar(_ id: AudioObjectID, element: UInt32) -> Float32 {
+        var out: Float32 = 0
+        var size = UInt32(MemoryLayout<Float32>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: element
+        )
+        let s = AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &out)
+        return s == noErr ? out : -1.0
+    }
+
+    @discardableResult
+    private func writeScalar(_ id: AudioObjectID, value: Float32, element: UInt32) -> Bool {
+        var v = value
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: element
+        )
+        let s = AudioObjectSetPropertyData(
+            id, &addr, 0, nil,
+            UInt32(MemoryLayout<Float32>.size), &v
+        )
+        return s == noErr
     }
 
     // MARK: Siren
@@ -176,6 +273,61 @@ final class AudioController: AudioControlling {
         )
         let s = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &id)
         return s == noErr ? id : nil
+    }
+
+    @discardableResult
+    private func setDefaultOutputDevice(_ id: AudioObjectID) -> Bool {
+        var value = id
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let s = AudioObjectSetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil,
+            UInt32(MemoryLayout<AudioObjectID>.size), &value
+        )
+        return s == noErr
+    }
+
+    /// Enumerate all output devices and identify the built-in speakers
+    /// by name. Ports the spike-1 detection logic verified on this Mac.
+    private func internalSpeakersDevice() -> AudioObjectID? {
+        var size: UInt32 = 0
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let sys = AudioObjectID(kAudioObjectSystemObject)
+        var status = AudioObjectGetPropertyDataSize(sys, &addr, 0, nil, &size)
+        guard status == noErr else { return nil }
+        let count = Int(size) / MemoryLayout<AudioObjectID>.size
+        var ids = [AudioObjectID](repeating: 0, count: count)
+        status = AudioObjectGetPropertyData(sys, &addr, 0, nil, &size, &ids)
+        guard status == noErr else { return nil }
+
+        for id in ids {
+            let name = deviceName(id).lowercased()
+            if name.contains("macbook") && name.contains("speaker") { return id }
+            if name.contains("built-in output") { return id }
+            if name.contains("internal speakers") { return id }
+        }
+        return nil
+    }
+
+    /// Read the human-readable name of an audio device.
+    private func deviceName(_ id: AudioObjectID) -> String {
+        var name: Unmanaged<CFString>?
+        var size = UInt32(MemoryLayout<CFString?>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        let s = AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &name)
+        guard s == noErr, let result = name?.takeRetainedValue() else { return "?" }
+        return result as String
     }
 
     private func readFloat32(_ id: AudioObjectID, selector: AudioObjectPropertySelector,

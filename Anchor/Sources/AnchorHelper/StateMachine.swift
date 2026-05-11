@@ -155,6 +155,22 @@ final class StateMachine {
         publishSnapshot()
     }
 
+    // MARK: Diagnostics
+
+    /// Fire the full alarm subsystem for the given duration without
+    /// touching state. Used by the "Test alarm" menu item so the user
+    /// can verify their speakers + voice cue + photo permissions etc.
+    func runTestAlarm(seconds: TimeInterval) {
+        audio.playTestAlarm(duration: seconds)
+    }
+
+    /// Inject a fake `.lidClosed` signal. Lets the user verify the full
+    /// grace → alarm path without physically closing the lid (which on
+    /// some Macs causes system sleep that the SleepGuard may not block).
+    func simulateLidClose() {
+        handle(signal: .lidClosed)
+    }
+
     // MARK: Internal transition
 
     private func transition(to next: AnchorState, trigger: AnchorTrigger?) {

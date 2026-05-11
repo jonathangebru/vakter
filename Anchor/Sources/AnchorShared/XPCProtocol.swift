@@ -37,6 +37,18 @@ import Foundation
     /// Tell the helper that the user changed the hotkey binding in Settings.
     /// The helper re-reads `HotkeyStore` and re-registers via Carbon.
     func reloadHotkey(reply: @escaping (Bool) -> Void)
+
+    // MARK: Diagnostics
+
+    /// Run the full alarm subsystem (siren + voice + audio override) for
+    /// `seconds` seconds, then auto-stop and restore prior audio state.
+    /// Does not change the state machine — purely an audio test.
+    func testAlarm(seconds: Double, reply: @escaping (Bool) -> Void)
+
+    /// Inject a fake `.lidClosed` signal into the state machine — used to
+    /// verify the grace → alarm path without physically closing the lid
+    /// (which on some Macs triggers system sleep before grace expires).
+    func simulateLidClose(reply: @escaping (Bool) -> Void)
 }
 
 // MARK: - App-exposed interface (helper calls these back)

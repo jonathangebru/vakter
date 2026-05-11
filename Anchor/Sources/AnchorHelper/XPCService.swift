@@ -179,4 +179,14 @@ private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked S
         hotkey.rebind()
         reply(true)
     }
+
+    func testAlarm(seconds: Double, reply: @escaping (Bool) -> Void) {
+        stateMachine.runTestAlarm(seconds: seconds)
+        reply(true)
+    }
+
+    func simulateLidClose(reply: @escaping (Bool) -> Void) {
+        stateMachine.simulateLidClose()
+        reply(true)
+    }
 }

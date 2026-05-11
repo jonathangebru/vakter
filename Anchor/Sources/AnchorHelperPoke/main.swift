@@ -51,6 +51,20 @@ guard let proxy = conn.remoteObjectProxyWithErrorHandler({ err in
 // Hotkey-only smoke test: write a non-default binding, call reloadHotkey,
 // then restore the default. The helper log should show two `[HotkeyObserver]
 // registered ...` lines proving the rebind path works.
+if mode == "testalarm" {
+    print("→ Calling testAlarm(3.0). Expect to hear siren + voice for ~3s.")
+    let sem = DispatchSemaphore(value: 0)
+    proxy.testAlarm(seconds: 3.0) { ok in
+        print("← testAlarm reply: \(ok)")
+        sem.signal()
+    }
+    sem.wait()
+    // Block while alarm plays so we don't exit before it completes.
+    RunLoop.current.run(until: Date(timeIntervalSinceNow: 4.0))
+    print("\nDone.")
+    exit(0)
+}
+
 if mode == "hotkey" {
     let custom = HotkeyBinding(keyCode: 0 /* A */,
                                modifiers: UInt32(0x100 /* cmdKey */ |
