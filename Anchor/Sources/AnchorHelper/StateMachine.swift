@@ -27,6 +27,7 @@ final class StateMachine {
     private let audio: AudioControlling
     private let photos: PhotoCapturing
     private let log: EventLogStore
+    private let sleepGuard: SleepGuard
 
     /// Subscribers (typically the menubar app) that want a callback every
     /// time the snapshot changes. The XPC service owns these; we keep a
@@ -36,11 +37,13 @@ final class StateMachine {
     init(
         audio: AudioControlling = AudioController(),
         photos: PhotoCapturing = PhotoCapture(),
-        log: EventLogStore = .shared
+        log: EventLogStore = .shared,
+        sleepGuard: SleepGuard = SleepGuard()
     ) {
         self.audio = audio
         self.photos = photos
         self.log = log
+        self.sleepGuard = sleepGuard
     }
 
     // MARK: Snapshot publishing
@@ -167,12 +170,27 @@ final class StateMachine {
         case .unarmed:
             cancelGraceTimer()
             audio.stopAlarm()
+            photos.stop()
+            // Critical: release the sleep guard so the Mac can sleep normally
+            // again when not armed. Otherwise we'd drain the battery and
+            // override the user's lid-close behaviour forever.
+            sleepGuard.release()
+            // Soft confirmation cue only if we're disarming from a non-resting
+            // state (don't chirp when we boot fresh into .unarmed).
+            if prev != .unarmed {
+                audio.playDisarmChirp()
+            }
             log.append(.init(
                 fromState: prev, toState: next, trigger: trigger,
                 photoFilenames: [], modeAtEvent: mode
             ))
 
         case .armed:
+            // Critical: hold the Mac awake. Without this, lid-close →
+            // system sleep → helper suspended → grace timer never fires →
+            // alarm never plays. This is the difference between "feature"
+            // and "actually catches thieves".
+            sleepGuard.engage()
             audio.playArmChirp()
             log.append(.init(
                 fromState: prev, toState: next, trigger: trigger,

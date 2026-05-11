@@ -7,6 +7,7 @@ import AnchorShared
 protocol AudioControlling {
     func playArmChirp()
     func playGraceChirp()
+    func playDisarmChirp()
     func startAlarm(audible: Bool)
     func stopAlarm()
 }
@@ -27,6 +28,7 @@ final class AudioController: AudioControlling {
 
     private let engine = AVAudioEngine()
     private let synth = AVSpeechSynthesizer()
+    private let chirps = ChirpPlayer()
 
     // Saved-state snapshot so we restore exactly what the user had.
     private struct Snapshot {
@@ -41,13 +43,18 @@ final class AudioController: AudioControlling {
     // MARK: Public
 
     func playArmChirp() {
-        // TODO(week-4): play a warm two-note chirp sample.
         NSLog("[Audio] ARM chirp")
+        chirps.playArmChirp()
     }
 
     func playGraceChirp() {
-        // TODO(week-4): play a soft escalating chirp sample.
         NSLog("[Audio] GRACE chirp")
+        chirps.playGraceChirp()
+    }
+
+    func playDisarmChirp() {
+        NSLog("[Audio] DISARM chirp")
+        chirps.playDisarmChirp()
     }
 
     func startAlarm(audible: Bool) {

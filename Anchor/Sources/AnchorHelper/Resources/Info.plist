@@ -22,5 +22,14 @@
     <true/>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+
+    <!-- Camera usage string is required even for a background daemon —
+         macOS pops the permission prompt on first AVCaptureSession.startRunning
+         and uses this string in the dialog. -->
+    <key>NSCameraUsageDescription</key>
+    <string>Anchor uses the FaceTime camera to capture photos when the alarm fires, so you can see who tried to take your Mac.</string>
+
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Anchor uses Bluetooth to detect when your trusted devices are nearby, dampening false alarms.</string>
 </dict>
 </plist>
