@@ -25,6 +25,11 @@ let stateMachine = StateMachine()
 // rebind when the user picks a new combo in Settings.
 let hotkey = HotkeyObserver()
 
+// WakeObserver gets its own reference because it needs to read state
+// machine state (to decide whether to delay sleep acknowledgement) AND
+// to subscribe to state changes (to acknowledge sleep when user disarms).
+let wake = WakeObserver()
+
 // Wire up observers. Each observer publishes `AnchorSignal` values to the
 // state machine. Order doesn't matter — they're independent.
 let observers: [AnchorSignalObserver] = [
@@ -33,7 +38,7 @@ let observers: [AnchorSignalObserver] = [
     BluetoothObserver(),
     hotkey,
     ScreenLockObserver(),
-    WakeObserver(),
+    wake,
 ]
 
 for observer in observers {
@@ -41,6 +46,11 @@ for observer in observers {
         stateMachine.handle(signal: signal)
     }
 }
+
+// Bidirectional link: WakeObserver needs to read state and subscribe to
+// snapshot pushes so it can release a held sleep request the moment the
+// user disarms during the delay window.
+wake.wireStateMachine(stateMachine)
 
 // Stand up the XPC listener so the menubar app can subscribe to snapshots
 // and dispatch arm/disarm/setMode commands.
