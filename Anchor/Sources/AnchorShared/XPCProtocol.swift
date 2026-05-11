@@ -33,6 +33,10 @@ import Foundation
 
     /// Enter Loaner mode with the given trust window in seconds.
     func enterLoaner(seconds: Double, reply: @escaping (Bool) -> Void)
+
+    /// Tell the helper that the user changed the hotkey binding in Settings.
+    /// The helper re-reads `HotkeyStore` and re-registers via Carbon.
+    func reloadHotkey(reply: @escaping (Bool) -> Void)
 }
 
 // MARK: - App-exposed interface (helper calls these back)

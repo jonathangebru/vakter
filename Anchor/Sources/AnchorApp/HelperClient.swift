@@ -95,6 +95,14 @@ final class HelperClient: NSObject, AnchorAppProtocol {
         }
     }
 
+    /// Ask the helper to re-read HotkeyStore and re-register its Carbon
+    /// hotkey. Called after the user picks a new combo in Settings.
+    func reloadHotkey() {
+        helperProxy()?.reloadHotkey { ok in
+            NSLog("[HelperClient] reloadHotkey reply: %@", ok ? "ok" : "rejected")
+        }
+    }
+
     func requestSnapshotNow() {
         helperProxy()?.currentSnapshot { [weak self] data in
             guard let snap = AnchorXPC.decode(AnchorSnapshot.self, from: data) else { return }

@@ -22,7 +22,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var menuBarController: MenuBarController?
     private var helperManager: HelperManager?
-    private var helperClient: HelperClient?
+    // Internal so Settings tabs can fire client.reloadHotkey() etc.
+    private(set) var helperClient: HelperClient?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[Anchor] launched")

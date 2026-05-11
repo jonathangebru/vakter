@@ -21,9 +21,11 @@ final class XPCService: NSObject, NSXPCListenerDelegate {
 
     private let listener: NSXPCListener
     private let stateMachine: StateMachine
+    private let hotkey: HotkeyObserver
 
-    init(stateMachine: StateMachine) {
+    init(stateMachine: StateMachine, hotkey: HotkeyObserver) {
         self.stateMachine = stateMachine
+        self.hotkey = hotkey
         self.listener = NSXPCListener(machServiceName: AnchorConstants.xpcMachServiceName)
         super.init()
         self.listener.delegate = self
@@ -47,7 +49,7 @@ final class XPCService: NSObject, NSXPCListenerDelegate {
         conn.exportedInterface = NSXPCInterface(with: AnchorHelperProtocol.self)
         conn.remoteObjectInterface = NSXPCInterface(with: AnchorAppProtocol.self)
 
-        let bridge = ExportedBridge(stateMachine: stateMachine, connection: conn)
+        let bridge = ExportedBridge(stateMachine: stateMachine, hotkey: hotkey, connection: conn)
         conn.exportedObject = bridge
 
         conn.invalidationHandler = { [weak bridge] in
@@ -78,11 +80,13 @@ final class XPCService: NSObject, NSXPCListenerDelegate {
 private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked Sendable {
 
     private let stateMachine: StateMachine
+    private let hotkey: HotkeyObserver
     private weak var connection: NSXPCConnection?
     private var isTornDown = false
 
-    init(stateMachine: StateMachine, connection: NSXPCConnection) {
+    init(stateMachine: StateMachine, hotkey: HotkeyObserver, connection: NSXPCConnection) {
         self.stateMachine = stateMachine
+        self.hotkey = hotkey
         self.connection = connection
         super.init()
 
@@ -168,6 +172,11 @@ private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked S
         default:       window = .fourHours
         }
         stateMachine.enterLoaner(window: window)
+        reply(true)
+    }
+
+    func reloadHotkey(reply: @escaping (Bool) -> Void) {
+        hotkey.rebind()
         reply(true)
     }
 }

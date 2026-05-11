@@ -46,15 +46,38 @@ private struct GeneralTab: View {
 }
 
 private struct ShortcutTab: View {
+    @State private var binding: HotkeyBinding = HotkeyStore.load()
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("Arming Shortcut").font(.title2.weight(.semibold))
-            HStack {
-                Text("Current:")
-                Text(AnchorConstants.defaultHotkeyLabel).monospaced().bold()
+
+            Text("Press this combination anywhere on your Mac to lock and arm Anchor.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            KeyRecorder(binding: $binding, onChange: { newBinding in
+                HotkeyStore.save(newBinding)
+                // Find the running AnchorApp's HelperClient and tell the
+                // helper to re-read the store. AppDelegate keeps it alive.
+                if let delegate = NSApp.delegate as? AppDelegate {
+                    delegate.helperClient?.reloadHotkey()
+                }
+            })
+
+            HStack(spacing: 8) {
+                Button("Restore default") {
+                    binding = .default
+                    HotkeyStore.save(.default)
+                    if let delegate = NSApp.delegate as? AppDelegate {
+                        delegate.helperClient?.reloadHotkey()
+                    }
+                }
+                .buttonStyle(.bordered)
+
+                Spacer()
             }
-            Text("Press the combo anywhere on your Mac to lock and arm Anchor.")
-                .font(.footnote).foregroundStyle(.secondary)
+
             Spacer()
         }.padding()
     }

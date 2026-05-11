@@ -27,6 +27,9 @@ final class PokeClient: NSObject, AnchorAppProtocol {
 
 print("== HelperPoke ==\n")
 
+let args = CommandLine.arguments
+let mode = args.count > 1 ? args[1] : "armdisarm"
+
 let conn = NSXPCConnection(machServiceName: AnchorConstants.xpcMachServiceName)
 conn.remoteObjectInterface = NSXPCInterface(with: AnchorHelperProtocol.self)
 conn.exportedInterface = NSXPCInterface(with: AnchorAppProtocol.self)
@@ -43,6 +46,40 @@ guard let proxy = conn.remoteObjectProxyWithErrorHandler({ err in
 }) as? AnchorHelperProtocol else {
     print("FAIL: could not cast remote proxy to AnchorHelperProtocol")
     exit(1)
+}
+
+// Hotkey-only smoke test: write a non-default binding, call reloadHotkey,
+// then restore the default. The helper log should show two `[HotkeyObserver]
+// registered ...` lines proving the rebind path works.
+if mode == "hotkey" {
+    let custom = HotkeyBinding(keyCode: 0 /* A */,
+                               modifiers: UInt32(0x100 /* cmdKey */ |
+                                                 0x200 /* shiftKey */ |
+                                                 0x800 /* optionKey */))
+    print("→ Writing custom binding \(custom.displayLabel) to HotkeyStore")
+    HotkeyStore.save(custom)
+
+    let sem = DispatchSemaphore(value: 0)
+    proxy.reloadHotkey { ok in
+        print("← reloadHotkey: \(ok)")
+        sem.signal()
+    }
+    sem.wait()
+
+    sleep(1)
+
+    print("→ Restoring default \(HotkeyBinding.default.displayLabel)")
+    HotkeyStore.save(.default)
+
+    let sem2 = DispatchSemaphore(value: 0)
+    proxy.reloadHotkey { ok in
+        print("← reloadHotkey: \(ok)")
+        sem2.signal()
+    }
+    sem2.wait()
+
+    print("\nDone — check the helper log for two register entries.")
+    exit(0)
 }
 
 // 1. Query current snapshot.

@@ -21,13 +21,17 @@ NSLog("[Anchor.helper] starting (build %@)", Bundle.main.infoDictionary?["CFBund
 // and dispatches all side effects.
 let stateMachine = StateMachine()
 
+// HotkeyObserver gets its own reference so the XPC service can ask it to
+// rebind when the user picks a new combo in Settings.
+let hotkey = HotkeyObserver()
+
 // Wire up observers. Each observer publishes `AnchorSignal` values to the
 // state machine. Order doesn't matter — they're independent.
 let observers: [AnchorSignalObserver] = [
     LidObserver(),
     PowerObserver(),
     BluetoothObserver(),
-    HotkeyObserver(),
+    hotkey,
     ScreenLockObserver(),
 ]
 
@@ -39,7 +43,7 @@ for observer in observers {
 
 // Stand up the XPC listener so the menubar app can subscribe to snapshots
 // and dispatch arm/disarm/setMode commands.
-let xpc = XPCService(stateMachine: stateMachine)
+let xpc = XPCService(stateMachine: stateMachine, hotkey: hotkey)
 xpc.start()
 
 NSLog("[Anchor.helper] ready — running run loop")

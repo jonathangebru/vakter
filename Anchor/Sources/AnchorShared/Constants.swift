@@ -11,10 +11,6 @@ public enum AnchorConstants {
     /// Mach service name used for XPC between the app and the helper.
     public static let xpcMachServiceName = "app.anchor.mac.helper.xpc"
 
-    /// Default global hotkey for arming, expressed as a human-readable label.
-    /// The actual key combo lives in `Settings` (user-customisable).
-    public static let defaultHotkeyLabel = "⌘⌃⌥L"
-
     /// User-data root. Lives under `~/Library/Application Support/Anchor`.
     public static var supportDirectoryURL: URL {
         let library = FileManager.default
