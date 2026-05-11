@@ -12,13 +12,18 @@ import IOKit.pwr_mgt
 /// theft path. We close that hole here.
 ///
 /// What we hold:
-///   - `kIOPMAssertionTypePreventSystemSleep` — the strongest assertion;
-///     prevents lid-close from putting the Mac to sleep. On Apple Silicon
-///     this is honoured for our use case (background daemon with a clear
-///     reason string).
-///   - `kIOPMAssertionTypePreventUserIdleSystemSleep` — belt-and-braces;
-///     also prevents idle-timer sleep, in case the user has very short
-///     idle sleep configured.
+///   - `kIOPMAssertPreventUserIdleSystemSleep` — prevents the idle-timer
+///     sleep path. Honoured on battery and AC. Cheap.
+///   - `kIOPMAssertPreventSystemSleep` — the textually-strongest assertion.
+///     On Apple Silicon this is *gated to AC power* on many models, which
+///     is why our first attempt at SleepGuard failed for lid-close-on-
+///     battery. Worth holding because when it does work, it's broader.
+///   - `kIOPMAssertPreventUserIdleDisplaySleep` — this is the assertion
+///     `caffeinate -d` uses and it IS honoured on battery. It prevents
+///     lid-close sleep because closing the lid normally drives display
+///     sleep → system sleep, and this assertion blocks the first step.
+///     This is what actually makes the lid-close trigger work in real
+///     life on a MacBook on battery.
 ///
 /// Lifecycle:
 ///   - `engage()` called when the state machine enters `armed`
@@ -29,64 +34,85 @@ final class SleepGuard {
 
     private var idAssertionPreventSystem: IOPMAssertionID = 0
     private var idAssertionPreventUserIdle: IOPMAssertionID = 0
+    private var idAssertionPreventDisplay: IOPMAssertionID = 0
     private var isEngaged = false
 
-    /// Acquire both assertions so the Mac cannot sleep until we let it.
-    /// Returns true if both were acquired successfully.
+    /// Acquire all three assertions so the Mac cannot sleep until we
+    /// let it. Returns true if at least the display-sleep assertion
+    /// was acquired (that's the one that actually prevents lid-close
+    /// sleep on Apple Silicon).
     @discardableResult
     func engage() -> Bool {
         guard !isEngaged else { return true }
 
-        let preventSleepReason = "Anchor is armed — preventing sleep so a theft can be detected" as CFString
-        let preventIdleReason  = "Anchor is armed — preventing idle sleep" as CFString
+        let displayReason = "Anchor is armed — keeping the Mac awake so a theft trigger can fire" as CFString
+        let systemReason  = "Anchor is armed — preventing system sleep" as CFString
+        let idleReason    = "Anchor is armed — preventing idle sleep" as CFString
 
-        var rc1: IOReturn = kIOReturnSuccess
-        var rc2: IOReturn = kIOReturnSuccess
+        var rcDisplay: IOReturn = kIOReturnError
+        var rcSystem:  IOReturn = kIOReturnError
+        var rcIdle:    IOReturn = kIOReturnError
 
-        rc1 = IOPMAssertionCreateWithName(
-            kIOPMAssertPreventUserIdleSystemSleep as CFString,
+        // 1. The critical one for lid-close-on-battery.
+        rcDisplay = IOPMAssertionCreateWithName(
+            kIOPMAssertPreventUserIdleDisplaySleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
-            preventIdleReason,
-            &idAssertionPreventUserIdle
+            displayReason,
+            &idAssertionPreventDisplay
         )
 
-        rc2 = IOPMAssertionCreateWithName(
-            "PreventSystemSleep" as CFString, // a.k.a. kIOPMAssertPreventSystemSleep (NOT in Swift overlay; raw string OK)
+        // 2. Belt-and-braces — only honoured on AC on some Macs, harmless elsewhere.
+        rcSystem = IOPMAssertionCreateWithName(
+            "PreventSystemSleep" as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
-            preventSleepReason,
+            systemReason,
             &idAssertionPreventSystem
         )
 
-        let ok = (rc1 == kIOReturnSuccess) && (rc2 == kIOReturnSuccess)
-        if ok {
+        // 3. Belt-and-braces — prevents the idle-timer code path.
+        rcIdle = IOPMAssertionCreateWithName(
+            kIOPMAssertPreventUserIdleSystemSleep as CFString,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            idleReason,
+            &idAssertionPreventUserIdle
+        )
+
+        let displayOK = (rcDisplay == kIOReturnSuccess)
+        if displayOK {
             isEngaged = true
-            NSLog("[SleepGuard] engaged — userIdle=%d preventSystem=%d",
-                  Int(idAssertionPreventUserIdle), Int(idAssertionPreventSystem))
+            NSLog("[SleepGuard] engaged — display=%d preventSystem=%d userIdle=%d (display ok=%@ system ok=%@ idle ok=%@)",
+                  Int(idAssertionPreventDisplay),
+                  Int(idAssertionPreventSystem),
+                  Int(idAssertionPreventUserIdle),
+                  displayOK ? "yes" : "no",
+                  rcSystem == kIOReturnSuccess ? "yes" : "no",
+                  rcIdle == kIOReturnSuccess ? "yes" : "no")
         } else {
-            NSLog("[SleepGuard] FAILED engage — userIdle rc=0x%X preventSystem rc=0x%X",
-                  UInt32(rc1), UInt32(rc2))
-            // Best-effort cleanup if only one succeeded
-            if rc1 == kIOReturnSuccess { _ = IOPMAssertionRelease(idAssertionPreventUserIdle) }
-            if rc2 == kIOReturnSuccess { _ = IOPMAssertionRelease(idAssertionPreventSystem) }
-            idAssertionPreventUserIdle = 0
-            idAssertionPreventSystem = 0
+            NSLog("[SleepGuard] FAILED engage — display rc=0x%X system rc=0x%X idle rc=0x%X",
+                  UInt32(rcDisplay), UInt32(rcSystem), UInt32(rcIdle))
+            release()
         }
-        return ok
+        return displayOK
     }
 
-    /// Release both assertions and let the Mac sleep normally again.
+    /// Release all assertions and let the Mac sleep normally again.
     func release() {
-        guard isEngaged else { return }
-        if idAssertionPreventUserIdle != 0 {
-            _ = IOPMAssertionRelease(idAssertionPreventUserIdle)
-            idAssertionPreventUserIdle = 0
+        if idAssertionPreventDisplay != 0 {
+            _ = IOPMAssertionRelease(idAssertionPreventDisplay)
+            idAssertionPreventDisplay = 0
         }
         if idAssertionPreventSystem != 0 {
             _ = IOPMAssertionRelease(idAssertionPreventSystem)
             idAssertionPreventSystem = 0
         }
-        isEngaged = false
-        NSLog("[SleepGuard] released — Mac may sleep normally")
+        if idAssertionPreventUserIdle != 0 {
+            _ = IOPMAssertionRelease(idAssertionPreventUserIdle)
+            idAssertionPreventUserIdle = 0
+        }
+        if isEngaged {
+            isEngaged = false
+            NSLog("[SleepGuard] released — Mac may sleep normally")
+        }
     }
 
     deinit {
