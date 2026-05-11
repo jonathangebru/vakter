@@ -2,10 +2,12 @@ import Foundation
 
 /// An external signal observed by the helper daemon while in `.armed`.
 ///
-/// These are the inputs to the state machine's `armed → grace` transition.
+/// These are the inputs to the state machine's `armed → grace` transition,
+/// plus the natural-unlock disarm path.
 /// Each concrete observer in the helper (LidObserver, PowerObserver,
-/// BluetoothObserver, HotkeyObserver, optional PowerButtonObserver) emits
-/// values of this type onto a shared signal channel.
+/// BluetoothObserver, HotkeyObserver, ScreenLockObserver, optional
+/// PowerButtonObserver) emits values of this type onto a shared signal
+/// channel.
 public enum AnchorSignal: Sendable, Equatable {
     case lidClosed
     case lidOpened
@@ -16,14 +18,24 @@ public enum AnchorSignal: Sendable, Equatable {
     case hotkeyArm
     case powerButtonBrief
 
+    /// The user authenticated their way into the system (Touch ID / password
+    /// unlock at the lock screen). macOS has just verified them, so we
+    /// trust this as our disarm signal too — no second prompt needed.
+    case screenUnlocked
+
     /// Should this signal transition us from `.armed` to `.grace`?
     public var triggersGrace: Bool {
         switch self {
         case .lidClosed, .powerDisconnected, .bluetoothTrustLost, .powerButtonBrief:
             return true
-        case .lidOpened, .powerConnected, .bluetoothTrustGained, .hotkeyArm:
+        case .lidOpened, .powerConnected, .bluetoothTrustGained, .hotkeyArm, .screenUnlocked:
             return false
         }
+    }
+
+    /// Should this signal disarm an armed/grace/alarm session?
+    public var triggersDisarm: Bool {
+        self == .screenUnlocked
     }
 
     /// Map signal to the trigger reason recorded in the event log.

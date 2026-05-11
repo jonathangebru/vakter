@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 import AnchorShared
 
 /// The helper-side XPC server.
@@ -124,9 +125,33 @@ private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked S
     }
 
     func disarm(reply: @escaping (Bool) -> Void) {
-        // TODO(week-4): gate via LAContext biometric auth before applying.
-        stateMachine.disarmFromUser()
-        reply(true)
+        // Gate any XPC-initiated disarm on biometric/password auth. The
+        // *natural* disarm path (the user unlocking the Mac at the lock
+        // screen) goes through ScreenLockObserver, never through here —
+        // so this only fires when something other than the OS unlock is
+        // asking, e.g. a menubar click while the screen is already unlocked,
+        // a Shortcuts invocation, or a future iOS-companion request.
+        let context = LAContext()
+        var err: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &err) else {
+            NSLog("[XPCService] disarm: canEvaluatePolicy denied (%@)",
+                  err?.localizedDescription ?? "?")
+            reply(false)
+            return
+        }
+
+        context.evaluatePolicy(
+            .deviceOwnerAuthentication,
+            localizedReason: "Disarm Anchor"
+        ) { [weak self] success, authErr in
+            if let authErr = authErr {
+                NSLog("[XPCService] disarm: auth failed (%@)", authErr.localizedDescription)
+            }
+            if success {
+                self?.stateMachine.disarmFromUser()
+            }
+            reply(success)
+        }
     }
 
     func setMode(_ raw: String, reply: @escaping (Bool) -> Void) {

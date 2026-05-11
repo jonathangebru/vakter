@@ -87,15 +87,22 @@ final class StateMachine {
 
         switch (state, signal) {
 
-        // Hotkey arms only when unarmed.
+        // Hotkey arms only when unarmed. Same effect as a menubar / XPC arm.
         case (.unarmed, .hotkeyArm):
-            transition(to: .armed, trigger: .userAction)
+            performUserArmLocked()
 
-        // While armed, trigger signals start the grace window.
+        // Any of the trigger signals starts the grace window while armed.
         case (.armed, let s) where s.triggersGrace:
             transition(to: .grace, trigger: s.asTrigger)
 
-        // Anything else: ignore (e.g. powerConnected while armed isn't a trigger).
+        // Natural screen unlock is our authenticated disarm. macOS already
+        // verified the user; we trust it.
+        case (.armed, .screenUnlocked),
+             (.grace, .screenUnlocked),
+             (.alarm, .screenUnlocked):
+            transition(to: .unarmed, trigger: .userAction)
+
+        // Anything else: ignore.
         default:
             break
         }
@@ -105,8 +112,18 @@ final class StateMachine {
 
     func armFromUser() {
         lock.lock(); defer { lock.unlock() }
+        performUserArmLocked()
+    }
+
+    /// Caller must already hold `lock`. Performs the unarmed→armed
+    /// transition AND fires the screen-lock side effect. Used by both the
+    /// hotkey path (via `handle`) and the XPC path (via `armFromUser`).
+    private func performUserArmLocked() {
         guard state == .unarmed else { return }
         transition(to: .armed, trigger: .userAction)
+        // ScreenLocker is stateless and thread-safe; safe to call while
+        // holding `lock`. The actual lock happens asynchronously.
+        ScreenLocker.lockScreen()
     }
 
     /// Called after the user successfully authenticates. The auth check
