@@ -1,0 +1,25 @@
+# Build products
+.build/
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.swp
+
+# SPM / Xcode
+Package.resolved
+.swiftpm/
+
+# Notarisation artefacts
+*.zip
+
+# Local config
+*.local
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Logs
+*.log

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- LaunchAgent that runs the Anchor helper for the logged-in user.
+         Loaded via SMAppService.agent from the menubar app on first run.
+         See `openspec/changes/bootstrap-anchor/design.md` § Architecture. -->
+
+    <key>Label</key>
+    <string>app.anchor.mac.helper</string>
+
+    <key>BundleProgram</key>
+    <string>Contents/MacOS/AnchorHelper</string>
+
+    <key>MachServices</key>
+    <dict>
+        <key>app.anchor.mac.helper.xpc</key>
+        <true/>
+    </dict>
+
+    <!-- Keep alive across launchd-detected crashes. -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/anchor-helper.err.log</string>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/anchor-helper.out.log</string>
+</dict>
+</plist>

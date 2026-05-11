@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+*.swp
+
+# Swift Package Manager / Xcode
+.build/
+.swiftpm/
+Package.resolved
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Build artifacts
+build/
+*.zip
+*.dSYM/
+
+# Compiled spike binaries (we ship the .m sources; binaries are local)
+spikes/01-audio/audio_test
+spikes/03-clamshell/lid_test
+spikes/07-audio-mix/mix_test
+
+# Logs
+*.log
+
+# Local config / secrets
+.env
+.env.local
+*.local
+
+# Editor
+.idea/
+.vscode/
