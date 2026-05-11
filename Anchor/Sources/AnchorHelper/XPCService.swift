@@ -189,4 +189,9 @@ private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked S
         stateMachine.simulateLidClose()
         reply(true)
     }
+
+    func runArmDemo(reply: @escaping (Bool) -> Void) {
+        stateMachine.runArmDemo()
+        reply(true)
+    }
 }

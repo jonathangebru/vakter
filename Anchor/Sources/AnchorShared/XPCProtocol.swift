@@ -49,6 +49,12 @@ import Foundation
     /// verify the grace → alarm path without physically closing the lid
     /// (which on some Macs triggers system sleep before grace expires).
     func simulateLidClose(reply: @escaping (Bool) -> Void)
+
+    /// One-click "watch the full arm flow from the menubar" demo: arms
+    /// WITHOUT locking the screen, then triggers a fake lid close so the
+    /// grace+alarm sequence runs end-to-end. Returns false if not in the
+    /// `.unarmed` state.
+    func runArmDemo(reply: @escaping (Bool) -> Void)
 }
 
 // MARK: - App-exposed interface (helper calls these back)

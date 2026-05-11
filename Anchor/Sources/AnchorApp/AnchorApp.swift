@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import AVFoundation
 import AnchorShared
 
 @main
@@ -50,5 +51,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             helperManager: helper,
             helperClient: client
         )
+
+        // Camera permission — request it now, in a calm context, rather
+        // than mid-alarm when the user can't actually grant it. macOS
+        // attributes the grant to the .app bundle, which means the
+        // embedded helper inherits access for AVCaptureSession.
+        requestCameraAccessIfNeeded()
+    }
+
+    private func requestCameraAccessIfNeeded() {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        switch status {
+        case .authorized:
+            NSLog("[Anchor] camera permission: authorized")
+        case .denied, .restricted:
+            NSLog("[Anchor] camera permission: %@ — alarm photos disabled until user fixes in System Settings",
+                  status == .denied ? "denied" : "restricted")
+        case .notDetermined:
+            NSLog("[Anchor] camera permission: requesting now")
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                NSLog("[Anchor] camera permission %@", granted ? "GRANTED" : "DENIED by user")
+            }
+        @unknown default:
+            break
+        }
     }
 }

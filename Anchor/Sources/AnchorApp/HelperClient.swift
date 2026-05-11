@@ -121,6 +121,15 @@ final class HelperClient: NSObject, AnchorAppProtocol {
         }
     }
 
+    /// One-click "watch the arming flow from the menubar" demo — arms
+    /// without locking the screen, then triggers a fake lid close so
+    /// chirp → grace chirps → alarm play through audibly.
+    func runArmDemo() {
+        helperProxy()?.runArmDemo { ok in
+            NSLog("[HelperClient] runArmDemo reply: %@", ok ? "ok" : "rejected")
+        }
+    }
+
     func requestSnapshotNow() {
         helperProxy()?.currentSnapshot { [weak self] data in
             guard let snap = AnchorXPC.decode(AnchorSnapshot.self, from: data) else { return }

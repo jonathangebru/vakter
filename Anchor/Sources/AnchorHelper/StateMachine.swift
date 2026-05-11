@@ -171,6 +171,25 @@ final class StateMachine {
         handle(signal: .lidClosed)
     }
 
+    /// One-click full demo of the arming flow. Transitions to ARMED
+    /// without locking the screen (so the user can watch from the
+    /// menubar), waits 1 s for the arm chirp to ring out, then injects
+    /// a lid-close signal. Grace chirps escalate for 8 s, alarm fires.
+    /// User can disarm from the menubar at any point.
+    func runArmDemo() {
+        lock.lock()
+        guard state == .unarmed else { lock.unlock(); return }
+        // Same as performUserArmLocked but WITHOUT the screen-lock side
+        // effect — we want the user looking at the menubar throughout.
+        transition(to: .armed, trigger: .userAction)
+        lock.unlock()
+        // Schedule the synthetic lid-close after a short pause so the
+        // user hears the arm chirp before the grace starts.
+        DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.handle(signal: .lidClosed)
+        }
+    }
+
     // MARK: Internal transition
 
     private func transition(to next: AnchorState, trigger: AnchorTrigger?) {
