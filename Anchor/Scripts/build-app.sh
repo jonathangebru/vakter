@@ -36,6 +36,15 @@ cp "${ROOT}/Sources/AnchorHelper/Resources/LaunchAgent.plist" "${APP}/Contents/L
 # Helper Info.plist sits inside Contents/Library, referenced by SMAppService
 # (see SMAppService.agent docs).
 
+# NOTE: We do NOT run appintentsmetadataprocessor here. It requires
+# `.swiftconstvalues` files emitted by the Swift compiler per source file,
+# which SPM doesn't produce. To enable AppIntents discovery (Shortcuts /
+# Spotlight) we need to either (a) migrate to .xcodeproj or (b) build a
+# custom per-file Swift invocation that emits const values. Tracked in
+# spikes/SPIKE_REPORT.md spike 8. The AppIntent code in
+# Sources/AnchorApp/AnchorIntents.swift is real and ships in the binary;
+# it just isn't surfaced to the system yet.
+
 echo "==> Bundle assembled."
 ls -la "${APP}/Contents/MacOS/"
 echo ""

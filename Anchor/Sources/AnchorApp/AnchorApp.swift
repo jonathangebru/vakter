@@ -21,6 +21,7 @@ struct AnchorApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var menuBarController: MenuBarController?
+    private var helperManager: HelperManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[Anchor] launched")
@@ -28,7 +29,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Hide Dock icon — menubar-only.
         NSApp.setActivationPolicy(.accessory)
 
-        menuBarController = MenuBarController()
+        // Register the bundled helper LaunchAgent. macOS will either auto-
+        // enable it (if previously approved) or mark it as requiresApproval
+        // and bounce the user to System Settings → Login Items & Extensions.
+        let helper = HelperManager()
+        helper.ensureRegistered()
+        helperManager = helper
+
+        menuBarController = MenuBarController(helperManager: helper)
 
         // TODO(week-5): if first run, present OnboardingView in a window.
     }

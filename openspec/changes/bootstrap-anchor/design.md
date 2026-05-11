@@ -407,12 +407,12 @@ STEP 6 — Hear the alarm
 6. ~~**`nvram LoginwindowText` write permissions.**~~ ✅ Resolved — modern macOS uses `/Library/Preferences/com.apple.loginwindow` instead of nvram. Privileged helper writes after one-time install admin auth, no further prompts (`spikes/06-nvram/` findings in SPIKE_REPORT.md).
 7. ~~**AVSpeechSynthesizer routing.**~~ ✅ Resolved. AVSpeechSynthesizer + AVAudioEngine mix cleanly (`spikes/07-audio-mix/`).
 
-### Open — blocked on Xcode + Developer ID
+### Open — blocked on Xcode + Developer ID  *(resolved 2026-05-11)*
 
-2. **Touch ID brief-tap detection.** `LAContext` is public-API-binary (auth or no auth). Brief-tap likely needs HID-level sensor observation via `IOHIDManager` — needs a signed app to test. **Plan:** mark the brief-tap silent-disarm requirement as contingent in `spec.md`; ship v1 with full-unlock disarm only if HID path doesn't pan out.
-4. **`SMAppService` LaunchAgent.** Needs a proper `.app` bundle with embedded LaunchAgent plist. Resolve week 1 of build.
-5. **Power-button intercept feasibility.** CGEventTap needs Accessibility, which is signature-bound. Power-button events on Apple Silicon may not even surface in CGEvent at all (the button is wired through the Secure Enclave, not the keyboard event path). Resolve week 1 of build; plan for the realistic case that this is documented as a limitation.
-8. **App Intents discovery in a menubar app.** App Intents need an Xcode-built `.app` bundle. Resolve week 2-3 of build.
+4. ~~**`SMAppService` LaunchAgent.**~~ ✅ Resolved. Implemented in `HelperManager`. Helper registers, runs, survives `killall` via KeepAlive. See SPIKE_REPORT.
+8. ~~**App Intents discovery in a menubar app.**~~ ⚠ Partial. AppIntents code compiles + links + ships, but Shortcuts can't discover them until we either migrate to `.xcodeproj` or build a per-file `-emit-const-values-path` Swift compile step. **Decision: defer to v1.5.** Code remains in repo, inert.
+5. ~~**Power-button intercept feasibility.**~~ ⏳ Probed and likely infeasible. `IOHIDManagerOpen` returns `kIOReturnNotPermitted` without Input Monitoring; even with permission granted, Apple Silicon's power button is routed via SMC/Secure Enclave and is *probably* not in standard userspace event streams. **Decision: document as honest limitation in onboarding; one more confirmation attempt during Phase 1 once Input Monitoring is granted to the signed helper.**
+2. **Touch ID brief-tap detection.** Still deferred — same posture as before. v1 ships full-unlock-only disarm; brief-tap is a v1.5 research item.
 
 ## Future versions (sketched)
 

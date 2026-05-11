@@ -29,6 +29,14 @@ let package = Package(
             // .app bundle by `Scripts/build-app.sh`. Exclude so SPM stops
             // warning about "unhandled" files.
             exclude: ["Resources"]
+            // NOTE: AppIntents discovery (Shortcuts/Spotlight) requires
+            // appintentsmetadataprocessor to consume `.swiftconstvalues`
+            // files emitted per Swift source — a build phase that SPM does
+            // not perform by default. See spikes/SPIKE_REPORT.md spike 8.
+            // The intent code in AnchorIntents.swift compiles and links;
+            // it will not surface in Shortcuts until we either (a) migrate
+            // to .xcodeproj or (b) plumb the const-values emission via
+            // custom Swift invocations.
         ),
 
         .executableTarget(

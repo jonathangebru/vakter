@@ -89,6 +89,7 @@ A native macOS menubar app for Apple Silicon Macs that:
 - Apple Watch on-wrist inference (via BT peer state)
 - On-device iPhone push when alarm fires
 - Stronger custom-paired BLE proximity (replaces generic BT peer for pairing users)
+- **App Intents discovery** — moved from v1 to v1.5 (spike 8 finding: needs Xcode build phases SPM doesn't replicate; will land naturally when we migrate to `.xcodeproj` for v1.5 features). AppIntent source code already ships in v1 binaries; v1.5 surfaces them to Shortcuts.
 
 **v2 — cloud tier ($4/mo or $36/yr add-on)**
 - HomeKit alarm trigger when at home (HomePod sirens, lights flash)

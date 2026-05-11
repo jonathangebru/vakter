@@ -12,11 +12,11 @@ Phased plan. Each phase ships and earns revenue before the next begins.
 - [x] **AVSpeechSynthesizer + AVAudioEngine mixing spike.** ✅ Concurrent TTS + tone playback works cleanly. See `spikes/07-audio-mix/`.
 - [~] **Touch ID brief-tap spike.** ⏳ Deferred — needs HID-level sensor observation via signed app (no public LAContext path). See `spikes/02-touchid/NOTES.md`. Plan: ship v1 without brief-tap unless this resolves cleanly in Phase 1 week 1.
 
-**Environment-blocked spikes — DEFERRED to Phase 1 week 1**
+**Environment-blocked spikes — RESOLVED 2026-05-11**
 
-- [ ] **`SMAppService` LaunchAgent spike.** Needs Xcode + signed app.
-- [ ] **Power-button intercept spike.** Needs Xcode + Accessibility-granted signed app.
-- [ ] **App Intents in menubar/LaunchAgent spike.** Needs Xcode app target.
+- [x] **`SMAppService` LaunchAgent spike.** ✅ PASS. `HelperManager.swift` calls `SMAppService.agent(plistName:).register()`. Helper boots within 1–2 seconds of app launch; survives `killall` via KeepAlive (respawn ~1.5s). See SPIKE_REPORT.
+- [~] **App Intents in menubar/LaunchAgent spike.** ⚠ PARTIAL. Intent code compiles + links but Shortcuts discovery requires Xcode-style `.swiftconstvalues` per-file emission that SPM doesn't perform. **Deferred to v1.5** — code stays in repo, inert.
+- [~] **Power-button intercept spike.** ⏳ Probed, likely infeasible. Apple Silicon's power button is routed via SMC/Secure Enclave outside userspace event streams. Final attempt once Input Monitoring is granted to the signed helper; otherwise documented limitation in onboarding.
 
 ## Phase 0.5 — Environment setup (user-driven, ~30 min)
 

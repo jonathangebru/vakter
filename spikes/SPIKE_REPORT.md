@@ -13,9 +13,9 @@ Toolchain: Command Line Tools only (no full Xcode), Swift 6.0.3 (broken; clang/O
 | 3. Lid (clamshell) state | ✅ **PASS** | None — read + notify both work |
 | 6. Lock-screen message storage | ⚠ **CONDITIONAL** | Low — needs sudo for write, design already accommodates |
 | 2. Touch ID brief-tap | ⏳ **DEFERRED** | Medium — may need to drop the brief-tap luxury feature |
-| 4. SMAppService LaunchAgent | ⛔ **BLOCKED** | Needs Xcode |
-| 5. Power-button intercept | ⛔ **BLOCKED** | Needs signed app + Accessibility |
-| 8. App Intents in menubar app | ⛔ **BLOCKED** | Needs Xcode |
+| 4. SMAppService LaunchAgent | ✅ **PASS** (resolved 2026-05-11) | None — helper registers, runs, survives KeepAlive |
+| 8. App Intents in menubar app | ⚠ **PARTIAL** (resolved 2026-05-11) | Medium — needs Xcode build phases SPM can't replicate |
+| 5. Power-button intercept | ⏳ **DEFERRED** (probed 2026-05-11) | Medium — likely not feasible; treat as documented limitation |
 
 **No spike result fundamentally breaks the design.** Three are blocked on environment (Xcode + Developer ID) — they don't change the design, just push their resolution to after the dev environment is real.
 
@@ -104,63 +104,91 @@ Toolchain: Command Line Tools only (no full Xcode), Swift 6.0.3 (broken; clang/O
 
 ---
 
-### ⛔ Spike 4 — SMAppService LaunchAgent — BLOCKED on Xcode
+### ✅ Spike 4 — SMAppService LaunchAgent — RESOLVED 2026-05-11
 
-**Why blocked:** `SMAppService` requires a proper `.app` bundle with a registered LaunchAgent plist embedded in `Contents/Library/LaunchAgents/`. We can't build this without Xcode and code signing.
+**Implementation:** `HelperManager` in `Anchor/Sources/AnchorApp/HelperManager.swift` calls `SMAppService.agent(plistName: "app.anchor.mac.helper.plist").register()` at app launch.
 
-**What we already know from Apple docs:**
-- `SMAppService.agent(plistName: ...)` is the modern API
-- First registration triggers a user-approval prompt in System Settings → Login Items
-- Approval is reversible by the user from System Settings
-- Works for unsigned apps in development with Developer ID
+**Confirmed:**
+- First registration succeeded silently (no user-approval prompt) because the app was signed + notarised; macOS pre-trusts notarised Developer-ID-Application bundles
+- Helper boots within 1–2 seconds of app launch
+- All four observers initialise (Lid / Power / Bluetooth / Hotkey)
+- `launchctl list | grep anchor` shows the helper as a regular LaunchAgent submitted by `smd` (System Management Daemon)
+- **KeepAlive verified**: `killall AnchorHelper` → launchd respawned within ~1.5 seconds, all observers reinitialised. An attacker can't quiet the alarm by killing the helper process.
+- `SMAppService.Status` enum surfaces correctly in the menubar dropdown (Helper: enabled (running))
 
-**Recommendation:** Resolve this spike during week 1 of v1 build once Xcode is installed and Developer ID is in hand.
-
----
-
-### ⛔ Spike 5 — Power-button intercept — BLOCKED on Accessibility / signing
-
-**Why blocked:**
-- `CGEventTap` requires the **Accessibility** TCC grant
-- Accessibility grants are tied to the app's code signature
-- An unsigned CLI binary requesting Accessibility creates a new TCC entry on every rebuild and is treated as untrusted
-
-**Also uncertain:**
-- Whether the power button on Apple Silicon emits an observable event in the CGEvent stream at all (the button is wired through the SMC/Secure Enclave on M-series, separate from the standard keyboard event path). Likely it doesn't, but verifying needs a real signed app.
-
-**Recommendation:** Move this spike to week 1 of v1 build. Plan for the realistic outcome that the power button is NOT interceptable, and treat that as an honest documented limitation rather than a feature regression.
+**Production-bound fix caught en passant:** when the app binary is re-signed
+(local rebuild OR a Sparkle update in production), the recorded
+"Lightweight Code Requirement" (LWCR) no longer matches the new binary, and
+launchd refuses to spawn the helper (`EX_CONFIG / 78`). `HelperManager`
+now `unregister()`s before `register()`ing on every call, which clears the
+stale LWCR and forces launchd to record the new one. This will keep Sparkle
+updates working without manual user intervention.
 
 ---
 
-### ⛔ Spike 8 — App Intents discovery — BLOCKED on Xcode
+### ⚠ Spike 8 — App Intents discovery — PARTIAL PASS (resolved 2026-05-11)
 
-**Why blocked:** App Intents discovery (the way Shortcuts finds your app's intents) is driven by Xcode-generated metadata baked into the `.app` bundle. We can't test this without a proper app target.
+**What works:**
+- `ArmAnchorIntent`, `SetAnchorModeIntent`, and `AnchorShortcutsProvider` (in `Sources/AnchorApp/AnchorIntents.swift`) compile cleanly
+- The AppIntents framework links into the menubar binary (`otool -l` shows `/System/Library/Frameworks/AppIntents.framework` as a load command)
+- LSUIElement=true menubar apps are compatible with AppIntents — Apple supports this
 
-**What we already know:**
-- App Intents framework works on macOS 14+
-- A menubar/`LSUIElement` app can expose intents
-- A LaunchAgent helper alone (no app bundle) cannot expose intents — the host needs to be a regular app target
+**What doesn't work yet:**
+- Shortcuts.app / Spotlight do NOT see Anchor's intents
+- Reason: Xcode generates a `Metadata.appintents` directory inside the bundle's `Contents/Resources/`, produced by `appintentsmetadataprocessor` running over per-source `.swiftconstvalues` files
+- SPM does not emit those `.swiftconstvalues` files (the `SWIFT_ENABLE_EMIT_CONST_VALUES = YES` build setting is an Xcode-side phase)
+- We tried `-Xfrontend -emit-const-values-path <path>` via Package.swift's `swiftSettings` — flag accepted but only emits one path for the whole module, not per-file, which `appintentsmetadataprocessor` requires
 
-**Recommendation:** Resolve during v1 build week 2-3 alongside the helper architecture work.
+**Paths forward (any one resolves it):**
+1. **Migrate to .xcodeproj** (or generate one via XcodeGen / Tuist) — gets the build phase for free
+2. **Custom Swift compile step** — invoke `swift -c -emit-const-values-path ...` per file in `build-app.sh`, feed the results to `appintentsmetadataprocessor --swift-const-vals-list`
+3. **Defer AppIntents to v1.5** — keep the intent code; surface them later
 
-## Environment gap
+**Recommendation:** Defer to v1.5. The Shortcuts feature was a "nice to have" for power users (MacStories pitch). Not on the critical path for café-snatch deterrence. When we do migrate to .xcodeproj for other reasons (e.g. Asset Catalog needs), AppIntents discovery comes along for free.
 
-To unblock the four remaining spikes and start v1 build, the project needs:
+**Updated v1 spec:** Mark the Shortcuts/App Intents requirement as **deferred to v1.5** in `spec.md`.
 
-1. **Install full Xcode** (App Store, ~15GB, free)
-2. **Apple Developer Program enrollment** ($99/year)
-3. **Generate a Developer ID Application certificate** in Apple Developer portal
-4. **Set up notarization credentials** (app-specific password or App Store Connect API key)
+---
 
-None of these can be done programmatically — they require an Apple ID, payment, and a few clicks in Apple's portals. Estimated time: ~30 minutes of user-driven setup + Xcode download.
+### ⏳ Spike 5 — Power-button intercept — PROBED, LIKELY INFEASIBLE (2026-05-11)
 
-## Updates needed to OpenSpec artifacts
+**What we observed:**
+- `IOHIDManager` matching with `kHIDPage_GenericDesktop` / `kHIDPage_Keyboard` / `kHIDPage_Consumer` succeeded
+- 4 HID devices matched on probe; IOReg shows a family of `AppleSPUHIDDevice` entries (SPU = System Programmable Unit, backed by Secure Enclave / SMC)
+- `IOHIDManagerOpen` returned `0xE00002E2` (`kIOReturnNotPermitted`) — Input Monitoring permission required even for read-only event observation
+- No actual events observed because permission was denied to the unsigned probe
 
-Based on these findings:
+**What's still unknown:**
+- Whether the brief power-button press surfaces in the HID event stream when Input Monitoring IS granted
+- Even with permission granted, conventional wisdom + Apple's docs strongly suggest the power button on Apple Silicon is routed via SMC/Secure Enclave and is NOT in standard userspace event streams. The firmware handles it directly.
 
-1. **`design.md` — Lock-screen message section**: drop the nvram path. State that we write to `/Library/Preferences/com.apple.loginwindow` via privileged helper.
-2. **`design.md` — Open spikes**: mark spikes 1, 3, 6, 7 as resolved; rephrase spike 2 to focus on HID-level Touch ID sensor; leave 4, 5, 8 as pending until Xcode is set up.
-3. **`spec.md` — Touch ID brief-tap requirement**: mark contingent (same treatment as power-button intercept).
-4. **`tasks.md` — Phase 0**: collapse the 8-spike list to the 4 remaining items; document the 4 done.
+**Pragmatic conclusion:**
+- Treat power-button intercept as **likely-infeasible** but worth one more attempt during Phase 1 when we have the signed Anchor.app with Input Monitoring granted
+- Update `spec.md` requirement to reflect "contingent on Phase 1 confirmation"
+- Honest fallback for users in onboarding: "Anchor cannot prevent a held power-button shutdown. We close the lid / power-disconnect / Bluetooth-leave gaps; the firmware-managed power button is outside any third-party app's reach."
 
-I'll apply these next.
+**Code artefact:** `spikes/05-power-button/power_probe.m` — re-runs against the signed Anchor.app context will be cheap once Input Monitoring is granted.
+
+## Environment gap — CLOSED 2026-05-11
+
+All four environment dependencies satisfied:
+
+1. ✅ Xcode 16.2 installed at `/Applications/Xcode.app`
+2. ✅ Apple Developer Program enrolled (Team `9TA5GB5UJH`)
+3. ✅ Developer ID Application certificate in login keychain
+4. ✅ `notarytool` keychain profile `anchor-notarytool` stored, verified, used to notarise the bundle once already (submission ad1eb8f7-f0d6-4209-99ce-738dd29778a5)
+
+## Final spike status
+
+```
+✅ 1. CoreAudio volume control       PASS         (2026-05-11)
+✅ 3. Clamshell state                PASS         (2026-05-11)
+⚠  6. Lock-screen text path          CONDITIONAL  (privileged helper needed)
+✅ 7. AVSpeechSynthesizer + tone     PASS         (2026-05-11)
+✅ 4. SMAppService LaunchAgent       PASS         (2026-05-11, post-Xcode)
+⚠  8. App Intents discovery         PARTIAL      (needs Xcode build phases)
+⏳ 5. Power-button intercept         DEFERRED     (probably infeasible)
+⏳ 2. Touch ID brief-tap             DEFERRED     (research item for v1.5)
+```
+
+**No remaining blockers for the v1 build.** Phase 1 feature work can begin.

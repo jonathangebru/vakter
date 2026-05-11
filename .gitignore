@@ -18,6 +18,7 @@ build/
 # Compiled spike binaries (we ship the .m sources; binaries are local)
 spikes/01-audio/audio_test
 spikes/03-clamshell/lid_test
+spikes/05-power-button/power_probe
 spikes/07-audio-mix/mix_test
 
 # Logs

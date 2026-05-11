@@ -13,8 +13,10 @@ final class MenuBarController {
 
     private let item: NSStatusItem
     private var currentState: AnchorState = .unarmed
+    private let helperManager: HelperManager?
 
-    init() {
+    init(helperManager: HelperManager? = nil) {
+        self.helperManager = helperManager
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         refresh()
 
@@ -31,6 +33,21 @@ final class MenuBarController {
         let header = NSMenuItem(title: "Anchor — \(currentState.rawValue)", action: nil, keyEquivalent: "")
         header.isEnabled = false
         menu.addItem(header)
+
+        if let helperManager = helperManager {
+            let helperRow = NSMenuItem(title: "Helper: \(helperManager.statusLabel)", action: nil, keyEquivalent: "")
+            helperRow.isEnabled = false
+            menu.addItem(helperRow)
+
+            if helperManager.status == .requiresApproval {
+                let approve = NSMenuItem(title: "Approve in System Settings…",
+                                         action: #selector(openHelperApproval),
+                                         keyEquivalent: "")
+                approve.target = self
+                menu.addItem(approve)
+            }
+        }
+
         menu.addItem(.separator())
 
         let armItem = NSMenuItem(
@@ -65,6 +82,10 @@ final class MenuBarController {
         item.menu = menu
         item.button?.performClick(nil)
         item.menu = nil  // detach so single-click works next time
+    }
+
+    @objc private func openHelperApproval() {
+        helperManager?.openLoginItemsSettings()
     }
 
     @objc private func toggleArm() {
