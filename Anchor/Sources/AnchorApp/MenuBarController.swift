@@ -20,6 +20,11 @@ final class MenuBarController {
     private let helperManager: HelperManager?
     private let helperClient: HelperClient?
 
+    /// Closure that opens the Settings window. Injected from AppDelegate
+    /// because SwiftUI's `Settings` scene doesn't reliably open from
+    /// LSUIElement=true apps — we manage our own NSWindow instead.
+    private let onShowSettings: () -> Void
+
     /// Holds the state value that drives the SwiftUI MenubarShield. Wrapping
     /// in an `ObservableObject` lets us push updates into the hosted view
     /// without recreating the NSHostingView on every state change.
@@ -28,10 +33,12 @@ final class MenuBarController {
 
     init(
         helperManager: HelperManager? = nil,
-        helperClient: HelperClient? = nil
+        helperClient: HelperClient? = nil,
+        onShowSettings: @escaping () -> Void = {}
     ) {
         self.helperManager = helperManager
         self.helperClient = helperClient
+        self.onShowSettings = onShowSettings
         self.stateBox = ShieldStateBox()
         item = NSStatusBar.system.statusItem(withLength: 28)
         installSwiftUIShield()
@@ -219,10 +226,7 @@ final class MenuBarController {
     }
 
     @objc private func openSettings() {
-        if #available(macOS 14, *) {
-            NSApp.activate()
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        }
+        onShowSettings()
     }
 
     private func refresh() {

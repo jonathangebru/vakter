@@ -58,7 +58,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menuBarController = MenuBarController(
             helperManager: helper,
-            helperClient: client
+            helperClient: client,
+            onShowSettings: { [weak self] in self?.showSettingsWindow() }
         )
 
         // Camera permission — request it now, in a calm context, rather
@@ -78,6 +79,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var onboardingWindow: NSWindow?
+    private var settingsWindow: NSWindow?
+
+    /// Called by MenuBarController when the user picks "Settings…".
+    /// SwiftUI's `Settings` scene doesn't reliably open from
+    /// LSUIElement=true apps (the activation policy keeps the window
+    /// hidden), so we present our own NSWindow that hosts SettingsRoot
+    /// directly. Tracks a single shared window so repeated clicks just
+    /// bring the existing one forward.
+    @MainActor
+    func showSettingsWindow() {
+        if let win = settingsWindow {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            win.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let host = NSHostingController(rootView: SettingsRoot())
+        let window = NSWindow(contentViewController: host)
+        window.title = "Anchor Settings"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.minSize = NSSize(width: 760, height: 560)
+        window.center()
+        window.isReleasedWhenClosed = false
+
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        settingsWindow = window
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                // Only drop back to accessory if no other windows are open.
+                if self?.onboardingWindow == nil {
+                    NSApp.setActivationPolicy(.accessory)
+                }
+                self?.settingsWindow = nil
+            }
+        }
+    }
 
     @MainActor
     private func presentOnboarding() {
