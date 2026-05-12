@@ -76,7 +76,20 @@ let package = Package(
             name: "AnchorPrivilegedDaemon",
             dependencies: ["AnchorShared"],
             path: "Sources/AnchorPrivilegedDaemon",
-            exclude: ["Resources"]
+            exclude: ["Resources"],
+            linkerSettings: [
+                // SMAppService.daemon refuses to spawn a binary whose
+                // Info.plist isn't bound into the Mach-O. For .app-style
+                // bundles Xcode handles this automatically; with SwiftPM
+                // we ask the linker to create the __TEXT,__info_plist
+                // section ourselves.
+                .unsafeFlags([
+                    "-Xlinker", "-sectcreate",
+                    "-Xlinker", "__TEXT",
+                    "-Xlinker", "__info_plist",
+                    "-Xlinker", "Sources/AnchorPrivilegedDaemon/Resources/Info.plist"
+                ])
+            ]
         ),
     ]
 )
