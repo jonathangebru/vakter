@@ -25,6 +25,10 @@ let stateMachine = StateMachine()
 // rebind when the user picks a new combo in Settings.
 let hotkey = HotkeyObserver()
 
+// BluetoothObserver gets its own reference so the XPC service can drive
+// the pairing-UI scan + add/remove from trusted peers.
+let bluetooth = BluetoothObserver()
+
 // WakeObserver gets its own reference because it needs to read state
 // machine state (to decide whether to delay sleep acknowledgement) AND
 // to subscribe to state changes (to acknowledge sleep when user disarms).
@@ -35,7 +39,7 @@ let wake = WakeObserver()
 let observers: [AnchorSignalObserver] = [
     LidObserver(),
     PowerObserver(),
-    BluetoothObserver(),
+    bluetooth,
     hotkey,
     ScreenLockObserver(),
     wake,
@@ -54,7 +58,7 @@ wake.wireStateMachine(stateMachine)
 
 // Stand up the XPC listener so the menubar app can subscribe to snapshots
 // and dispatch arm/disarm/setMode commands.
-let xpc = XPCService(stateMachine: stateMachine, hotkey: hotkey)
+let xpc = XPCService(stateMachine: stateMachine, hotkey: hotkey, bluetooth: bluetooth)
 xpc.start()
 
 NSLog("[Anchor.helper] ready — running run loop")

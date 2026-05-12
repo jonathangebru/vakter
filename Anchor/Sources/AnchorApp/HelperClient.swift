@@ -130,6 +130,49 @@ final class HelperClient: NSObject, AnchorAppProtocol {
         }
     }
 
+    // MARK: Trusted Bluetooth peers
+
+    /// Fetch the current trusted-peer list from the helper.
+    func listTrustedPeers(completion: @escaping ([TrustedPeer]) -> Void) {
+        helperProxy()?.listTrustedPeers { data in
+            let peers = AnchorXPC.decode([TrustedPeer].self, from: data) ?? []
+            Task { @MainActor in completion(peers) }
+        }
+    }
+
+    /// Start a discovery scan. Initial reply arrives ~0.8 s later with
+    /// any peripherals already in advertisement range.
+    func startBluetoothDiscovery(completion: @escaping ([BluetoothDiscovery]) -> Void) {
+        helperProxy()?.startBluetoothDiscovery { data in
+            let list = AnchorXPC.decode([BluetoothDiscovery].self, from: data) ?? []
+            Task { @MainActor in completion(list) }
+        }
+    }
+
+    /// Latest snapshot for live polling during the pairing modal.
+    func currentBluetoothDiscoveries(completion: @escaping ([BluetoothDiscovery]) -> Void) {
+        helperProxy()?.currentBluetoothDiscoveries { data in
+            let list = AnchorXPC.decode([BluetoothDiscovery].self, from: data) ?? []
+            Task { @MainActor in completion(list) }
+        }
+    }
+
+    func stopBluetoothDiscovery() {
+        helperProxy()?.stopBluetoothDiscovery { _ in }
+    }
+
+    func addTrustedPeer(_ peer: TrustedPeer, completion: @escaping (Bool) -> Void) {
+        helperProxy()?.addTrustedPeer(AnchorXPC.encode(peer)) { ok in
+            Task { @MainActor in completion(ok) }
+        }
+    }
+
+    func removeTrustedPeer(id: UUID, completion: @escaping (Bool) -> Void) {
+        helperProxy()?.removeTrustedPeer(id.uuidString) { ok in
+            Task { @MainActor in completion(ok) }
+        }
+    }
+
     func requestSnapshotNow() {
         helperProxy()?.currentSnapshot { [weak self] data in
             guard let snap = AnchorXPC.decode(AnchorSnapshot.self, from: data) else { return }

@@ -366,26 +366,236 @@ private struct SoundTab: View {
 // MARK: - Bluetooth
 
 private struct BluetoothTab: View {
+    @State private var peers: [TrustedPeer] = []
+    @State private var showingPairing = false
+
     var body: some View {
         Text("Trusted Devices")
             .font(AnchorDesign.titleFont)
-        Text("Pair the things you keep with you — phone, AirPods, watch. While at least one is nearby, Anchor dampens false alarms. When all of them go out of Bluetooth range, that's a theft signal.")
+        Text("Pair the things you keep with you — phone, AirPods, Apple Watch. While at least one is nearby, Anchor dampens false alarms. When all of them go out of Bluetooth range, that's a theft signal.")
             .font(AnchorDesign.bodyFont)
             .foregroundStyle(.secondary)
 
         AnchorCard(
-            title: "Coming in v1.5",
-            subtitle: "The Bluetooth pairing UI lands with the iPhone companion app. For now, Anchor protects via the lid, power, and hotkey paths."
+            title: peers.isEmpty ? "No devices paired yet" : "Paired devices",
+            subtitle: peers.isEmpty
+                ? "Pair at least one to enable Bluetooth-presence triggers. You can pair up to \(TrustedPeerStore.maxCount)."
+                : "Anchor watches for all of these. If they're ALL out of range for 3+ seconds, the alarm trigger fires."
         ) {
-            HStack(spacing: AnchorDesign.spacingS) {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 18))
-                    .foregroundStyle(AnchorDesign.watch)
-                Text("Bluetooth observer is stubbed in v1 builds.")
-                    .font(AnchorDesign.bodyFont)
-                    .foregroundStyle(.secondary)
-                Spacer()
+            VStack(spacing: AnchorDesign.spacingS) {
+                ForEach(peers) { peer in
+                    peerRow(peer)
+                }
+
+                if peers.count < TrustedPeerStore.maxCount {
+                    Button {
+                        showingPairing = true
+                    } label: {
+                        Label("Add a device", systemImage: "plus.circle.fill")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AnchorDesign.anchor)
+                    .controlSize(.large)
+                }
             }
+        }
+        .onAppear { refreshPeers() }
+        .sheet(isPresented: $showingPairing, onDismiss: { refreshPeers() }) {
+            PairingSheet(onClose: { showingPairing = false })
+                .frame(width: 540, height: 480)
+        }
+    }
+
+    private func refreshPeers() {
+        guard let delegate = NSApp.delegate as? AppDelegate,
+              let client = delegate.helperClient else { return }
+        client.listTrustedPeers { list in
+            peers = list.sorted(by: { $0.dateAdded > $1.dateAdded })
+        }
+    }
+
+    private func peerRow(_ peer: TrustedPeer) -> some View {
+        HStack(spacing: AnchorDesign.spacingM) {
+            Image(systemName: iconFor(name: peer.displayName))
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(AnchorDesign.anchor)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(AnchorDesign.anchor.opacity(0.10)))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(peer.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                Text(peer.id.uuidString.prefix(8))
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button {
+                removePeer(peer)
+            } label: {
+                Image(systemName: "minus.circle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Remove this device from the trusted set")
+        }
+        .padding(AnchorDesign.spacingS)
+        .background(
+            RoundedRectangle(cornerRadius: AnchorDesign.radiusS, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
+        )
+    }
+
+    private func removePeer(_ peer: TrustedPeer) {
+        guard let delegate = NSApp.delegate as? AppDelegate,
+              let client = delegate.helperClient else { return }
+        client.removeTrustedPeer(id: peer.id) { _ in
+            refreshPeers()
+        }
+    }
+
+    private func iconFor(name: String) -> String {
+        let n = name.lowercased()
+        if n.contains("iphone")    { return "iphone" }
+        if n.contains("airpods")   { return "airpods" }
+        if n.contains("ipad")      { return "ipad" }
+        if n.contains("watch")     { return "applewatch" }
+        if n.contains("mac")       { return "macbook" }
+        return "antenna.radiowaves.left.and.right"
+    }
+}
+
+/// Modal that shows nearby BT devices and lets the user pick one to trust.
+private struct PairingSheet: View {
+    let onClose: () -> Void
+
+    @State private var discoveries: [BluetoothDiscovery] = []
+    @State private var pollTimer: Timer?
+    @State private var pickedID: UUID?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Add a trusted device")
+                        .font(.system(size: 20, weight: .semibold))
+                    Text("Scanning for nearby Bluetooth devices. Pair the device with your Mac first (System Settings → Bluetooth) for the most reliable matching.")
+                        .font(AnchorDesign.captionFont)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Button("Done", action: onClose)
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+            }
+            .padding(AnchorDesign.spacingL)
+
+            Divider()
+
+            if discoveries.isEmpty {
+                VStack(spacing: AnchorDesign.spacingM) {
+                    ProgressView()
+                        .controlSize(.large)
+                    Text("Scanning…")
+                        .foregroundStyle(.secondary)
+                        .font(AnchorDesign.bodyFont)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(discoveries) { d in
+                            discoveryRow(d)
+                        }
+                    }
+                    .padding(AnchorDesign.spacingM)
+                }
+            }
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            startDiscovery()
+            startPolling()
+        }
+        .onDisappear {
+            pollTimer?.invalidate()
+            if let delegate = NSApp.delegate as? AppDelegate {
+                delegate.helperClient?.stopBluetoothDiscovery()
+            }
+        }
+    }
+
+    private func discoveryRow(_ d: BluetoothDiscovery) -> some View {
+        HStack(spacing: AnchorDesign.spacingM) {
+            // Signal-strength visual: 4 bars filled proportional to RSSI.
+            // -30 dBm or stronger = full bars, -90 dBm or weaker = no bars.
+            let strength = max(0, min(4, (d.rssi + 90) / 15))
+            HStack(spacing: 2) {
+                ForEach(0..<4, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(i < strength ? AnchorDesign.anchor : Color.primary.opacity(0.12))
+                        .frame(width: 4, height: 4 + CGFloat(i) * 3)
+                }
+            }
+            .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(d.displayName)
+                    .font(.system(size: 14, weight: .medium))
+                Text("\(d.rssi) dBm · \(d.id.uuidString.prefix(8))")
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                addPeer(d)
+            } label: {
+                Text("Add")
+                    .frame(minWidth: 60)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AnchorDesign.anchor)
+            .controlSize(.small)
+        }
+        .padding(.vertical, AnchorDesign.spacingS)
+        .padding(.horizontal, AnchorDesign.spacingM)
+        .background(
+            RoundedRectangle(cornerRadius: AnchorDesign.radiusS, style: .continuous)
+                .fill(Color.primary.opacity(0.03))
+        )
+    }
+
+    private func startDiscovery() {
+        guard let delegate = NSApp.delegate as? AppDelegate,
+              let client = delegate.helperClient else { return }
+        client.startBluetoothDiscovery { initial in
+            discoveries = initial
+        }
+    }
+
+    private func startPolling() {
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { _ in
+            Task { @MainActor in
+                guard let delegate = NSApp.delegate as? AppDelegate,
+                      let client = delegate.helperClient else { return }
+                client.currentBluetoothDiscoveries { list in
+                    discoveries = list
+                }
+            }
+        }
+    }
+
+    private func addPeer(_ d: BluetoothDiscovery) {
+        guard let delegate = NSApp.delegate as? AppDelegate,
+              let client = delegate.helperClient else { return }
+        let peer = TrustedPeer(id: d.id, displayName: d.displayName)
+        client.addTrustedPeer(peer) { ok in
+            if ok { onClose() }
         }
     }
 }

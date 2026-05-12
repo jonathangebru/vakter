@@ -55,6 +55,30 @@ import Foundation
     /// grace+alarm sequence runs end-to-end. Returns false if not in the
     /// `.unarmed` state.
     func runArmDemo(reply: @escaping (Bool) -> Void)
+
+    // MARK: Trusted Bluetooth peers (Settings pairing UI)
+
+    /// Returns the current trusted-peer list as JSON-encoded
+    /// `[TrustedPeer]`.
+    func listTrustedPeers(reply: @escaping (Data) -> Void)
+
+    /// Begin recording nearby Bluetooth discoveries. The reply fires
+    /// with a JSON-encoded `[BluetoothDiscovery]` (initial snapshot
+    /// after a brief delay). The Settings UI then polls
+    /// `currentDiscoveries` for live updates.
+    func startBluetoothDiscovery(reply: @escaping (Data) -> Void)
+
+    /// Latest snapshot of nearby Bluetooth discoveries (for polling).
+    func currentBluetoothDiscoveries(reply: @escaping (Data) -> Void)
+
+    /// Stop the discovery recording (background trust scan continues).
+    func stopBluetoothDiscovery(reply: @escaping (Bool) -> Void)
+
+    /// Add a trusted peer. `data` is a JSON-encoded `TrustedPeer`.
+    func addTrustedPeer(_ data: Data, reply: @escaping (Bool) -> Void)
+
+    /// Remove a trusted peer by UUID.
+    func removeTrustedPeer(_ idString: String, reply: @escaping (Bool) -> Void)
 }
 
 // MARK: - App-exposed interface (helper calls these back)

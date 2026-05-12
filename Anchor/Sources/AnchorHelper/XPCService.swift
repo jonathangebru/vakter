@@ -22,10 +22,14 @@ final class XPCService: NSObject, NSXPCListenerDelegate {
     private let listener: NSXPCListener
     private let stateMachine: StateMachine
     private let hotkey: HotkeyObserver
+    private let bluetooth: BluetoothObserver
 
-    init(stateMachine: StateMachine, hotkey: HotkeyObserver) {
+    init(stateMachine: StateMachine,
+         hotkey: HotkeyObserver,
+         bluetooth: BluetoothObserver) {
         self.stateMachine = stateMachine
         self.hotkey = hotkey
+        self.bluetooth = bluetooth
         self.listener = NSXPCListener(machServiceName: AnchorConstants.xpcMachServiceName)
         super.init()
         self.listener.delegate = self
@@ -49,7 +53,7 @@ final class XPCService: NSObject, NSXPCListenerDelegate {
         conn.exportedInterface = NSXPCInterface(with: AnchorHelperProtocol.self)
         conn.remoteObjectInterface = NSXPCInterface(with: AnchorAppProtocol.self)
 
-        let bridge = ExportedBridge(stateMachine: stateMachine, hotkey: hotkey, connection: conn)
+        let bridge = ExportedBridge(stateMachine: stateMachine, hotkey: hotkey, bluetooth: bluetooth, connection: conn)
         conn.exportedObject = bridge
 
         conn.invalidationHandler = { [weak bridge] in
@@ -81,12 +85,14 @@ private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked S
 
     private let stateMachine: StateMachine
     private let hotkey: HotkeyObserver
+    private let bluetooth: BluetoothObserver
     private weak var connection: NSXPCConnection?
     private var isTornDown = false
 
-    init(stateMachine: StateMachine, hotkey: HotkeyObserver, connection: NSXPCConnection) {
+    init(stateMachine: StateMachine, hotkey: HotkeyObserver, bluetooth: BluetoothObserver, connection: NSXPCConnection) {
         self.stateMachine = stateMachine
         self.hotkey = hotkey
+        self.bluetooth = bluetooth
         self.connection = connection
         super.init()
 
@@ -192,6 +198,52 @@ private final class ExportedBridge: NSObject, AnchorHelperProtocol, @unchecked S
 
     func runArmDemo(reply: @escaping (Bool) -> Void) {
         stateMachine.runArmDemo()
+        reply(true)
+    }
+
+    // MARK: Trusted Bluetooth peers
+
+    func listTrustedPeers(reply: @escaping (Data) -> Void) {
+        reply(AnchorXPC.encode(TrustedPeerStore.load()))
+    }
+
+    func startBluetoothDiscovery(reply: @escaping (Data) -> Void) {
+        bluetooth.beginDiscoveryRecording { _ in /* live snapshot via polling */ }
+        // Give the radio a beat to surface a first batch of advertisements.
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            let initial = self?.bluetooth.currentDiscoveries() ?? []
+            reply(AnchorXPC.encode(initial))
+        }
+    }
+
+    func currentBluetoothDiscoveries(reply: @escaping (Data) -> Void) {
+        reply(AnchorXPC.encode(bluetooth.currentDiscoveries()))
+    }
+
+    func stopBluetoothDiscovery(reply: @escaping (Bool) -> Void) {
+        bluetooth.stopDiscoveryRecording()
+        reply(true)
+    }
+
+    func addTrustedPeer(_ data: Data, reply: @escaping (Bool) -> Void) {
+        guard let peer = AnchorXPC.decode(TrustedPeer.self, from: data) else {
+            reply(false); return
+        }
+        let existing = TrustedPeerStore.load()
+        if existing.count >= TrustedPeerStore.maxCount &&
+           !existing.contains(where: { $0.id == peer.id }) {
+            NSLog("[XPCService] addTrustedPeer rejected — max %d peers", TrustedPeerStore.maxCount)
+            reply(false); return
+        }
+        TrustedPeerStore.add(peer)
+        bluetooth.reloadTrustedPeers()
+        reply(true)
+    }
+
+    func removeTrustedPeer(_ idString: String, reply: @escaping (Bool) -> Void) {
+        guard let uuid = UUID(uuidString: idString) else { reply(false); return }
+        TrustedPeerStore.remove(id: uuid)
+        bluetooth.reloadTrustedPeers()
         reply(true)
     }
 }
