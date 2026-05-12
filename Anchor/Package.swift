@@ -24,6 +24,18 @@ let package = Package(
             path: "Sources/AnchorShared"
         ),
 
+        // Tiny C target that wraps `AuthorizationExecuteWithPrivileges` —
+        // necessary because the Swift overlay marks it `unavailable` even
+        // though it works in C. Used by the helper's SleepDisabler.
+        .target(
+            name: "AnchorPrivilegedExec",
+            path: "Sources/AnchorPrivilegedExec",
+            publicHeadersPath: "include",
+            linkerSettings: [
+                .linkedFramework("Security")
+            ]
+        ),
+
         .executableTarget(
             name: "AnchorApp",
             dependencies: ["AnchorShared"],
@@ -44,7 +56,7 @@ let package = Package(
 
         .executableTarget(
             name: "AnchorHelper",
-            dependencies: ["AnchorShared"],
+            dependencies: ["AnchorShared", "AnchorPrivilegedExec"],
             path: "Sources/AnchorHelper",
             exclude: ["Resources"]
         ),

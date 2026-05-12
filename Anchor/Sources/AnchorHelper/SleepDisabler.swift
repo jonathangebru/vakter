@@ -1,4 +1,6 @@
 import Foundation
+import Security
+import AnchorPrivilegedExec
 
 /// Globally disables system sleep via `pmset -a disablesleep 1` while armed,
 /// then restores normal sleep on disarm.
@@ -6,51 +8,36 @@ import Foundation
 /// Why this exists, beyond `SleepGuard`'s IOPM assertions:
 /// On Apple Silicon, `kIOPMAssertPreventSystemSleep` + friends are advisory.
 /// The firmware-managed lid-close sleep path on a MacBook without an
-/// external display **overrides them every time on battery**. We proved
-/// this in real testing — the assertions return success, but the system
-/// sleeps anyway, the audio hardware powers down, and no alarm is audible
-/// through the closed lid.
+/// external display **overrides them every time on battery**. The
+/// technique used by every working Mac anti-theft tool that handles
+/// closed-lid alarms (MacGuard, Fermata's "lid sensor deactivation") is
+/// to run `pmset disablesleep` as root.
 ///
-/// The technique used by every working Mac anti-theft tool that handles
-/// closed-lid alarms (MacGuard, Fermata's "lid sensor deactivation",
-/// caffeinate-style apps with admin support) is to shell out to
-/// `pmset -a disablesleep 1`. That requires root, which we get by
-/// invoking through `osascript do shell script "..." with administrator
-/// privileges` — which pops the system Touch ID / password dialog.
+/// **Touch ID note:** we acquire the admin right via `AuthorizationServices`
+/// rather than `osascript do shell script ... with administrator privileges`
+/// because the AppleScript path is hard-wired to the legacy password-only
+/// auth dialog. `AuthorizationCopyRights` requesting `system.privilege.admin`
+/// pops the modern system auth dialog which honours Touch ID on supported
+/// Macs.
 ///
-/// Lifecycle:
-///   - `engage()` called when state machine enters `.armed`. The user
-///     sees a Touch ID prompt with reason "Anchor needs to keep your Mac
-///     awake while armed." On success, sleep is globally disabled.
-///   - `release()` called when state machine returns to `.unarmed`. Runs
-///     `pmset -a disablesleep 0`. This SHOULD also require admin, but
-///     `pmset` honours the previous "session" once you've authenticated
-///     once recently — in practice the second prompt is suppressed if it
-///     comes within a short window. If a prompt does appear, the user
-///     has already authenticated (they unlocked the Mac), so they can
-///     Touch ID quickly again.
-///
-/// Failure handling:
-///   - If the user cancels the auth prompt: engage() returns false. The
-///     state machine should still proceed with arming (we lose closed-
-///     lid coverage but keep open-lid coverage via SleepGuard).
-///   - On helper crash/quit while engaged: a deinit hook fires release()
-///     so the user's Mac doesn't stay sleep-disabled forever.
+/// `AuthorizationExecuteWithPrivileges` is technically deprecated since
+/// 10.7 but still functional through current macOS. The long-term path
+/// is to install a privileged helper via `SMAppService.daemon` so the
+/// auth is asked once-ever rather than per-arm; that's a separate
+/// architectural change for v1.5+.
 final class SleepDisabler: @unchecked Sendable {
 
     private var isEngaged = false
     private let lock = NSLock()
 
-    /// Disable system sleep globally. Returns true if pmset succeeded.
-    /// Caller should still proceed with arming even if this returns
-    /// false — the IOPM assertions in SleepGuard provide partial
-    /// coverage as a fallback.
+    /// Disable system sleep globally. Pops a Touch ID / password dialog.
+    /// Returns true if pmset succeeded.
     @discardableResult
     func engage() -> Bool {
         lock.lock(); defer { lock.unlock() }
         if isEngaged { return true }
 
-        NSLog("[SleepDisabler] requesting admin to disable system sleep…")
+        NSLog("[SleepDisabler] requesting admin (Touch ID) to disable system sleep…")
         let ok = runPMSet(disable: true)
         if ok {
             isEngaged = true
@@ -76,50 +63,34 @@ final class SleepDisabler: @unchecked Sendable {
         }
     }
 
-    /// Run pmset via osascript with administrator privileges. This pops the
-    /// system Touch ID / password dialog. Returns true on success.
+    /// Acquire admin via `AuthorizationCopyRights` (Touch ID-capable) and
+    /// run `pmset -a disablesleep <1|0>` as root.
+    ///
+    /// Bridged through `AnchorPrivilegedExec` because the Swift overlay
+    /// blocks `AuthorizationExecuteWithPrivileges`.
     private func runPMSet(disable: Bool) -> Bool {
-        let value = disable ? 1 : 0
-        let prompt = disable
-            ? "Anchor needs administrator access to keep your Mac awake while armed (otherwise closing the lid would silently put the Mac to sleep and the alarm could not play)."
-            : "Anchor is disarming and is restoring normal sleep behaviour."
-        // The literal embedded inside the shell script. We use single-quotes
-        // around the inner command so the outer AppleScript double-quotes work.
-        let script = """
-        do shell script "/usr/bin/pmset -a disablesleep \(value)" \
-            with prompt "\(prompt)" \
-            with administrator privileges
-        """
-
-        let process = Process()
-        process.launchPath = "/usr/bin/osascript"
-        process.arguments = ["-e", script]
-        let stderrPipe = Pipe()
-        process.standardError = stderrPipe
-        let stdoutPipe = Pipe()
-        process.standardOutput = stdoutPipe
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            NSLog("[SleepDisabler] failed to launch osascript: %@", error.localizedDescription)
+        let rc = anchor_run_pmset_admin(disable ? 1 : 0)
+        switch rc {
+        case 0:
+            return true
+        case -1:
+            NSLog("[SleepDisabler] AuthorizationCreate failed")
+            return false
+        case -2:
+            NSLog("[SleepDisabler] auth dialog dismissed or denied")
+            return false
+        case -3:
+            NSLog("[SleepDisabler] pmset execution failed under privileged exec")
+            return false
+        default:
+            NSLog("[SleepDisabler] unknown error from anchor_run_pmset_admin: %d", rc)
             return false
         }
-
-        if process.terminationStatus != 0 {
-            let err = String(data: stderrPipe.fileHandleForReading.availableData, encoding: .utf8) ?? "(no stderr)"
-            NSLog("[SleepDisabler] osascript exit=%d stderr=%@", process.terminationStatus, err.trimmingCharacters(in: .whitespacesAndNewlines))
-            return false
-        }
-        return true
     }
 
     deinit {
         // Defensive: if the helper is being torn down while engaged, try to
-        // restore normal sleep. This may prompt for admin and may fail
-        // silently — best effort only. The user can always run
-        // `sudo pmset -a disablesleep 0` manually to recover.
+        // restore normal sleep. Best effort only.
         if isEngaged {
             _ = runPMSet(disable: false)
         }
