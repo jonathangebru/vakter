@@ -275,7 +275,11 @@ final class StateMachine {
 
         case .grace:
             audio.playGraceChirp()
-            scheduleGraceExpiry(seconds: params.graceSeconds)
+            // The user's chosen grace duration overrides the mode default.
+            // Re-read each time so a Settings change takes effect on the
+            // very next grace window with no XPC notification needed.
+            let userGrace = GraceSettingsStore.load().seconds
+            scheduleGraceExpiry(seconds: userGrace)
             log.append(.init(
                 fromState: prev, toState: next, trigger: trigger,
                 photoFilenames: [], modeAtEvent: mode

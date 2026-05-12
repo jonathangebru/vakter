@@ -13,7 +13,7 @@ struct AnchorApp: App {
         // Settings window — opened via menubar "Settings…".
         Settings {
             SettingsRoot()
-                .frame(minWidth: 580, minHeight: 420)
+                .frame(minWidth: 760, minHeight: 560)
         }
     }
 }
