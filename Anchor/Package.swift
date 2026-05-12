@@ -16,6 +16,11 @@ let package = Package(
 
         // Dev-only CLI poker that exercises the XPC protocol. Not shipped.
         .executable(name: "AnchorHelperPoke", targets: ["AnchorHelperPoke"]),
+
+        // Root-privileged LaunchDaemon. Registered via SMAppService.daemon
+        // from the menubar app. Exposes a single XPC method for toggling
+        // pmset disablesleep, so we don't prompt for admin per arm.
+        .executable(name: "AnchorPrivilegedDaemon", targets: ["AnchorPrivilegedDaemon"]),
     ],
     targets: [
         // Shared protocol + types used by both the app and the helper.
@@ -65,6 +70,13 @@ let package = Package(
             name: "AnchorHelperPoke",
             dependencies: ["AnchorShared"],
             path: "Sources/AnchorHelperPoke"
+        ),
+
+        .executableTarget(
+            name: "AnchorPrivilegedDaemon",
+            dependencies: ["AnchorShared"],
+            path: "Sources/AnchorPrivilegedDaemon",
+            exclude: ["Resources"]
         ),
     ]
 )

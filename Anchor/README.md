@@ -45,13 +45,38 @@ swift build && "$(swift build --show-bin-path)/AnchorHelperPoke"
 
 ## Build the .app bundle
 
-The SPM project produces two raw Mach-O executables. The `.app` bundle is
-assembled by a script that copies them + the resources + plists into a
-proper bundle structure.
+The SPM project produces three raw Mach-O executables (app, user-level
+helper, root-privileged daemon). The `.app` bundle is assembled by a
+script that copies them + the resources + plists into a proper bundle
+structure.
 
 ```bash
 ./Scripts/build-app.sh        # → build/Anchor.app
 ```
+
+### Important: install to `/Applications` for daemon approval
+
+`SMAppService.daemon` (which we use to install the root-privileged
+LaunchDaemon for the closed-lid alarm path) **only registers when the
+host app is located in `/Applications`**. From any other location, it
+silently fails with "Operation not permitted." The LaunchAgent helper
+works fine outside `/Applications`; only the daemon has this rule.
+
+For dev iteration: copy the freshly-signed bundle in once, then
+re-test:
+
+```bash
+./Scripts/build-app.sh
+./Scripts/sign.sh
+rm -rf /Applications/Anchor.app
+cp -R build/Anchor.app /Applications/Anchor.app
+open /Applications/Anchor.app
+```
+
+The first launch will open **System Settings → General → Login Items
+& Extensions**. Toggle "Anchor" on under "Allow in the Background."
+After that, arming silently disables sleep through the daemon — no
+per-arm Touch ID prompt.
 
 ## Sign and notarize
 

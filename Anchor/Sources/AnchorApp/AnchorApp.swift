@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var menuBarController: MenuBarController?
     private var helperManager: HelperManager?
+    private var privilegedDaemonManager: PrivilegedDaemonManager?
     // Internal so Settings tabs can fire client.reloadHotkey() etc.
     private(set) var helperClient: HelperClient?
 
@@ -38,6 +39,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let helper = HelperManager()
         helper.ensureRegistered()
         helperManager = helper
+
+        // Register the privileged daemon (runs as root). Same approval
+        // model. After the user approves once in Login Items, arming the
+        // alarm no longer prompts for admin — the daemon handles pmset
+        // disablesleep silently over XPC.
+        let daemon = PrivilegedDaemonManager()
+        daemon.ensureRegistered()
+        privilegedDaemonManager = daemon
 
         // Open an XPC connection to the running helper. NSXPCConnection lazy-
         // resolves the Mach service name, so this is safe to call even if the

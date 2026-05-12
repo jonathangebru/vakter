@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Daemon runs unsandboxed — needs full Process spawn for pmset. -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!-- SMAuthorizedClients pendant: any process whose code signature
+         matches this requirement may connect to our Mach service.
+         The daemon ALSO checks programmatically (defense in depth). -->
+    <key>com.apple.developer.smappservice.client</key>
+    <array>
+        <string>anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] and certificate leaf[subject.OU] = "9TA5GB5UJH"</string>
+    </array>
+</dict>
+</plist>

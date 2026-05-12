@@ -22,6 +22,7 @@ rm -rf "${APP}"
 mkdir -p "${APP}/Contents/MacOS"
 mkdir -p "${APP}/Contents/Resources"
 mkdir -p "${APP}/Contents/Library/LaunchAgents"
+mkdir -p "${APP}/Contents/Library/LaunchDaemons"
 
 # Main executable
 cp "${BIN_DIR}/AnchorApp" "${APP}/Contents/MacOS/AnchorApp"
@@ -29,12 +30,17 @@ cp "${BIN_DIR}/AnchorApp" "${APP}/Contents/MacOS/AnchorApp"
 # Helper executable, embedded as a LaunchAgent program
 cp "${BIN_DIR}/AnchorHelper" "${APP}/Contents/MacOS/AnchorHelper"
 
+# Privileged daemon executable — installed as a LaunchDaemon (root)
+# via SMAppService.daemon from AnchorApp's first launch.
+cp "${BIN_DIR}/AnchorPrivilegedDaemon" "${APP}/Contents/MacOS/AnchorPrivilegedDaemon"
+
 # Info.plist + entitlements live alongside the app source; copy in
 cp "${ROOT}/Sources/AnchorApp/Resources/Info.plist" "${APP}/Contents/Info.plist"
 cp "${ROOT}/Sources/AnchorHelper/Resources/LaunchAgent.plist" "${APP}/Contents/Library/LaunchAgents/app.anchor.mac.helper.plist"
+cp "${ROOT}/Sources/AnchorPrivilegedDaemon/Resources/LaunchDaemon.plist" "${APP}/Contents/Library/LaunchDaemons/app.anchor.mac.privileged-helper.plist"
 
-# Helper Info.plist sits inside Contents/Library, referenced by SMAppService
-# (see SMAppService.agent docs).
+# Helper / daemon Info.plists sit inside Contents/Library, referenced by
+# SMAppService.agent and SMAppService.daemon respectively.
 
 # NOTE: We do NOT run appintentsmetadataprocessor here. It requires
 # `.swiftconstvalues` files emitted by the Swift compiler per source file,

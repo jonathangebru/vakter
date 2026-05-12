@@ -26,12 +26,22 @@ echo "==> Signing as: ${DEVELOPER_ID_APPLICATION}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="${ROOT}/build/Anchor.app"
 HELPER="${APP}/Contents/MacOS/AnchorHelper"
+DAEMON="${APP}/Contents/MacOS/AnchorPrivilegedDaemon"
 APP_ENT="${ROOT}/Sources/AnchorApp/Resources/Anchor.entitlements"
 HELPER_ENT="${ROOT}/Sources/AnchorHelper/Resources/AnchorHelper.entitlements"
+DAEMON_ENT="${ROOT}/Sources/AnchorPrivilegedDaemon/Resources/AnchorPrivilegedDaemon.entitlements"
 
 [[ -e "${APP}" ]] || { echo "Build first (./Scripts/build-app.sh)"; exit 1; }
 
-# Helper first (inside-out signing).
+# Daemon first (deepest in the bundle, signed inside-out).
+echo "==> Signing privileged daemon"
+codesign --force --options runtime \
+  --entitlements "${DAEMON_ENT}" \
+  --sign "${DEVELOPER_ID_APPLICATION}" \
+  --timestamp \
+  "${DAEMON}"
+
+# Helper next.
 echo "==> Signing helper"
 codesign --force --options runtime \
   --entitlements "${HELPER_ENT}" \

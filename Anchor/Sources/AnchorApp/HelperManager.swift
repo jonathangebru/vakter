@@ -62,9 +62,16 @@ final class HelperManager {
             try service.register()
             NSLog("[HelperManager] register() succeeded — status now: %@", statusLabel)
         } catch {
+            // SMAppService returns SMAppServiceErrorDomain code=1 when the
+            // status transitioned to .requiresApproval — that's actually a
+            // normal first-launch path, not a hard error.
             let nsError = error as NSError
-            NSLog("[HelperManager] register() FAILED: %@ (domain=%@ code=%ld)",
-                  error.localizedDescription, nsError.domain, nsError.code)
+            if service.status == .requiresApproval {
+                NSLog("[HelperManager] needs one-time approval in System Settings → Login Items")
+            } else {
+                NSLog("[HelperManager] register() FAILED: %@ (domain=%@ code=%ld) — final status: %@",
+                      error.localizedDescription, nsError.domain, nsError.code, statusLabel)
+            }
         }
 
         if service.status == .requiresApproval {

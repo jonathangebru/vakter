@@ -11,6 +11,13 @@ public enum AnchorConstants {
     /// Mach service name used for XPC between the app and the helper.
     public static let xpcMachServiceName = "app.anchor.mac.helper.xpc"
 
+    /// Bundle ID for the privileged daemon (runs as root).
+    public static let privilegedDaemonBundleID = "app.anchor.mac.privileged-helper"
+
+    /// Mach service exposed by the privileged daemon (root). Used by the
+    /// user-level helper to ask the daemon to toggle pmset disablesleep.
+    public static let privilegedDaemonMachServiceName = "app.anchor.mac.privileged-helper.xpc"
+
     /// User-data root. Lives under `~/Library/Application Support/Anchor`.
     public static var supportDirectoryURL: URL {
         let library = FileManager.default
