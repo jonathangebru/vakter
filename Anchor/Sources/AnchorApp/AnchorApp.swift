@@ -66,6 +66,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // attributes the grant to the .app bundle, which means the
         // embedded helper inherits access for AVCaptureSession.
         requestCameraAccessIfNeeded()
+
+        // First-launch onboarding sheet. Quietly skipped for users who
+        // have already been through it.
+        if !OnboardingState.hasCompleted {
+            // Show after a beat so the menubar shield has rendered.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.presentOnboarding()
+            }
+        }
+    }
+
+    private var onboardingWindow: NSWindow?
+
+    @MainActor
+    private func presentOnboarding() {
+        // Plain NSWindow rather than a Settings panel because Settings is
+        // already a reserved Scene for our preferences. We want a discrete,
+        // sheet-style window centred on screen.
+        let host = NSHostingController(rootView: OnboardingSheet())
+        let window = NSWindow(contentViewController: host)
+        window.title = "Welcome to Anchor"
+        window.styleMask = [.titled, .closable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = true
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.level = .floating
+        // Bring the app forward enough for the window to show.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        onboardingWindow = window
+        // Listen for the window closing so we can drop activation policy
+        // back to .accessory (menubar-only).
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                NSApp.setActivationPolicy(.accessory)
+                self?.onboardingWindow = nil
+            }
+        }
     }
 
     private func requestCameraAccessIfNeeded() {

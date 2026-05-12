@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import AnchorShared
 
 /// Owns the `NSStatusItem` in the menu bar.
@@ -12,10 +13,18 @@ import AnchorShared
 final class MenuBarController {
 
     private let item: NSStatusItem
-    private var currentState: AnchorState = .unarmed
+    private var currentState: AnchorState = .unarmed {
+        didSet { stateBox.state = currentState }
+    }
     private var currentMode: AnchorMode = .normal
     private let helperManager: HelperManager?
     private let helperClient: HelperClient?
+
+    /// Holds the state value that drives the SwiftUI MenubarShield. Wrapping
+    /// in an `ObservableObject` lets us push updates into the hosted view
+    /// without recreating the NSHostingView on every state change.
+    private let stateBox: ShieldStateBox
+    private var hostingView: NSHostingView<AnyView>?
 
     init(
         helperManager: HelperManager? = nil,
@@ -23,8 +32,9 @@ final class MenuBarController {
     ) {
         self.helperManager = helperManager
         self.helperClient = helperClient
-        item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        refresh()
+        self.stateBox = ShieldStateBox()
+        item = NSStatusBar.system.statusItem(withLength: 28)
+        installSwiftUIShield()
 
         item.button?.target = self
         item.button?.action = #selector(handleClick)
@@ -37,6 +47,34 @@ final class MenuBarController {
             self.currentMode = snapshot.mode
             self.refresh()
         }
+    }
+
+    private func installSwiftUIShield() {
+        // Host a SwiftUI view inside the menubar button so we can use the
+        // animated AnchorGlyph + pulse system instead of a static
+        // NSImage. ReactiveMenubarShield reads stateBox.state via
+        // @EnvironmentObject, so pushing a new value into stateBox.state
+        // re-renders the view automatically.
+        let host = NSHostingView(
+            rootView: AnyView(
+                ReactiveMenubarShield()
+                    .environmentObject(stateBox)
+            )
+        )
+        host.translatesAutoresizingMaskIntoConstraints = false
+        if let button = item.button {
+            button.subviews.forEach { $0.removeFromSuperview() }
+            button.addSubview(host)
+            NSLayoutConstraint.activate([
+                host.leadingAnchor.constraint(equalTo: button.leadingAnchor),
+                host.trailingAnchor.constraint(equalTo: button.trailingAnchor),
+                host.topAnchor.constraint(equalTo: button.topAnchor),
+                host.bottomAnchor.constraint(equalTo: button.bottomAnchor)
+            ])
+            // Hide the default button image — our SwiftUI view is the visual.
+            button.image = nil
+        }
+        hostingView = host
     }
 
     @objc private func handleClick() {
@@ -188,13 +226,23 @@ final class MenuBarController {
     }
 
     private func refresh() {
-        let symbol: String
-        switch currentState {
-        case .unarmed: symbol = "shield"
-        case .armed:   symbol = "shield.fill"
-        case .grace:   symbol = "shield.fill"
-        case .alarm:   symbol = "shield.lefthalf.filled.badge.exclamationmark"
-        }
-        item.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Anchor")
+        // The SwiftUI shield reacts to stateBox.state on its own —
+        // didSet on currentState pushes the new value into stateBox.
+        // Nothing else to do here for the visual.
+    }
+}
+
+// MARK: - SwiftUI <-> AppKit state bridge
+
+/// Holds the current `AnchorState`. Published so the SwiftUI MenubarShield
+/// re-renders when it changes.
+final class ShieldStateBox: ObservableObject {
+    @Published var state: AnchorState = .unarmed
+}
+
+private struct ReactiveMenubarShield: View {
+    @EnvironmentObject var box: ShieldStateBox
+    var body: some View {
+        MenubarShield(state: box.state)
     }
 }
