@@ -16,6 +16,7 @@ struct SettingsRoot: View {
         case sound      = "Sound"
         case bluetooth  = "Trusted Devices"
         case defenses   = "Defenses"
+        case eventLog   = "Event Log"
         case about      = "About"
 
         var id: String { rawValue }
@@ -28,6 +29,7 @@ struct SettingsRoot: View {
             case .sound:     return "speaker.wave.3"
             case .bluetooth: return "antenna.radiowaves.left.and.right"
             case .defenses:  return "checkmark.shield"
+            case .eventLog:  return "clock"
             case .about:     return "info.circle"
             }
         }
@@ -119,6 +121,7 @@ struct SettingsRoot: View {
                 case .sound:     SoundTab()
                 case .bluetooth: BluetoothTab()
                 case .defenses:  DefensesTab()
+                case .eventLog:  EventLogView()
                 case .about:     AboutTab()
                 }
             }
@@ -603,27 +606,109 @@ private struct PairingSheet: View {
 // MARK: - Defenses
 
 private struct DefensesTab: View {
+    @State private var checks: [DefenseCheck] = []
+
     var body: some View {
-        Text("Your Mac's Defenses")
-            .font(AnchorDesign.titleFont)
-        Text("Anchor reads your system's posture and surfaces anything you can improve. We never silently change settings — every CTA opens System Settings or a walkthrough.")
+        HStack(alignment: .firstTextBaseline) {
+            Text("Your Mac's Defenses")
+                .font(AnchorDesign.titleFont)
+            Spacer()
+            Button {
+                checks = DefensesAudit.run()
+            } label: {
+                Label("Re-check", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.bordered)
+        }
+
+        Text("Anchor reads your system's posture and surfaces what could be tightened. We never change settings silently — every fix opens System Settings.")
             .font(AnchorDesign.bodyFont)
             .foregroundStyle(.secondary)
 
-        AnchorCard(
-            title: "Pre-flight checklist",
-            subtitle: "FileVault, Find My Mac, login password, screen auto-lock, login-window message, firmware password, automatic-login flag. Read-only — Anchor never changes things behind your back."
-        ) {
-            HStack(spacing: AnchorDesign.spacingS) {
-                Image(systemName: "checkmark.shield")
-                    .font(.system(size: 18))
-                    .foregroundStyle(AnchorDesign.healthy)
-                Text("Defense audit lands week 6.5 of the v1 build.")
-                    .font(AnchorDesign.bodyFont)
-                    .foregroundStyle(.secondary)
-                Spacer()
+        // Big score card
+        scoreCard
+
+        // Per-check rows
+        VStack(spacing: AnchorDesign.spacingS) {
+            ForEach(checks) { check in
+                checkRow(check)
             }
         }
+        .onAppear {
+            checks = DefensesAudit.run()
+        }
+    }
+
+    private var scoreCard: some View {
+        let score = DefensesAudit.score(checks)
+        let (label, tint): (String, Color) = {
+            switch score {
+            case 100:     return ("Locked down", AnchorDesign.healthy)
+            case 70...99: return ("Mostly solid", Color(red: 0.85, green: 0.60, blue: 0.20))
+            default:      return ("Needs attention", AnchorDesign.alarm)
+            }
+        }()
+        return HStack(spacing: AnchorDesign.spacingL) {
+            ZStack {
+                Circle()
+                    .stroke(Color.primary.opacity(0.10), lineWidth: 8)
+                    .frame(width: 88, height: 88)
+                Circle()
+                    .trim(from: 0, to: CGFloat(score) / 100.0)
+                    .stroke(tint, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 88, height: 88)
+                Text("\(score)")
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(label)
+                    .font(.system(size: 18, weight: .semibold))
+                Text("\(checks.filter { $0.status == .healthy }.count) of \(checks.count) checks healthy")
+                    .font(AnchorDesign.bodyFont)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(AnchorDesign.spacingL)
+        .background(
+            RoundedRectangle(cornerRadius: AnchorDesign.radiusM, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AnchorDesign.radiusM, style: .continuous)
+                .strokeBorder(tint.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    private func checkRow(_ check: DefenseCheck) -> some View {
+        HStack(alignment: .top, spacing: AnchorDesign.spacingM) {
+            Image(systemName: check.icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(check.tint)
+                .frame(width: 28, height: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(check.title)
+                    .font(.system(size: 14, weight: .semibold))
+                Text(check.detail)
+                    .font(AnchorDesign.bodyFont)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            if check.status != .healthy, let url = check.systemSettingsURL {
+                Button("Fix in Settings") {
+                    NSWorkspace.shared.open(url)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+        .padding(AnchorDesign.spacingM)
+        .background(
+            RoundedRectangle(cornerRadius: AnchorDesign.radiusS, style: .continuous)
+                .fill(Color.primary.opacity(0.03))
+        )
     }
 }
 
