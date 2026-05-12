@@ -84,7 +84,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Plain NSWindow rather than a Settings panel because Settings is
         // already a reserved Scene for our preferences. We want a discrete,
         // sheet-style window centred on screen.
-        let host = NSHostingController(rootView: OnboardingSheet())
+        //
+        // Inject the helperClient directly because @NSApplicationDelegate-
+        // Adaptor's SwiftUI wrapping breaks `NSApp.delegate as? AppDelegate`
+        // when the cast happens from inside the hosted SwiftUI sheet.
+        let host = NSHostingController(
+            rootView: OnboardingSheet(helperClient: helperClient)
+        )
         let window = NSWindow(contentViewController: host)
         window.title = "Welcome to Anchor"
         window.styleMask = [.titled, .closable, .fullSizeContentView]

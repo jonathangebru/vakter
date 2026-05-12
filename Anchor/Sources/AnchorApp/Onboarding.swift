@@ -19,6 +19,15 @@ struct OnboardingSheet: View {
     @State private var step: Step = .welcome
     @State private var hotkey: HotkeyBinding = HotkeyStore.load()
 
+    // Dependency-injected so we don't have to fish through NSApp.delegate
+    // (which fails when the cast happens from inside a SwiftUI sheet —
+    // the @NSApplicationDelegateAdaptor wrapping breaks the runtime cast).
+    let helperClient: HelperClient?
+
+    init(helperClient: HelperClient? = nil) {
+        self.helperClient = helperClient
+    }
+
     enum Step: Int, CaseIterable {
         case welcome, permissions, hotkey, hearAlarm, done
     }
@@ -281,9 +290,7 @@ struct OnboardingSheet: View {
 
             KeyRecorder(binding: $hotkey) { newBinding in
                 HotkeyStore.save(newBinding)
-                if let delegate = NSApp.delegate as? AppDelegate {
-                    delegate.helperClient?.reloadHotkey()
-                }
+                helperClient?.reloadHotkey()
             }
         }
     }
@@ -314,8 +321,11 @@ struct OnboardingSheet: View {
 
             Button {
                 hasHeardAlarm = true
-                if let delegate = NSApp.delegate as? AppDelegate {
-                    delegate.helperClient?.testAlarm(seconds: 3.0)
+                if let client = helperClient {
+                    NSLog("[Onboarding] sending testAlarm via injected HelperClient")
+                    client.testAlarm(seconds: 3.0)
+                } else {
+                    NSLog("[Onboarding] helperClient not injected — nothing to call")
                 }
             } label: {
                 Label(
