@@ -28,6 +28,7 @@ final class StateMachine {
     private let photos: PhotoCapturing
     private let log: EventLogStore
     private let sleepGuard: SleepGuard
+    private let sleepDisabler: SleepDisabler
 
     /// Subscribers (typically the menubar app) that want a callback every
     /// time the snapshot changes. The XPC service owns these; we keep a
@@ -38,12 +39,14 @@ final class StateMachine {
         audio: AudioControlling = AudioController(),
         photos: PhotoCapturing = PhotoCapture(),
         log: EventLogStore = .shared,
-        sleepGuard: SleepGuard = SleepGuard()
+        sleepGuard: SleepGuard = SleepGuard(),
+        sleepDisabler: SleepDisabler = SleepDisabler()
     ) {
         self.audio = audio
         self.photos = photos
         self.log = log
         self.sleepGuard = sleepGuard
+        self.sleepDisabler = sleepDisabler
     }
 
     // MARK: Snapshot publishing
@@ -239,6 +242,9 @@ final class StateMachine {
             // again when not armed. Otherwise we'd drain the battery and
             // override the user's lid-close behaviour forever.
             sleepGuard.release()
+            // And restore global sleep — undo the pmset disablesleep 1 we
+            // ran on arm. Without this the Mac would never sleep again.
+            sleepDisabler.release()
             // Soft confirmation cue only if we're disarming from a non-resting
             // state (don't chirp when we boot fresh into .unarmed).
             if prev != .unarmed {
@@ -255,6 +261,12 @@ final class StateMachine {
             // alarm never plays. This is the difference between "feature"
             // and "actually catches thieves".
             sleepGuard.engage()
+            // And the heavy hammer: globally disable sleep via
+            // `pmset -a disablesleep 1` so the firmware-managed lid-close
+            // sleep path can't override our IOPM assertions on Apple
+            // Silicon. Pops a Touch ID prompt for admin. If the user
+            // cancels, we proceed anyway — SleepGuard is the fallback.
+            sleepDisabler.engage()
             audio.playArmChirp()
             log.append(.init(
                 fromState: prev, toState: next, trigger: trigger,
