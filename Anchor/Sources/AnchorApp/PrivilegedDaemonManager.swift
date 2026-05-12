@@ -44,34 +44,55 @@ final class PrivilegedDaemonManager {
     /// Register the daemon. Pops a one-time system Login Items prompt the
     /// first time. After approval, the daemon is launchable on-demand via
     /// its Mach service.
+    ///
+    /// **Important:** unlike HelperManager, we DO NOT unconditionally
+    /// unregister-before-register. For a system-domain daemon, unregister
+    /// revokes the user's Login Items approval. If we unregister on every
+    /// app launch, the user has to re-approve every time we relaunch the
+    /// app (or rebuild the bundle) — and during the time between
+    /// unregister and re-approval, the daemon is gone and our XPC calls
+    /// silently fall back to the per-arm Touch ID path. Bug.
     @discardableResult
     func ensureRegistered() -> SMAppService.Status {
-        // Refresh: drop any stale registration so the recorded code
-        // requirement matches the freshly-signed binary.
-        try? service.unregister()
+        switch service.status {
+        case .enabled:
+            // Already approved + registered. Don't touch it; the recorded
+            // code requirement is identity-based (Developer ID Application)
+            // not binary-hash-based, so a freshly-signed rebuild with the
+            // same identity continues to satisfy it without a refresh.
+            NSLog("[PrivilegedDaemonManager] already enabled — leaving registration alone")
+            return .enabled
 
-        do {
-            try service.register()
-            NSLog("[PrivilegedDaemonManager] register() succeeded — status: %@", statusLabel)
-        } catch {
-            // SMAppService returns SMAppServiceErrorDomain code=1
-            // ("Operation not permitted") when the status transitioned to
-            // .requiresApproval — that's actually a normal first-launch
-            // path, not a real error. Only log a loud failure when the
-            // status didn't reach a usable state.
-            let nsError = error as NSError
-            if service.status == .requiresApproval {
-                NSLog("[PrivilegedDaemonManager] needs one-time approval in System Settings → Login Items")
-            } else {
-                NSLog("[PrivilegedDaemonManager] register() FAILED: %@ (domain=%@ code=%ld) — final status: %@",
-                      error.localizedDescription, nsError.domain, nsError.code, statusLabel)
-            }
-        }
-
-        if service.status == .requiresApproval {
+        case .requiresApproval:
+            // The daemon is registered but the user hasn't enabled the
+            // Login Items toggle yet. Bounce them to the right pane.
+            NSLog("[PrivilegedDaemonManager] needs one-time approval in System Settings → Login Items")
             SMAppService.openSystemSettingsLoginItems()
+            return .requiresApproval
+
+        case .notRegistered, .notFound:
+            // Fresh — try to register. If macOS still wants approval after
+            // we register (the common first-run case), open Login Items.
+            do {
+                try service.register()
+                NSLog("[PrivilegedDaemonManager] register() succeeded — status: %@", statusLabel)
+            } catch {
+                let nsError = error as NSError
+                if service.status == .requiresApproval {
+                    NSLog("[PrivilegedDaemonManager] needs one-time approval in System Settings → Login Items")
+                } else {
+                    NSLog("[PrivilegedDaemonManager] register() FAILED: %@ (domain=%@ code=%ld) — final status: %@",
+                          error.localizedDescription, nsError.domain, nsError.code, statusLabel)
+                }
+            }
+            if service.status == .requiresApproval {
+                SMAppService.openSystemSettingsLoginItems()
+            }
+            return service.status
+
+        @unknown default:
+            return service.status
         }
-        return service.status
     }
 
     func unregister() {

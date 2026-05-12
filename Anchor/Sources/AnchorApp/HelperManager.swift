@@ -42,44 +42,49 @@ final class HelperManager {
 
     /// Register the helper LaunchAgent. Returns the resulting status.
     ///
-    /// **Why we unregister-then-register every call:**
-    /// `SMAppService.register()` is idempotent in the happy case, but when
-    /// the app binary has been re-signed since the last registration (e.g.
-    /// after a Sparkle update, or during local dev), the recorded
-    /// "Lightweight Code Requirement" (LWCR) no longer matches the new
-    /// binary's signature. launchd then refuses to spawn the helper and
-    /// returns `EX_CONFIG (78)`. The `properties` line shows
-    /// "needs LWCR update" in `launchctl print`.
-    /// Unregistering before registering clears the stale LWCR and forces
-    /// launchd to record the new one. Microseconds of overhead per launch.
+    /// **State-aware:** we only re-register when the status isn't already
+    /// `.enabled`. Unconditionally calling `unregister()` blows away the
+    /// user's Login Items approval every launch — which then forces them
+    /// back to System Settings every time we relaunch or rebuild.
+    /// The recorded code requirement is identity-based (Developer ID
+    /// Application + Team ID), so a re-signed-but-same-identity rebuild
+    /// continues to satisfy the existing registration without an LWCR
+    /// refresh. If LWCR mismatch ever does happen (e.g. major macOS
+    /// upgrade), launchd reports `EX_CONFIG` and we recover via the
+    /// `notRegistered` branch below.
     @discardableResult
     func ensureRegistered() -> SMAppService.Status {
-        // Refresh: drop the stale registration (if any) to clear an LWCR
-        // recorded against a previous build's signature.
-        try? service.unregister()
+        switch service.status {
+        case .enabled:
+            // Already approved + registered. Leave the user's approval alone.
+            return .enabled
 
-        do {
-            try service.register()
-            NSLog("[HelperManager] register() succeeded — status now: %@", statusLabel)
-        } catch {
-            // SMAppService returns SMAppServiceErrorDomain code=1 when the
-            // status transitioned to .requiresApproval — that's actually a
-            // normal first-launch path, not a hard error.
-            let nsError = error as NSError
-            if service.status == .requiresApproval {
-                NSLog("[HelperManager] needs one-time approval in System Settings → Login Items")
-            } else {
-                NSLog("[HelperManager] register() FAILED: %@ (domain=%@ code=%ld) — final status: %@",
-                      error.localizedDescription, nsError.domain, nsError.code, statusLabel)
-            }
-        }
-
-        if service.status == .requiresApproval {
-            NSLog("[HelperManager] requiresApproval — opening Login Items pane")
+        case .requiresApproval:
+            NSLog("[HelperManager] needs one-time approval in System Settings → Login Items")
             openLoginItemsSettings()
-        }
+            return .requiresApproval
 
-        return service.status
+        case .notRegistered, .notFound:
+            do {
+                try service.register()
+                NSLog("[HelperManager] register() succeeded — status now: %@", statusLabel)
+            } catch {
+                let nsError = error as NSError
+                if service.status == .requiresApproval {
+                    NSLog("[HelperManager] needs one-time approval in System Settings → Login Items")
+                } else {
+                    NSLog("[HelperManager] register() FAILED: %@ (domain=%@ code=%ld) — final status: %@",
+                          error.localizedDescription, nsError.domain, nsError.code, statusLabel)
+                }
+            }
+            if service.status == .requiresApproval {
+                openLoginItemsSettings()
+            }
+            return service.status
+
+        @unknown default:
+            return service.status
+        }
     }
 
     /// Unregister the helper LaunchAgent. Used during uninstall / debugging.

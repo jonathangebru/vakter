@@ -2,16 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Daemon runs unsandboxed — needs full Process spawn for pmset. -->
+    <!-- Minimal entitlement set — daemon runs unsandboxed (only relevant
+         to App-Store-distributed apps; we're direct-distribute), needs
+         no special capabilities beyond running pmset via Process.
+
+         The previous version had `com.apple.developer.smappservice.client`
+         which is NOT a real Apple entitlement key — strict daemon
+         signature validation rejected the binary with OS_REASON_EXEC
+         (EBADEXEC) before it could even start. Client gating is done
+         via Info.plist SMAuthorizedClients + a programmatic check in
+         ListenerDelegate.swift, which is the correct mechanism. -->
+
     <key>com.apple.security.app-sandbox</key>
     <false/>
-
-    <!-- SMAuthorizedClients pendant: any process whose code signature
-         matches this requirement may connect to our Mach service.
-         The daemon ALSO checks programmatically (defense in depth). -->
-    <key>com.apple.developer.smappservice.client</key>
-    <array>
-        <string>anchor apple generic and certificate leaf[field.1.2.840.113635.100.6.1.13] and certificate leaf[subject.OU] = "9TA5GB5UJH"</string>
-    </array>
 </dict>
 </plist>
