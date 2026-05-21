@@ -31,10 +31,10 @@
     <string>APPL</string>
 
     <key>CFBundleShortVersionString</key>
-    <string>1.4.2</string>
+    <string>1.4.3</string>
 
     <key>CFBundleVersion</key>
-    <string>2</string>
+    <string>3</string>
 
     <!-- Used by MacPaw / App Store to categorise. "Utilities" is the
          right bucket for an anti-theft alarm. -->
