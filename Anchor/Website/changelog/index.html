@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Changelog — Vakter</title>
+<meta name="description" content="Version history for Vakter. What shipped, what changed, and what's still pending. Newest first.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/favicons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/favicons/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicons/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter — Changelog page
+ * Shell matches vakter.app exactly: navy + amber, system fonts,
+ * ship's-log numbered sections, zero external dependencies.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  --radius-sm:  6px;
+  --radius:     12px;
+
+  --maxw:       780px;
+  --gutter:     clamp(20px, 4vw, 56px);
+
+  --t-fast:    160ms;
+  --t-base:    320ms;
+  --t-slow:    640ms;
+  --easing:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17.5px);
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.05), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.5), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.back-link:hover { color: var(--amber); }
+.back-arrow {
+  display: inline-block;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+
+/* ─── Layout ─── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ─── Page header ─── */
+.page-header {
+  padding: clamp(56px, 7vw, 96px) 0 clamp(40px, 5vw, 64px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+
+.page-lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(16px, 1.2vw + 10px, 20px);
+  line-height: 1.52;
+  color: var(--ink-soft);
+  letter-spacing: -0.01em;
+  max-width: 580px;
+}
+
+/* ─── Rule dot (ship's-log accent divider) ─── */
+.rule-dot {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(245, 177, 79, 0.5);
+}
+.rule-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 0 0 4px var(--bg);
+}
+
+/* ─── Changelog entries ─── */
+.log-body {
+  padding: clamp(48px, 6vw, 80px) 0 clamp(64px, 8vw, 120px);
+}
+
+/* Each release entry */
+.release {
+  padding: clamp(40px, 5vw, 64px) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.release:last-child {
+  border-bottom: none;
+}
+
+/* Version header row */
+.release-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.release-version {
+  font-family: var(--font-mono);
+  font-size: clamp(21px, 2.2vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.release-date {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  padding: 3px 10px;
+  border: 1px solid var(--hairline-bold);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  white-space: nowrap;
+}
+
+/* Section headings within a release */
+.release-section-label {
+  font-family: var(--font-text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 28px 0 12px;
+}
+.release-section-label:first-of-type {
+  margin-top: 0;
+}
+
+/* Body paragraphs */
+.release p {
+  color: var(--ink-soft);
+  line-height: 1.72;
+  margin-bottom: 14px;
+  max-width: 64ch;
+}
+.release p:last-of-type {
+  margin-bottom: 0;
+}
+.release strong { color: var(--ink); font-weight: 600; }
+.release em { font-style: italic; }
+
+/* Change list */
+.change-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 20px;
+  display: grid;
+  gap: 9px;
+}
+.change-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.change-list li::before {
+  content: "–";
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin-top: 3px;
+}
+.change-list li strong { color: var(--ink); font-weight: 600; }
+.change-list li code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+/* Pending section — slightly muted visual treatment */
+.pending-block {
+  margin-top: 32px;
+  padding: 20px 24px;
+  border: 1px solid var(--hairline-bold);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.pending-block .release-section-label {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.pending-block .change-list li {
+  font-size: 14.5px;
+}
+.pending-block .change-list li::before {
+  content: "○";
+  color: var(--ink-faint);
+}
+
+/* ─── Callout box ─── */
+.callout {
+  background: rgba(245, 177, 79, 0.06);
+  border: 1px solid rgba(245, 177, 79, 0.2);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 24px 0 0;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+.callout strong { color: var(--amber); }
+
+/* ─── Footer ─── */
+.footer {
+  border-top: 1px solid var(--hairline);
+  padding: 48px 0 40px;
+  background: var(--bg);
+}
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-col h5 {
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.footer-col ul { display: grid; gap: 9px; list-style: none; padding: 0; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.footer-col a:hover { color: var(--amber); }
+
+.footer-meta {
+  max-width: 1240px;
+  margin: 32px auto 0;
+  padding: 24px var(--gutter) 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--hairline);
+}
+.footer-meta-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--amber);
+  color: var(--navy-deep);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+    </a>
+    <a class="back-link" href="/">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      Back to vakter.app
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-header">
+    <div class="container">
+      <div class="eyebrow">§ version history</div>
+      <h1 class="page-title">Changelog</h1>
+      <p class="page-lead">
+        What shipped, what changed, and what's still pending.
+        Honest notes — not a marketing recap. Newest at the top.
+      </p>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot" style="margin: 0;"></div></div>
+
+  <div class="log-body">
+    <div class="container">
+
+      <!-- ── v1.4.1 ── -->
+      <article class="release" id="v1.4.1" aria-labelledby="v141-heading">
+
+        <div class="release-header">
+          <h2 class="release-version" id="v141-heading">v1.4.1</h2>
+          <span class="release-date">20 May 2026</span>
+        </div>
+
+        <div class="release-section-label">Overview</div>
+
+        <p>
+          This is the first release under the Vakter name. The product shipped
+          previously as <strong>Anchor</strong> — same codebase, same developer, renamed
+          before public launch. v1.4.1 is the first build submitted to Apple for
+          notarization and distributed as a signed DMG.
+        </p>
+
+        <p>
+          The core watch loop is complete: arm with one shortcut, and Vakter monitors
+          lid state, power, and Bluetooth peer proximity. On any trigger, a local siren
+          fires, a photo burst runs, and an iMessage with your location goes to the
+          number you configured — before the lid closes.
+        </p>
+
+        <div class="release-section-label">What's new</div>
+
+        <ul class="change-list">
+          <li>
+            <strong>Notarized DMG (4.8 MB).</strong> First build submitted to and
+            cleared by Apple's notary service. Gatekeeper opens it without a warning
+            dialog. Signed with Team ID <code>9TA5GB5UJH</code>, Hardened Runtime
+            enabled on all three binaries.
+          </li>
+          <li>
+            <strong>Café mode.</strong> Five operating modes now ship: Normal, Travel,
+            Library, Loaner, and the new Café mode. Café disarms Bluetooth proximity
+            (your AirPods are close but you want the alarm to stay live) and raises
+            the grace window for the noisier public-space workflow — take your coffee,
+            come back, no false alarm.
+          </li>
+          <li>
+            <strong>Bluetooth trust-lost false-positive fix.</strong> Earlier builds
+            occasionally fired the alarm when a trusted Bluetooth peer was momentarily
+            out of range — typical in a busy café as radios negotiate. The observer
+            now waits for a peer to be stale for 3 seconds across continuous polling
+            before emitting a trust-lost event. Single peer fluctuations no longer
+            trigger the state machine.
+          </li>
+          <li>
+            <strong>Live Defenses audit in the menubar.</strong> The Defenses panel
+            now reads 20 system-posture checks at launch — FileVault, Find My, login
+            window message, screen-lock delay, Gatekeeper, SIP, Touch ID enrollment,
+            SSH passphrase presence, and more. Each check that fails shows a one-tap
+            link to the relevant System Settings pane. The audit runs read-only; Vakter
+            never silently changes a system setting.
+          </li>
+          <li>
+            <strong>7-language voice TTS on alarm.</strong> The spoken deterrent cue —
+            "This Mac is protected. Step away." — now uses Apple's neural
+            <code>AVSpeechSynthesizer</code> voices in seven locales: English, French,
+            German, Spanish, Japanese, Mandarin Chinese, and Arabic. The locale is
+            detected at alarm time from your system language preference.
+          </li>
+          <li>
+            <strong>iPhone + Apple Watch companion source (preview).</strong> The
+            CloudKit-backed iOS and watchOS companion targets are in the repository.
+            The iPhone app reads your alarm state and event log from your private
+            CloudKit database; the Watch app shows the current shield state and
+            provides a remote disarm path. These are not yet provisioned for TestFlight —
+            see "What's still pending" below.
+          </li>
+          <li>
+            <strong>Event Log with inline photo thumbnails.</strong> Alarm events in
+            the Event Log now display 60&times;60 photo thumbnails from the burst.
+            Tap any thumbnail to open the full image in Preview.
+          </li>
+          <li>
+            <strong>Closed-lid alarm on Apple Silicon.</strong> Vakter's privileged
+            root daemon calls <code>pmset disablesleep 1</code> while armed. On Apple
+            Silicon, this keeps the speakers live so the siren routes to internal
+            audio even after the lid closes — the failure mode that defeats every
+            other Mac alarm app on M-series hardware.
+          </li>
+        </ul>
+
+        <div class="pending-block" aria-label="What's still pending">
+          <div class="release-section-label">What's still pending</div>
+          <ul class="change-list">
+            <li>
+              <strong>Sparkle auto-update not yet wired.</strong> In-app update checks
+              require a signed <code>appcast.xml</code> at <code>vakter.app/appcast.xml</code>.
+              For now, download the latest DMG manually from the website.
+            </li>
+            <li>
+              <strong>iOS + Watch companion not yet on TestFlight.</strong> Bundle IDs
+              <code>app.vakter.companion</code> and <code>app.vakter.companion.watchkitapp</code>
+              need App IDs and provisioning profiles before distribution. The source
+              compiles; provisioning is the only gate.
+            </li>
+            <li>
+              <strong>XPC peer verification gap.</strong> The XPC connection between
+              the menubar app and the helper does not yet enforce Team ID pinning via
+              <code>setCodeSigningRequirement</code>. Any process running as the same
+              user could, in principle, call the helper's XPC methods. Closing this
+              is the first security fix in the next update.
+            </li>
+            <li>
+              <strong>Defenses checklist over XPC.</strong> The live audit reads
+              correctly from inside the menubar app. It does not yet surface through
+              the helper's XPC interface, so it won't be available to a future
+              Shortcuts integration or a CLI tool until that plumbing is added.
+            </li>
+          </ul>
+        </div>
+
+        <div class="callout">
+          <strong>Migration note.</strong> If you ran a pre-release build labelled
+          "Anchor," your settings and event log at
+          <code>~/Library/Application Support/Anchor/</code> migrate automatically on
+          first launch of Vakter. The migration is one-shot and non-destructive; the
+          original directory is left in place.
+        </div>
+
+      </article>
+      <!-- /v1.4.1 -->
+
+    </div><!-- .container -->
+  </div><!-- .log-body -->
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h5>Product</h5>
+      <ul>
+        <li><a href="/#what-it-does">Features</a></li>
+        <li><a href="/#modes">Modes</a></li>
+        <li><a href="/#architecture">Architecture</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Trust</h5>
+      <ul>
+        <li><a href="/security/">Security</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="/changelog/" aria-current="page">Changelog</a></li>
+        <li><a href="mailto:security@vakter.app">Disclosure</a></li>
+        <li><a href="/press/">Press kit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contact</h5>
+      <ul>
+        <li><a href="mailto:support@vakter.app">support@</a></li>
+        <li><a href="mailto:security@vakter.app">security@</a></li>
+        <li><a href="mailto:hi@vakter.app">hi@</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span class="footer-meta-mark">
+      <span class="brand-mark" aria-hidden="true" style="width: 18px; height: 18px; display: inline-block; border-radius: 4px; background-image: url(../assets/screenshots/AppIcon.png); background-size: cover; vertical-align: middle;"></span>
+      Vakter · vakter.app · © 2026
+    </span>
+    <span>Built on a Mac. Signed by Apple. Hosted on your disk.</span>
+  </div>
+</footer>
+
+</body>
+</html>
