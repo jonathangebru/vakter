@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Vakter — The night-watch for your Mac</title>
+<meta name="description" content="Calm in normal use. Fierce the moment someone walks off with your Mac. Local alarm, photo burst, ambient audio, iMessage to your phone. Notarized. No cloud, no telemetry, no accounts. $29 one-time.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<!-- Open Graph + Twitter Card -->
+<meta property="og:title" content="Vakter — The night-watch for your Mac">
+<meta property="og:description" content="Calm in normal use. Fierce the moment someone walks off with your Mac. $29 one-time. Apple Silicon. Notarised. No cloud, no telemetry, no accounts.">
+<meta property="og:image" content="./assets/screenshots/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vakter.app">
+<meta property="og:site_name" content="Vakter">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vakter — The night-watch for your Mac">
+<meta name="twitter:description" content="Calm in normal use. Fierce the moment someone walks off with your Mac.">
+<meta name="twitter:image" content="./assets/screenshots/og-image.png">
+
+<link rel="icon" type="image/png" sizes="16x16" href="./assets/favicons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="./assets/favicons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./assets/favicons/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./assets/favicons/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="./assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter — vakter.app
+ *
+ * Aesthetic commitment: Cinematic Maritime Editorial.
+ * Dark navy dominates; lantern amber is a precious accent used like
+ * an actual lighthouse beam — sparingly, dramatically. System font
+ * stack pushed to its editorial limits. Numbered sections like a
+ * ship's log. One signature flourish: a slow rotating lighthouse
+ * beam emanating from the hero image.
+ *
+ * Zero external dependencies. No analytics. No third-party scripts.
+ * The page itself embodies the no-cloud / no-telemetry promise.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Brand palette */
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+
+  /* Surface tokens — dark by default (the cinematic mode) */
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  --radius-sm:  6px;
+  --radius:     12px;
+  --radius-lg:  22px;
+
+  --maxw:       1240px;
+  --gutter:     clamp(20px, 4vw, 56px);
+
+  --t-fast:    160ms;
+  --t-base:    320ms;
+  --t-slow:    640ms;
+  --t-glacial: 1200ms;
+
+  --easing:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Type — every distinctive system feature we can pull */
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Light mode is warm parchment, not cold white — the brand voice
+       leans Scandinavian / nautical, never clinical */
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+/* ─── Reset ─── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17.5px);
+  line-height: 1.62;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  font-variant-ligatures: contextual;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+
+/* ─── Atmospheric base layer ─── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.05), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.5), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Typography primitives ─── */
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  text-wrap: balance;
+}
+
+.display-lg { font-size: clamp(48px, 8.2vw, 116px); }
+.display-md { font-size: clamp(36px, 5.8vw, 76px); }
+.display-sm { font-size: clamp(28px, 4vw, 48px); }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(18px, 1.4vw + 11px, 24px);
+  line-height: 1.46;
+  color: var(--ink-soft);
+  letter-spacing: -0.012em;
+}
+
+.body-prose p + p { margin-top: 1.1em; }
+.body-prose strong { color: var(--ink); font-weight: 600; }
+
+.serif-quote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(20px, 1.8vw + 12px, 30px);
+  line-height: 1.35;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+}
+
+/* ─── Layout primitives ─── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+section { position: relative; }
+
+.section-pad   { padding: clamp(80px, 9vw, 140px) 0; }
+.section-pad-sm { padding: clamp(56px, 6vw, 96px) 0; }
+
+/* Section heading group — used everywhere for consistency */
+.head-group {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: clamp(40px, 5vw, 72px);
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.head-group .eyebrow { white-space: nowrap; }
+
+@media (max-width: 680px) {
+  .head-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+/* Subtle section divider — thin rule with amber dot */
+.rule-dot {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 0 0 4px var(--bg);
+}
+.rule-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(245, 177, 79, 0.5);
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-image: url(./assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.nav-links a {
+  position: relative;
+  transition: color var(--t-fast) var(--easing);
+}
+.nav-links a:hover { color: var(--ink); }
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -6px;
+  height: 1px;
+  background: var(--amber);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.nav-links a:hover::after { transform: scaleX(1); }
+
+@media (max-width: 760px) {
+  .nav-links { display: none; }
+}
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-family: var(--font-text);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: transform var(--t-fast) var(--easing-out),
+              background var(--t-fast) var(--easing),
+              border-color var(--t-fast) var(--easing),
+              color var(--t-fast) var(--easing),
+              box-shadow var(--t-base) var(--easing);
+  user-select: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--amber);
+  color: var(--navy-deep);
+  border-color: var(--amber);
+  box-shadow:
+    0 0 0 1px rgba(245, 177, 79, 0.35) inset,
+    0 8px 28px -8px rgba(245, 177, 79, 0.55);
+}
+.btn-primary:hover {
+  background: var(--amber-warm);
+  border-color: var(--amber-warm);
+  box-shadow:
+    0 0 0 1px rgba(245, 177, 79, 0.45) inset,
+    0 12px 40px -8px rgba(245, 177, 79, 0.6);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--hairline-bold);
+}
+.btn-ghost:hover {
+  background: var(--bg-card);
+  border-color: var(--ink-soft);
+}
+
+.btn-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.btn-arrow {
+  display: inline-block;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.btn:hover .btn-arrow { transform: translateX(3px); }
+
+/* ─── HERO ─── */
+.hero {
+  position: relative;
+  padding: clamp(60px, 8vw, 110px) 0 clamp(80px, 9vw, 140px);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Atmospheric beams that emanate from where the lighthouse image
+   sits — the signature flourish. Two layered rotations at different
+   speeds give the "beam catching the room" feeling without ever
+   being literally a circle of light. */
+.hero-beam {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  /* anchor near the lantern position on the hero image (right side,
+     upper third) */
+  top: 38%;
+  right: -10%;
+  width: 100vmax;
+  height: 100vmax;
+  transform: translate(50%, -50%);
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      transparent 340deg,
+      rgba(245, 177, 79, 0.06) 348deg,
+      rgba(245, 177, 79, 0.18) 358deg,
+      rgba(248, 200, 130, 0.28) 360deg,
+      rgba(245, 177, 79, 0.18) 362deg,
+      rgba(245, 177, 79, 0.06) 372deg,
+      transparent 380deg
+    );
+  filter: blur(8px);
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  animation: lighthouse-sweep 14s linear infinite;
+}
+.hero-beam-2 {
+  /* counter-rotating, slower, dimmer — adds depth */
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  top: 42%;
+  right: -10%;
+  width: 100vmax;
+  height: 100vmax;
+  transform: translate(50%, -50%);
+  background:
+    conic-gradient(
+      from 180deg,
+      transparent 0deg,
+      transparent 350deg,
+      rgba(245, 177, 79, 0.04) 358deg,
+      rgba(248, 200, 130, 0.1) 360deg,
+      rgba(245, 177, 79, 0.04) 362deg,
+      transparent 370deg
+    );
+  filter: blur(14px);
+  opacity: 0.7;
+  mix-blend-mode: screen;
+  animation: lighthouse-sweep 21s linear infinite reverse;
+}
+
+@keyframes lighthouse-sweep {
+  from { transform: translate(50%, -50%) rotate(0deg); }
+  to   { transform: translate(50%, -50%) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-beam, .hero-beam-2 { animation: none; opacity: 0.6; }
+}
+
+/* Hero grid: text left, image right, asymmetric */
+.hero-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  gap: clamp(40px, 5vw, 80px);
+}
+
+@media (max-width: 980px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 56px;
+  }
+}
+
+.hero-text { max-width: 640px; }
+
+.hero-eyebrow {
+  margin-bottom: clamp(28px, 3vw, 44px);
+}
+
+.hero h1 {
+  margin-bottom: 28px;
+}
+.hero h1 .accent {
+  color: var(--amber);
+  font-style: italic;
+  font-weight: 500;
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  margin-bottom: 36px;
+  max-width: 540px;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.hero-meta {
+  font-size: 13px;
+  color: var(--ink-faint);
+  letter-spacing: 0.005em;
+  line-height: 1.7;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  align-items: center;
+}
+.hero-meta-dot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  margin: 0 2px;
+}
+
+/* Hero image */
+.hero-figure {
+  position: relative;
+}
+.hero-figure-frame {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 8 / 9;
+  box-shadow:
+    0 0 0 1px var(--hairline-bold),
+    0 60px 100px -30px rgba(0, 0, 0, 0.7),
+    0 30px 60px -20px rgba(0, 0, 0, 0.4);
+  isolation: isolate;
+}
+.hero-figure-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-figure-frame::after {
+  /* Subtle inner glow that animates with the beam — the lighthouse
+     "lives" inside the frame */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 60% 40% at 50% 35%,
+    rgba(245, 177, 79, 0.12),
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: lantern-pulse 4.2s ease-in-out infinite;
+}
+
+@keyframes lantern-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-figure-frame::after { animation: none; opacity: 0.7; }
+}
+
+/* Hero caption — a small annotation on the hero figure */
+.hero-figure-caption {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translate(-50%, 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.hero-figure-caption::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--hairline-bold);
+}
+
+/* Tiny menubar floating tag above the hero figure — "this is where it lives" */
+.menubar-tag {
+  position: absolute;
+  z-index: 2;
+  top: -38px;
+  left: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--hairline-bold);
+  border-radius: 999px;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+}
+.menubar-tag-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background-image: url(./assets/screenshots/AppIcon.png);
+  background-size: cover;
+  flex: 0 0 auto;
+}
+.menubar-tag-arrow {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* ─── Demo strip ─── */
+.demo-strip {
+  background: var(--bg-elev);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  gap: clamp(32px, 4vw, 64px);
+}
+
+@media (max-width: 900px) {
+  .demo-grid { grid-template-columns: 1fr; }
+}
+
+.demo-video {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--navy-deep);
+  aspect-ratio: 16 / 10;
+  box-shadow:
+    0 0 0 1px var(--hairline-bold),
+    0 30px 60px -20px rgba(0, 0, 0, 0.5);
+}
+.demo-video video,
+.demo-video img.poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.demo-video .play-pip {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  background: rgba(11, 21, 48, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+.demo-video .play-pip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 12px var(--amber);
+  animation: pip-pulse 1.6s ease-in-out infinite;
+}
+@keyframes pip-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+.demo-copy h2 {
+  margin-bottom: 24px;
+}
+.demo-copy p {
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.demo-copy p:last-child { margin-bottom: 0; }
+
+/* ─── Positioning ─── */
+.positioning .compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: clamp(24px, 3vw, 48px);
+  align-items: stretch;
+}
+
+@media (max-width: 820px) {
+  .positioning .compare {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .positioning .versus { display: none; }
+}
+
+.compare-card {
+  position: relative;
+  padding: clamp(28px, 3vw, 44px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+.compare-card h3 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  margin-bottom: 6px;
+}
+.compare-card .compare-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 24px;
+  display: block;
+}
+.compare-card p {
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+  font-size: 16px;
+}
+.compare-card.is-vakter {
+  border-color: rgba(245, 177, 79, 0.3);
+  background:
+    linear-gradient(180deg, rgba(245, 177, 79, 0.06), transparent 60%),
+    var(--bg-card);
+}
+.compare-card.is-vakter h3 { color: var(--amber); }
+
+.versus {
+  display: grid;
+  align-items: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--ink-faint);
+}
+
+.compare-card ul.compare-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+.compare-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 12px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.55;
+}
+.compare-list .glyph {
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline-bold);
+  position: relative;
+}
+.compare-card.is-vakter .compare-list .glyph {
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 10px rgba(245, 177, 79, 0.5);
+}
+
+/* ─── Features grid ─── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--hairline);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+@media (max-width: 980px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .features-grid { grid-template-columns: 1fr; }
+}
+
+.feature {
+  padding: clamp(28px, 2.5vw, 40px);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: background var(--t-base) var(--easing);
+}
+.feature:hover { background: var(--bg-elev); }
+
+.feature-glyph {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid var(--hairline-bold);
+  color: var(--amber);
+  margin-bottom: 4px;
+  background: rgba(245, 177, 79, 0.04);
+}
+.feature-glyph svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.feature h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.013em;
+  color: var(--ink);
+}
+.feature p {
+  font-size: 15px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.feature-counter {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-faint);
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* ─── Modes — the spectrum ─── */
+.modes-spectrum {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 32px;
+}
+@media (max-width: 820px) {
+  .modes-spectrum { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .modes-spectrum { grid-template-columns: 1fr; }
+}
+
+.mode {
+  position: relative;
+  padding: clamp(20px, 2vw, 28px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 220px;
+}
+
+.mode-bar {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+.mode-bar span {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--hairline-bold);
+}
+.mode[data-intensity="1"] .mode-bar span:nth-child(-n+1),
+.mode[data-intensity="2"] .mode-bar span:nth-child(-n+2),
+.mode[data-intensity="3"] .mode-bar span:nth-child(-n+3),
+.mode[data-intensity="4"] .mode-bar span:nth-child(-n+4),
+.mode[data-intensity="5"] .mode-bar span:nth-child(-n+5) {
+  background: var(--amber);
+  box-shadow: 0 0 6px rgba(245, 177, 79, 0.5);
+}
+
+.mode-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: -0.012em;
+}
+.mode-spec {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.mode-desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+
+.spectrum-label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.spectrum-line {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    var(--hairline) 0%,
+    var(--amber) 100%
+  );
+}
+
+/* ─── Architecture ─── */
+.architecture {
+  background:
+    linear-gradient(180deg, transparent, rgba(28, 42, 79, 0.15) 50%, transparent),
+    var(--bg);
+}
+
+.arch-diagram {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin: 36px 0 32px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.arch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+@media (max-width: 860px) {
+  .arch-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .arch-connector { display: none; }
+}
+
+.arch-box {
+  border: 1px solid var(--hairline-bold);
+  border-radius: 10px;
+  padding: 18px;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.arch-box-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.arch-box-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.arch-box-priv {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+.arch-box-priv .priv-mark {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 600;
+}
+.arch-box.is-root { border-color: rgba(245, 177, 79, 0.4); background: rgba(245, 177, 79, 0.04); }
+.arch-box.is-root .priv-mark { color: var(--amber); }
+
+.arch-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.arch-connector .line {
+  width: 100%;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--hairline-bold) 0 4px,
+    transparent 4px 8px
+  );
+}
+
+.arch-caption {
+  border-top: 1px solid var(--hairline);
+  padding-top: 24px;
+  margin-top: 16px;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 680px;
+}
+.arch-caption code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--hairline);
+}
+
+/* ─── What we don't do ─── */
+.donts {
+  background: var(--bg-elev);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+.donts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(32px, 4vw, 56px);
+  margin: 36px 0 36px;
+}
+@media (max-width: 820px) { .donts-grid { grid-template-columns: 1fr; } }
+
+.dont {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dont-prefix {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 5.5vw, 72px);
+  font-weight: 200;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--ink-faint);
+}
+.dont-prefix .pre {
+  font-style: italic;
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: 0.6em;
+  margin-right: 8px;
+  vertical-align: 0.18em;
+  color: var(--amber);
+}
+.dont h3 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin-top: -8px;
+}
+.dont p {
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.donts-foot {
+  margin-top: 8px;
+  padding: 24px 0;
+  border-top: 1px solid var(--hairline);
+  font-size: 14px;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.donts-foot .seal {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--amber);
+  display: grid;
+  place-items: center;
+  color: var(--navy-deep);
+  font-weight: 700;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+/* ─── Pricing ─── */
+.pricing-wrap {
+  display: grid;
+  place-items: center;
+}
+.pricing-card {
+  width: 100%;
+  max-width: 580px;
+  padding: clamp(36px, 4vw, 56px);
+  border: 1px solid var(--hairline-bold);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse at top, rgba(245, 177, 79, 0.07), transparent 60%),
+    var(--bg-elev);
+  text-align: center;
+  position: relative;
+}
+.pricing-tag {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  background: var(--amber);
+  color: var(--navy-deep);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.price {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-family: var(--font-display);
+  margin: 8px 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+.price-amount {
+  font-size: clamp(78px, 10vw, 124px);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+}
+.price-currency {
+  font-size: 28px;
+  font-weight: 500;
+  margin-top: 18px;
+  color: var(--ink-soft);
+}
+.price-period {
+  font-family: var(--font-text);
+  font-size: 14px;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+  display: block;
+  margin-bottom: 24px;
+}
+.pricing-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 24px;
+  text-align: left;
+  margin: 32px 0;
+  border-top: 1px solid var(--hairline);
+  padding-top: 28px;
+}
+@media (max-width: 520px) { .pricing-features { grid-template-columns: 1fr; } }
+.pricing-features li {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.pricing-features .tick {
+  color: var(--amber);
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.pricing-note {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin-top: 18px;
+}
+
+/* ─── FAQ ─── */
+.faq-list {
+  display: grid;
+  gap: 4px;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.faq-item {
+  border-top: 1px solid var(--hairline);
+  padding: 24px 0;
+}
+.faq-item:last-child { border-bottom: 1px solid var(--hairline); }
+
+.faq-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  cursor: pointer;
+  list-style: none;
+  align-items: start;
+}
+.faq-summary::-webkit-details-marker { display: none; }
+.faq-q {
+  font-family: var(--font-display);
+  font-size: clamp(17px, 1.2vw + 10px, 21px);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.faq-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline-bold);
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+  flex: 0 0 auto;
+  transition: transform var(--t-base) var(--easing), background var(--t-fast) var(--easing);
+  background: var(--bg-card);
+}
+.faq-item[open] .faq-toggle {
+  transform: rotate(45deg);
+  background: var(--amber);
+  color: var(--navy-deep);
+  border-color: var(--amber);
+}
+.faq-answer {
+  margin-top: 18px;
+  max-width: 680px;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.faq-answer p + p { margin-top: 0.9em; }
+.faq-answer code {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--hairline);
+}
+
+/* ─── Footer ─── */
+.footer {
+  border-top: 1px solid var(--hairline);
+  padding: 64px 0 48px;
+  background: var(--bg);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+@media (max-width: 820px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+.footer-brand h4 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  letter-spacing: -0.012em;
+}
+.footer-brand p {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 360px;
+}
+.footer-col h5 {
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+.footer-col ul { display: grid; gap: 10px; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.footer-col a:hover { color: var(--amber); }
+
+.footer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--hairline);
+  padding-top: 28px;
+}
+.footer-meta-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Reveal-on-scroll (subtle) ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--t-slow) var(--easing-out),
+              transform var(--t-slow) var(--easing-out);
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* Subtle staggering for grid children */
+.reveal.in.delay-1 { transition-delay: 50ms; }
+.reveal.in.delay-2 { transition-delay: 110ms; }
+.reveal.in.delay-3 { transition-delay: 170ms; }
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--amber);
+  color: var(--navy-deep);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+
+/* ─── Tiny utility ─── */
+.kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline-bold);
+  color: var(--ink);
+  line-height: 1;
+}
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="#" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#what-it-does">What it does</a>
+      <a href="#modes">Modes</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn btn-primary btn-price" href="#pricing">
+      Download for Mac
+      <span aria-hidden="true">·</span>
+      <span>$29</span>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ─── Hero ─── -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-beam" aria-hidden="true"></div>
+    <div class="hero-beam-2" aria-hidden="true"></div>
+
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-text reveal">
+
+          <div class="hero-eyebrow">
+            <span class="eyebrow">§ vakter · norwegian · the night-watchmen</span>
+          </div>
+
+          <h1 id="hero-title" class="display display-lg">
+            The night-watch <br>
+            for your <span class="accent">Mac.</span>
+          </h1>
+
+          <p class="hero-sub lead">
+            Calm in normal use. Fierce the moment someone tries to walk
+            off with it. Lives in your menu bar. Wakes the deck when the
+            lid closes, the cable pulls, or your phone leaves the room.
+          </p>
+
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#pricing">
+              <span>Download for Mac</span>
+              <span class="btn-price">— $29</span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="btn btn-ghost" href="#demo">
+              Watch the demo
+              <span class="btn-arrow" aria-hidden="true">↓</span>
+            </a>
+          </div>
+
+          <p class="hero-meta">
+            <span>14-day full trial</span>
+            <span class="hero-meta-dot" aria-hidden="true"></span>
+            <span>Apple Silicon</span>
+            <span class="hero-meta-dot" aria-hidden="true"></span>
+            <span>Notarised by Apple</span>
+            <span class="hero-meta-dot" aria-hidden="true"></span>
+            <span>No cloud · no telemetry · no accounts</span>
+          </p>
+        </div>
+
+        <figure class="hero-figure reveal delay-2">
+          <div class="menubar-tag" aria-hidden="true">
+            <span class="menubar-tag-mark"></span>
+            <span>Lives in your menu bar</span>
+            <span class="menubar-tag-arrow">↓</span>
+          </div>
+
+          <div class="hero-figure-frame">
+            <img
+              src="./assets/screenshots/arming-overlay.png"
+              alt="The Vakter 'On watch' arming overlay, full-screen: a lighthouse silhouette with a warm amber lantern light at the top, on a deep anchor-navy gradient background, with the words 'On watch' below and 'Vakter has the deck.' as a sub-line."
+              width="1470" height="956"
+              fetchpriority="high"
+              decoding="async">
+          </div>
+
+          <figcaption class="hero-figure-caption">
+            The handoff moment, live from the running app
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Demo strip ─── -->
+  <section id="demo" class="demo-strip section-pad" aria-labelledby="demo-title">
+    <div class="container">
+
+      <div class="head-group">
+        <h2 id="demo-title" class="display display-md">
+          What it looks like when it fires.
+        </h2>
+        <span class="section-num">§ 01 / 09</span>
+      </div>
+
+      <div class="demo-grid">
+        <div class="demo-video reveal" id="demo-video">
+          <!-- The MP4 is loaded by JS only if it exists; otherwise the
+               poster image is the experience until you record one. -->
+          <img
+            class="poster"
+            src="./assets/screenshots/arming-overlay.png"
+            alt="Vakter arming overlay shown as the demo placeholder until the live demo video is recorded."
+            loading="lazy"
+            decoding="async">
+          <div class="play-pip">
+            <span class="play-pip-dot" aria-hidden="true"></span>
+            <span>Demo · 10 sec</span>
+          </div>
+        </div>
+
+        <div class="demo-copy reveal delay-1">
+          <h3 class="display display-sm">A hotkey. An arm. A grab.</h3>
+          <p>
+            You press the hotkey on the way out the door. Your Mac locks
+            and goes <em>on watch</em> in one motion. When the lid
+            closes, the cable disconnects, or your trusted devices leave
+            the room — the deck wakes.
+          </p>
+          <p>
+            Photo burst. Ten seconds of ambient audio. A tamper-evident
+            log entry sealed into a SHA-256 chain. An iMessage to your
+            phone with the photos and a Maps pin. A police-ready PDF on
+            demand. All from the menu bar.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Positioning ─── -->
+  <section class="positioning section-pad" aria-labelledby="position-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ positioning</span>
+          <h2 id="position-title" class="display display-md" style="margin-top: 18px;">
+            Find My is recovery. <br>
+            Vakter is <span style="font-style: italic; font-family: var(--font-serif); font-weight: 500; color: var(--amber);">the moment</span>.
+          </h2>
+        </div>
+        <span class="section-num">§ 02 / 09</span>
+      </div>
+
+      <div class="compare">
+        <article class="compare-card reveal">
+          <span class="compare-role">Apple, free</span>
+          <h3>Find My</h3>
+          <p>
+            Locates your Mac on a map after it's already somewhere else.
+            Needs the Mac powered on, signed-in to iCloud, and online.
+            Mostly recovery, after the fact.
+          </p>
+          <ul class="compare-list">
+            <li><span class="glyph" aria-hidden="true"></span><span>Tracks the Mac's location after it's reached the network</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>Lets you mark it lost, lock it remotely, or wipe it</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>Activation Lock keeps thieves from reusing it</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>Silent. No camera, no audio, no live evidence</span></li>
+          </ul>
+        </article>
+
+        <div class="versus" aria-hidden="true">+</div>
+
+        <article class="compare-card is-vakter reveal delay-1">
+          <span class="compare-role">Vakter, $29</span>
+          <h3>Vakter</h3>
+          <p>
+            Lives in the menu bar, watching for the trigger signal.
+            Fires <em>during</em> the moment your Mac is leaving — siren,
+            camera, microphone, message to your phone — before it's
+            gone.
+          </p>
+          <ul class="compare-list">
+            <li><span class="glyph" aria-hidden="true"></span><span>100 dB siren the second the lid closes or the cable pulls</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>Photo burst and 10 s of ambient audio, locally</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>iMessage to your phone with a Maps pin</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>Tamper-evident chain &amp; police-ready PDF on demand</span></li>
+          </ul>
+        </article>
+      </div>
+
+      <p class="lead" style="text-align: center; margin-top: clamp(36px, 4vw, 56px); max-width: 720px; margin-left: auto; margin-right: auto;">
+        They're complementary. <strong style="color: var(--ink);">Run both.</strong>
+      </p>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── What it does ─── -->
+  <section id="what-it-does" class="section-pad" aria-labelledby="features-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ what it does</span>
+          <h2 id="features-title" class="display display-md" style="margin-top: 18px;">
+            Six things, all the moment <br> someone grabs it.
+          </h2>
+        </div>
+        <span class="section-num">§ 03 / 09</span>
+      </div>
+
+      <div class="features-grid">
+
+        <article class="feature reveal">
+          <div class="feature-glyph" aria-hidden="true">
+            <!-- camera -->
+            <svg viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="13" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M9 6.5l1.5-2.5h3L15 6.5"/></svg>
+          </div>
+          <h3>Photo burst</h3>
+          <p>
+            The instant the alarm fires, the front-facing camera starts.
+            Three to thirteen frames depending on mode. JPEG to local
+            disk. Pointed at the person holding your Mac.
+          </p>
+          <span class="feature-counter">i</span>
+        </article>
+
+        <article class="feature reveal delay-1">
+          <div class="feature-glyph" aria-hidden="true">
+            <!-- mic -->
+            <svg viewBox="0 0 24 24"><rect x="9.5" y="2.5" width="5" height="11" rx="2.5"/><path d="M6 11.5a6 6 0 0 0 12 0"/><line x1="12" y1="17.5" x2="12" y2="21.5"/></svg>
+          </div>
+          <h3>10 s ambient audio</h3>
+          <p>
+            AAC at 22 kHz mono. Voices. Names. The room they walked into.
+            The car they got in. Photos catch a face if the thief is in
+            front of the camera — audio catches everything else.
+          </p>
+          <span class="feature-counter">ii</span>
+        </article>
+
+        <article class="feature reveal delay-2">
+          <div class="feature-glyph" aria-hidden="true">
+            <!-- iMessage bubble + pin -->
+            <svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v6.5a3 3 0 0 1-3 3H9.8l-3.4 2.7c-.3.2-.7-.04-.7-.4V16.5A3 3 0 0 1 2.5 13.5V7A3 3 0 0 1 5 4Z"/><circle cx="12" cy="10" r="1.2"/></svg>
+          </div>
+          <h3>iMessage + Apple Maps</h3>
+          <p>
+            Your phone gets a message within seconds — the photos and a
+            Maps pin at the last known location. From your own Apple ID
+            via Messages.app. No Vakter server in between.
+          </p>
+          <span class="feature-counter">iii</span>
+        </article>
+
+        <article class="feature reveal">
+          <div class="feature-glyph" aria-hidden="true">
+            <!-- speaker waves -->
+            <svg viewBox="0 0 24 24"><path d="M4.5 9h3l4.5-4v14l-4.5-4h-3z"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg>
+          </div>
+          <h3>100 dB siren, 7 voices</h3>
+          <p>
+            Sample-quality sirens, not synthetic beeps. The Mac says
+            "this MacBook is being tracked" in English, Norwegian,
+            German, French, Spanish, Italian, or Japanese — at max
+            volume, with mute overridden.
+          </p>
+          <span class="feature-counter">iv</span>
+        </article>
+
+        <article class="feature reveal delay-1">
+          <div class="feature-glyph" aria-hidden="true">
+            <!-- PDF doc with chain -->
+            <svg viewBox="0 0 24 24"><path d="M6 2.5h8l4 4V21a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5Z"/><path d="M14 2.5V7h4"/><circle cx="9.5" cy="14.5" r="1"/><circle cx="14.5" cy="14.5" r="1"/><line x1="10.4" y1="14.5" x2="13.6" y2="14.5"/></svg>
+          </div>
+          <h3>Police-ready PDF</h3>
+          <p>
+            Single-page report. Device serial. Event timeline. Photo
+            list. Audio paths. Cryptographic chain-of-custody
+            verification. Hand it to a cop. Hand it to an insurance
+            adjuster. They'll read it.
+          </p>
+          <span class="feature-counter">v</span>
+        </article>
+
+        <article class="feature reveal delay-2">
+          <div class="feature-glyph" aria-hidden="true">
+            <!-- cloud with key -->
+            <svg viewBox="0 0 24 24"><path d="M7 16.5h10a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.6-1.5A4 4 0 0 0 7 16.5Z"/><circle cx="12" cy="13" r="1.4"/><line x1="12" y1="14.4" x2="12" y2="17"/></svg>
+          </div>
+          <h3>Optional cloud bucket</h3>
+          <p>
+            Backblaze B2 or any pre-signed URL. Your bucket. Your keys in
+            your Keychain. The evidence is in the cloud before the thief
+            gets past authentication — so it survives a wipe.
+          </p>
+          <span class="feature-counter">vi</span>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Modes ─── -->
+  <section id="modes" class="section-pad-sm" aria-labelledby="modes-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ modes</span>
+          <h2 id="modes-title" class="display display-md" style="margin-top: 18px;">
+            Five tempers, one watch.
+          </h2>
+        </div>
+        <span class="section-num">§ 04 / 09</span>
+      </div>
+
+      <p class="lead" style="max-width: 720px; margin-bottom: 40px;">
+        Each mode adjusts grace window, audibility, and what counts as a
+        trigger. The Mac you carry to a coffee shop has different
+        expectations than the Mac you check at the hotel desk.
+      </p>
+
+      <div class="spectrum-label">
+        <span>Calm ←</span>
+        <span class="spectrum-line" aria-hidden="true"></span>
+        <span>→ Fierce</span>
+      </div>
+
+      <div class="modes-spectrum">
+
+        <article class="mode reveal" data-intensity="2">
+          <div class="mode-bar" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span class="mode-spec">Loaner</span>
+          <h3 class="mode-name">Forgiving</h3>
+          <p class="mode-desc">
+            30-second grace. For when you hand the Mac to a friend or
+            family member for a few minutes.
+          </p>
+        </article>
+
+        <article class="mode reveal delay-1" data-intensity="2">
+          <div class="mode-bar" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span class="mode-spec">Library</span>
+          <h3 class="mode-name">Silent</h3>
+          <p class="mode-desc">
+            No siren — evidence still captured. For quiet rooms where
+            the alarm itself would be a problem.
+          </p>
+        </article>
+
+        <article class="mode reveal delay-2" data-intensity="3">
+          <div class="mode-bar" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span class="mode-spec">Normal</span>
+          <h3 class="mode-name">Everyday</h3>
+          <p class="mode-desc">
+            6-second grace, loud. The default. The mode you'll run
+            ninety-five percent of the time.
+          </p>
+        </article>
+
+        <article class="mode reveal delay-1" data-intensity="4">
+          <div class="mode-bar" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span class="mode-spec">Café</span>
+          <h3 class="mode-name">Considerate</h3>
+          <p class="mode-desc">
+            30-second alarm cap. The siren won't blast for hours if you
+            forget to disarm. Designed for shared spaces.
+          </p>
+        </article>
+
+        <article class="mode reveal delay-2" data-intensity="5">
+          <div class="mode-bar" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span class="mode-spec">Travel</span>
+          <h3 class="mode-name">Paranoid</h3>
+          <p class="mode-desc">
+            3-second grace. Tighter Bluetooth trust radius. Use it in
+            airports, hotel lobbies, train stations.
+          </p>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Architecture ─── -->
+  <section id="architecture" class="architecture section-pad" aria-labelledby="arch-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ architecture</span>
+          <h2 id="arch-title" class="display display-md" style="margin-top: 18px;">
+            Three binaries. <br>
+            One asks for root.
+          </h2>
+        </div>
+        <span class="section-num">§ 05 / 09</span>
+      </div>
+
+      <p class="lead" style="max-width: 720px; margin-bottom: 36px;">
+        Closed-source security tools earn trust by making the privilege
+        boundary legible. This is ours, in full.
+      </p>
+
+      <div class="arch-diagram" role="img" aria-label="Architecture: menu bar app (user) connects via XPC to a helper LaunchAgent (user), which connects via XPC to a privileged daemon (root).">
+
+        <div class="arch-row">
+          <div class="arch-box">
+            <span class="arch-box-label">menubar</span>
+            <span class="arch-box-name">Vakter.app</span>
+            <span class="arch-box-priv"><span class="priv-mark">●</span>runs as you</span>
+          </div>
+
+          <div class="arch-connector" aria-hidden="true">
+            <span>XPC</span>
+            <div class="line"></div>
+            <span>peer-pinned</span>
+          </div>
+
+          <div class="arch-box">
+            <span class="arch-box-label">launchagent · helper</span>
+            <span class="arch-box-name">VakterHelper</span>
+            <span class="arch-box-priv"><span class="priv-mark">●</span>runs as you · state machine, observers, capture</span>
+          </div>
+
+          <div class="arch-connector" aria-hidden="true">
+            <span>XPC</span>
+            <div class="line"></div>
+            <span>peer-pinned</span>
+          </div>
+
+          <div class="arch-box is-root">
+            <span class="arch-box-label">launchdaemon · privileged</span>
+            <span class="arch-box-name">VakterPrivilegedDaemon</span>
+            <span class="arch-box-priv"><span class="priv-mark">●</span>runs as root · one job: <code style="background:none;border:none;padding:0;color:var(--amber);font-family:var(--font-mono);font-size:11px;">pmset disablesleep</code></span>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="arch-caption">
+        The privileged daemon has <strong style="color: var(--ink);">exactly one job</strong>:
+        toggle <code>pmset disablesleep</code> while you're armed, so
+        the lid-close doesn't put your Mac to sleep before the alarm
+        fires. Roughly 150 lines of C, signed by Apple's Developer ID,
+        audited by macOS at every launch. Verify the entitlements
+        yourself with <code>codesign --display --entitlements -</code>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── What we don't do ─── -->
+  <section class="donts section-pad" aria-labelledby="donts-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ what we don't do</span>
+          <h2 id="donts-title" class="display display-md" style="margin-top: 18px;">
+            Three negatives <br>
+            we never break.
+          </h2>
+        </div>
+        <span class="section-num">§ 06 / 09</span>
+      </div>
+
+      <div class="donts-grid">
+
+        <div class="dont reveal">
+          <div class="dont-prefix"><span class="pre">no</span>cloud</div>
+          <h3>Your disk, your evidence.</h3>
+          <p>
+            Photos, audio, event log — all written locally. Vakter does
+            not operate a server. The only thing that goes off-device is
+            the iMessage you configured to send to your own phone.
+          </p>
+        </div>
+
+        <div class="dont reveal delay-1">
+          <div class="dont-prefix"><span class="pre">no</span>telemetry</div>
+          <h3>Zero outbound calls.</h3>
+          <p>
+            No analytics. No "help us improve" beacons. No crash
+            reporters that ship a stack trace home. Activity Monitor and
+            Little Snitch will both show you the same thing: silence.
+          </p>
+        </div>
+
+        <div class="dont reveal delay-2">
+          <div class="dont-prefix"><span class="pre">no</span>accounts</div>
+          <h3>Nothing to sign up for.</h3>
+          <p>
+            No email. No password. No login. Download the DMG, run it,
+            forget it exists until the day you need it. The Apple ID on
+            the Mac is the only identity Vakter ever sees.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="donts-foot">
+        <span class="seal" aria-hidden="true">✓</span>
+        <span>
+          Notarised by Apple · Hardened Runtime · Developer ID Application
+          (9TA5GB5UJH). Audit the binary yourself with
+          <code class="kbd">codesign --display --entitlements -</code>.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Pricing ─── -->
+  <section id="pricing" class="section-pad" aria-labelledby="pricing-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ pricing</span>
+          <h2 id="pricing-title" class="display display-md" style="margin-top: 18px;">
+            Buy it once. Use it forever.
+          </h2>
+        </div>
+        <span class="section-num">§ 07 / 09</span>
+      </div>
+
+      <div class="pricing-wrap">
+        <div class="pricing-card reveal">
+          <span class="pricing-tag">Lifetime licence</span>
+
+          <p class="price">
+            <span class="price-currency">$</span>
+            <span class="price-amount">29</span>
+          </p>
+          <span class="price-period">one-time payment · 14-day full trial first</span>
+
+          <a class="btn btn-primary" href="mailto:hi@vakter.app?subject=Vakter%20—%20I'd%20like%20the%20DMG" style="font-size: 16px; padding: 16px 28px;">
+            Download for Mac
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </a>
+
+          <ul class="pricing-features">
+            <li><span class="tick">✓</span><span>One-hotkey arm + lock</span></li>
+            <li><span class="tick">✓</span><span>Five modes (Normal, Travel, Library, Loaner, Café)</span></li>
+            <li><span class="tick">✓</span><span>Photo burst + 10 s ambient audio</span></li>
+            <li><span class="tick">✓</span><span>100 dB siren in 7 voices</span></li>
+            <li><span class="tick">✓</span><span>iMessage to your phone with Maps URL</span></li>
+            <li><span class="tick">✓</span><span>Police-ready PDF + tamper-evident chain</span></li>
+            <li><span class="tick">✓</span><span>Auto-arm on geofence, Wi-Fi loss, or idle</span></li>
+            <li><span class="tick">✓</span><span>Optional cloud-bucket evidence backup</span></li>
+          </ul>
+
+          <p class="pricing-note">
+            $12 / year optional for major-version updates after year one. <br>
+            Skip the update and the licence keeps running, indefinitely.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FAQ ─── -->
+  <section id="faq" class="section-pad" aria-labelledby="faq-title">
+    <div class="container">
+
+      <div class="head-group">
+        <div>
+          <span class="eyebrow">§ FAQ</span>
+          <h2 id="faq-title" class="display display-md" style="margin-top: 18px;">
+            Reasonable questions.
+          </h2>
+        </div>
+        <span class="section-num">§ 08 / 09</span>
+      </div>
+
+      <div class="faq-list">
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">Why not just use Find My?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              Find My is excellent for recovery — once the Mac is gone
+              and the thief has powered it back on or connected to
+              Wi-Fi, you can track it. Vakter operates earlier. The
+              instant the lid closes or the cable is pulled, Vakter is
+              already screaming, photographing, and texting your phone.
+            </p>
+            <p>
+              They're complementary. We recommend running both, and the
+              architecture page is explicit that nothing Vakter does
+              overlaps with Find My's job.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">Why is Vakter closed-source?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              We're a single-developer indie product. Closed-source lets
+              us iterate faster, keep architectural freedom, and avoid
+              the operational tax of running a public repo while
+              hunting for product-market fit.
+            </p>
+            <p>
+              We compensate with notarisation, Hardened Runtime, a tiny
+              privileged surface (~150 lines), and a public commitment
+              to fund a third-party security audit at $50k MRR. Little
+              Snitch has been closed-source for twenty years and is the
+              gold standard. If you'd prefer fully open-source, LuLu
+              (Objective-See) and Pareto Security are excellent
+              alternatives — they solve adjacent problems.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">Does it work if my Mac is wiped?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              With cloud-bucket upload enabled — yes. Your evidence is
+              streamed to your bucket while the alarm is firing, before
+              the thief gets past authentication. The Mac can be wiped
+              clean and your photos, audio, and location pings are
+              already off-device.
+            </p>
+            <p>
+              Cloud upload is optional. Plenty of users run Vakter
+              purely local — the on-device evidence is recoverable if
+              you get the Mac back.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">What if the thief disables Wi-Fi?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              The local alarm fires regardless. Siren, photos, audio —
+              all written to disk before the network leaves. If Wi-Fi
+              comes back later (and it usually does), the iMessage and
+              cloud upload retry. If not, the local evidence is still
+              there for the moment you recover the Mac.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">Can it fire accidentally at a coffee shop?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              That's exactly what Café mode is for. 30-second grace,
+              30-second alarm cap. The Bluetooth trust radius is
+              configurable — your phone in your pocket, your AirPods in
+              your ears, your watch on your wrist all count as <em>you're
+              still nearby</em>. If a trusted device is in range,
+              lid-close alone doesn't trigger.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">What runs as root?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              One process. <code>VakterPrivilegedDaemon</code>. Its only
+              job is to call <code>pmset disablesleep</code> so the Mac
+              doesn't fall asleep before the alarm fires when the lid
+              closes. Roughly 150 lines of C, signed by Apple's
+              Developer ID. Read its <code>Info.plist</code> with
+              <code>codesign --display --entitlements -</code> whenever
+              you want.
+            </p>
+            <p>
+              Everything else — the state machine, the camera, the
+              microphone, the XPC server — runs as your user. Same
+              privilege level as your browser.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">How do I disarm?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              Unlock your Mac normally. macOS has already authenticated
+              you — Vakter trusts that. There's no second password to
+              remember. Disarming is just opening your Mac like you
+              always do.
+            </p>
+            <p>
+              You can also disarm from the menu bar, the Settings panel,
+              or your paired iPhone via the optional companion app.
+            </p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">macOS and hardware requirements?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              macOS Sonoma (14.0) or later. Apple Silicon or Intel.
+              Internal camera, microphone, and speakers. Bluetooth
+              optional for proximity disarm. Notarised DMG, direct
+              download — no Mac App Store dance.
+            </p>
+          </div>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+
+      <div class="head-group" style="margin-bottom: 36px;">
+        <div>
+          <span class="eyebrow">§ at the wheel</span>
+        </div>
+        <span class="section-num">§ 09 / 09</span>
+      </div>
+
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>One developer. One Mac. One night-watch.</h4>
+          <p>
+            Vakter is built by Jonathan Gebru, solo, in plain Swift on a
+            Mac. Email reaches a human within a day. There is no support
+            queue, no chatbot, no out-of-office triage. If you find
+            something broken, write — I read every message.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="#what-it-does">Features</a></li>
+            <li><a href="#modes">Modes</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Trust</h5>
+          <ul>
+            <li><a href="#architecture">Privilege model</a></li>
+            <li><a href="mailto:security@vakter.app">Disclosure</a></li>
+            <li><a href="#faq">Open questions</a></li>
+            <li><a href="./press/">Press kit</a></li>
+            <li><a href="./concepts/">Design concepts</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Contact</h5>
+          <ul>
+            <li><a href="mailto:support@vakter.app">support@</a></li>
+            <li><a href="mailto:security@vakter.app">security@</a></li>
+            <li><a href="mailto:licensing@vakter.app">licensing@</a></li>
+            <li><a href="mailto:hi@vakter.app">hi@</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-meta">
+        <span class="footer-meta-mark">
+          <span class="brand-mark" aria-hidden="true" style="width: 18px; height: 18px;"></span>
+          Vakter · vakter.app · © 2026
+        </span>
+        <span>Built on a Mac. Signed by Apple. Hosted on your disk.</span>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script>
+  // Reveal-on-scroll. No framework, no library.
+  (function () {
+    if (!('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.reveal').forEach(function (n) {
+        n.classList.add('in');
+      });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+    document.querySelectorAll('.reveal').forEach(function (n) {
+      io.observe(n);
+    });
+  })();
+
+  // Hero video — only swap the poster image for a <video> if the file
+  // exists. Avoids a broken-icon when the user hasn't shot the demo
+  // video yet.
+  (function () {
+    var slot = document.getElementById('demo-video');
+    if (!slot) return;
+
+    var probe = new XMLHttpRequest();
+    probe.open('HEAD', './assets/video/hero.mp4', true);
+    probe.onreadystatechange = function () {
+      if (probe.readyState !== 4) return;
+      if (probe.status >= 200 && probe.status < 400) {
+        var poster = slot.querySelector('img.poster');
+        var pip = slot.querySelector('.play-pip');
+        var v = document.createElement('video');
+        v.src = './assets/video/hero.mp4';
+        v.poster = './assets/screenshots/arming-overlay.png';
+        v.muted = true;
+        v.loop = true;
+        v.playsInline = true;
+        v.autoplay = false;
+        v.controls = false;
+        v.setAttribute('aria-label', 'Vakter demo video: arm, grab, alarm');
+        slot.insertBefore(v, slot.firstChild);
+        if (poster) poster.remove();
+
+        // Play when scrolled into view; pause when out
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+              if (e.isIntersecting) {
+                v.play().catch(function () {});
+                if (pip) pip.style.opacity = '0.55';
+              } else {
+                v.pause();
+                if (pip) pip.style.opacity = '1';
+              }
+            });
+          }, { threshold: 0.35 });
+          io.observe(slot);
+        } else {
+          v.play().catch(function () {});
+        }
+
+        // Reveal controls on hover for the desktop crowd
+        slot.addEventListener('mouseenter', function () { v.controls = true; });
+        slot.addEventListener('mouseleave', function () { v.controls = false; });
+      }
+    };
+    try { probe.send(); } catch (e) { /* file:// or permission — leave poster */ }
+  })();
+</script>
+
+</body>
+</html>

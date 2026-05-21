@@ -1,0 +1,4614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vakter — Design concepts · v1.4</title>
+<meta name="description" content="The design book for Vakter. Every UI surface, hand-built in HTML so it scales arbitrarily, edits cleanly, and stays in sync with the actual macOS app.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<meta property="og:title" content="Vakter — Design concepts">
+<meta property="og:description" content="The design book for Vakter. Every UI surface, hand-built in HTML.">
+<meta property="og:image" content="../assets/screenshots/og-image.png">
+<meta property="og:type" content="article">
+
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/favicons/favicon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter · Design Concepts (v1.4)
+ *
+ * The design book. Every surface, in one file. Cinematic maritime
+ * aesthetic anchored to the press kit. One signature flourish: a
+ * scroll-driven lighthouse beam emanating from the cover.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Brand */
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+  --red:         #ff453a;
+  --green:       #34c759;
+
+  /* Surfaces — dark default */
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --bg-window:   #16223e;
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  /* Tokens */
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 22px;
+
+  --gutter: clamp(20px, 4vw, 56px);
+  --maxw:   1240px;
+
+  --t-fast:   160ms;
+  --t-base:   320ms;
+  --t-slow:   640ms;
+  --easing:   cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Type */
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --bg-window:   #fbf6e9;
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+/* ─── Reset ─── */
+*, *::before, *::after { box-sizing: border-box; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote, dl, dd { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, svg, video { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; border: 0; background: transparent; color: inherit; }
+a { color: inherit; text-decoration: none; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html, body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17px);
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  font-variant-ligatures: contextual;
+  overflow-x: hidden;
+}
+::selection { background: var(--amber); color: var(--navy-deep); }
+
+/* ─── Atmospheric base ─── */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(ellipse 1100px 700px at 18% -10%, rgba(245, 177, 79, 0.06), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 70%, rgba(28, 42, 79, 0.5), transparent 70%);
+}
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1100px 700px at 18% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 70%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Signature flourish — slow lighthouse beam (fixed, scroll-modulated) ─── */
+.beam-wrap {
+  position: fixed; z-index: -1;
+  top: 50vh; left: 50vw;
+  width: 200vmax; height: 200vmax;
+  margin: -100vmax 0 0 -100vmax;
+  pointer-events: none;
+  transform: rotate(0deg);
+  transform-origin: center center;
+  will-change: transform;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+.beam-wrap::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 340deg,
+    rgba(245, 177, 79, 0.05) 348deg,
+    rgba(245, 177, 79, 0.16) 358deg,
+    rgba(248, 200, 130, 0.28) 360deg,
+    rgba(245, 177, 79, 0.16) 362deg,
+    rgba(245, 177, 79, 0.05) 372deg,
+    transparent 380deg
+  );
+  filter: blur(8px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .beam-wrap { opacity: 0.35; transform: rotate(20deg) !important; }
+}
+@media (prefers-color-scheme: light) {
+  .beam-wrap { mix-blend-mode: multiply; opacity: 0.18; }
+}
+
+/* ─── Typography primitives ─── */
+.display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 0.97;
+  text-wrap: balance;
+}
+.display-xl { font-size: clamp(56px, 9vw, 132px); }
+.display-lg { font-size: clamp(44px, 6.4vw, 92px); }
+.display-md { font-size: clamp(32px, 4.2vw, 60px); }
+.display-sm { font-size: clamp(24px, 2.8vw, 38px); }
+
+.serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--amber);
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(17px, 1.1vw + 11px, 22px);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  letter-spacing: -0.012em;
+  text-wrap: pretty;
+}
+
+.body-prose { color: var(--ink-soft); font-size: 15.5px; line-height: 1.65; max-width: 64ch; }
+.body-prose strong { color: var(--ink); font-weight: 600; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.eyebrow::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.kbd {
+  display: inline-grid; place-items: center;
+  min-width: 26px; height: 26px;
+  padding: 0 7px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline-bold);
+  background: var(--bg-card);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+/* ─── Layout primitives ─── */
+.container {
+  width: 100%; max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.section { padding: clamp(72px, 8vw, 128px) 0; position: relative; }
+.section-tight { padding: clamp(48px, 5vw, 80px) 0; }
+
+.head-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 32px;
+  margin-bottom: clamp(36px, 4.5vw, 64px);
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+.head-group h2 { margin-top: 16px; }
+.head-group .lead { max-width: 720px; margin-top: 16px; }
+.head-group .section-num { white-space: nowrap; padding-bottom: 4px; }
+@media (max-width: 720px) {
+  .head-group { grid-template-columns: 1fr; }
+  .head-group .section-num { order: -1; }
+}
+
+.rule-dot {
+  width: 100%; height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::before {
+  content: ""; position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.6), 0 0 0 4px var(--bg);
+  z-index: 1;
+}
+
+/* ─── Top nav ─── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: var(--maxw); margin: 0 auto;
+}
+.brand {
+  display: inline-flex; align-items: center; gap: 11px;
+  font-family: var(--font-display); font-weight: 600;
+  font-size: 17px; letter-spacing: -0.012em;
+}
+.brand-mark {
+  width: 26px; height: 26px; border-radius: 6px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 2px 10px rgba(0,0,0,0.3);
+}
+.nav-links {
+  display: flex; gap: 22px; align-items: center;
+  font-family: var(--font-mono); font-size: 11.5px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.nav-links a { transition: color var(--t-fast) var(--easing); }
+.nav-links a:hover { color: var(--amber); }
+@media (max-width: 880px) {
+  .nav-links { display: none; }
+}
+
+.nav-back {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  transition: color 160ms var(--easing);
+}
+.nav-back:hover { color: var(--amber); }
+
+/* ─── Reusable: macOS window chrome ─── */
+.mac-window {
+  background: var(--bg-window);
+  border: 1px solid var(--hairline-bold);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 40px 80px -30px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+.mac-titlebar {
+  position: relative;
+  height: 38px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  border-bottom: 1px solid var(--hairline);
+  display: flex; align-items: center;
+  padding: 0 14px;
+  gap: 8px;
+}
+.mac-traffic {
+  display: flex; gap: 8px;
+}
+.mac-traffic span {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.2) inset;
+}
+.mac-traffic span:nth-child(1) { background: #ff5f57; }
+.mac-traffic span:nth-child(2) { background: #ffbd2e; }
+.mac-traffic span:nth-child(3) { background: #28ca42; }
+.mac-titlebar .title {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: -0.005em;
+}
+
+/* ─── Reveal ─── */
+.reveal { opacity: 0; transform: translateY(14px); transition: opacity 640ms var(--easing-out), transform 640ms var(--easing-out); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal.d1.in { transition-delay: 60ms; }
+.reveal.d2.in { transition-delay: 120ms; }
+.reveal.d3.in { transition-delay: 180ms; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ─────────────────────────────────────────────────
+ * § 00 — Cover
+ * ───────────────────────────────────────────────── */
+.cover {
+  min-height: 92vh;
+  display: flex; align-items: center;
+  position: relative;
+  padding: clamp(60px, 8vw, 120px) 0;
+  overflow: hidden;
+}
+.cover-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(40px, 5vw, 80px);
+  align-items: center;
+  width: 100%;
+}
+@media (max-width: 960px) {
+  .cover-grid { grid-template-columns: 1fr; }
+}
+.cover h1 .accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--amber);
+  letter-spacing: -0.02em;
+}
+.cover-meta {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 8px 32px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.cover-meta dt {
+  color: var(--ink-faint);
+}
+.cover-meta dd {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .cover-meta { grid-template-columns: repeat(2, auto); }
+}
+
+/* Cover lighthouse glyph */
+.cover-glyph {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-width: 480px;
+  margin-left: auto;
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 36%, rgba(245, 177, 79, 0.22), transparent 70%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(11, 21, 48, 0.5), transparent 70%),
+    linear-gradient(180deg, #1c2a4f 0%, #0b1530 100%);
+  overflow: hidden;
+  display: grid; place-items: center;
+  box-shadow:
+    0 60px 100px -30px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(255,255,255,0.05) inset;
+}
+.cover-glyph::before {
+  /* concentric watch-ring sweep */
+  content: ""; position: absolute; inset: -20%;
+  background: conic-gradient(from 0deg, transparent 0deg, transparent 350deg, rgba(245,177,79,0.18) 358deg, rgba(245,177,79,0.3) 360deg, rgba(245,177,79,0.18) 362deg, transparent 370deg, transparent 720deg);
+  filter: blur(4px);
+  animation: ring-spin 18s linear infinite;
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cover-glyph::before { animation: none; }
+}
+@keyframes ring-spin {
+  to { transform: rotate(360deg); }
+}
+.cover-glyph .glyph {
+  width: 56%; height: auto;
+  filter: drop-shadow(0 18px 32px rgba(245, 177, 79, 0.25));
+  position: relative; z-index: 1;
+}
+.cover-glyph .lantern-pulse {
+  position: absolute;
+  top: 26%; left: 50%;
+  width: 9px; height: 9px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 16px var(--amber), 0 0 40px rgba(245,177,79,0.6);
+  animation: lantern-pulse 3.4s ease-in-out infinite;
+}
+@keyframes lantern-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ─── Section index — table of contents ─── */
+.toc {
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: 16px 0;
+  background: color-mix(in oklab, var(--bg) 80%, var(--navy));
+}
+.toc-list {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+}
+@media (max-width: 1000px) {
+  .toc-list { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .toc-list { grid-template-columns: repeat(2, 1fr); }
+}
+.toc-list a {
+  padding: 12px 14px;
+  display: flex; flex-direction: column;
+  gap: 2px;
+  border-right: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  transition: background var(--t-fast) var(--easing), color var(--t-fast) var(--easing);
+  position: relative;
+}
+.toc-list a:last-child { border-right: none; }
+.toc-list a:hover {
+  background: var(--bg-card);
+  color: var(--ink);
+}
+.toc-list a:hover .toc-name { color: var(--amber); }
+.toc-list a .toc-num { color: var(--amber); font-weight: 600; }
+.toc-list a .toc-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  text-transform: none;
+  transition: color var(--t-fast) var(--easing);
+}
+
+/* ─────────────────────────────────────────────────
+ * § 01 — Design tokens
+ * ───────────────────────────────────────────────── */
+.tokens-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+@media (max-width: 920px) { .tokens-grid { grid-template-columns: repeat(6, 1fr); } }
+
+.token-card {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--bg-card);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.token-color { grid-column: span 3; }
+@media (max-width: 920px) { .token-color { grid-column: span 3; } }
+@media (max-width: 600px) { .token-color { grid-column: span 6; } }
+
+.token-swatch {
+  aspect-ratio: 5 / 4;
+  position: relative;
+  background: var(--swatch);
+  border-bottom: 1px solid var(--hairline);
+}
+.token-swatch.has-stroke::after {
+  content: ""; position: absolute; inset: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}
+.token-meta {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.token-name {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+}
+.token-hex {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Type specimens */
+.tokens-section {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .tokens-section { grid-template-columns: 1fr; }
+}
+.tokens-section h3 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
+  padding-top: 12px;
+}
+
+.type-stack {
+  display: grid; gap: 28px;
+}
+.type-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--hairline);
+}
+.type-row:last-child { border-bottom: none; padding-bottom: 0; }
+.type-spec {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.spacing-stack { display: grid; gap: 8px; }
+.spacing-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+.spacing-row .label {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.spacing-bar {
+  height: 12px;
+  background: var(--amber);
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+.easing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 640px) { .easing-grid { grid-template-columns: 1fr; } }
+.easing-card {
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.easing-card svg { width: 100%; height: auto; display: block; }
+.easing-card .label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+.easing-card .label strong {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.008em;
+}
+
+/* ─────────────────────────────────────────────────
+ * § 02 — Menubar (every state)
+ * ───────────────────────────────────────────────── */
+.menubar-states {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+@media (max-width: 880px) { .menubar-states { grid-template-columns: repeat(2, 1fr); } }
+
+.menubar-state {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-card);
+  display: flex; flex-direction: column;
+}
+.menubar-strip-mock {
+  background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+  height: 28px;
+  display: flex; align-items: center;
+  padding: 0 14px;
+  gap: 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.4);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.8);
+  position: relative;
+}
+.menubar-strip-mock::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 40%);
+}
+.menubar-strip-mock .apple {
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+}
+.menubar-strip-mock .right {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: rgba(255,255,255,0.72);
+}
+
+/* The lighthouse menubar shield as inline SVG */
+.menubar-shield {
+  width: 18px; height: 18px;
+  display: inline-grid; place-items: center;
+}
+.menubar-shield svg { width: 18px; height: 18px; }
+
+.menubar-state-body {
+  padding: 22px 18px 18px;
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,0.18));
+}
+.menubar-state-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.menubar-state-desc {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.menubar-state-pip {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.menubar-state-pip::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--pip-color, var(--amber));
+  box-shadow: 0 0 8px var(--pip-color, var(--amber));
+}
+
+/* Menubar dropdown */
+.dropdown-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 920px) { .dropdown-frame { grid-template-columns: 1fr; } }
+
+.macos-menubar-pop {
+  background: rgba(28, 36, 60, 0.92);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow:
+    0 40px 80px -25px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(0,0,0,0.4);
+  font-family: var(--font-text);
+  font-size: 13px;
+  color: #f0f1f5;
+  width: 320px;
+}
+@media (prefers-color-scheme: light) {
+  .macos-menubar-pop {
+    background: rgba(245, 244, 240, 0.92);
+    border-color: rgba(0,0,0,0.1);
+    color: #15213b;
+  }
+}
+.mp-header {
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 5px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-header { border-bottom-color: rgba(0,0,0,0.07); }
+}
+.mp-header-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  margin-bottom: 3px;
+}
+.mp-header-status {
+  font-size: 11px;
+  color: rgba(240,241,245,0.65);
+  display: flex; align-items: center; gap: 6px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-header-status { color: rgba(21, 33, 59, 0.6); }
+}
+.mp-header-status .pip {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(52, 199, 89, 0.6);
+}
+.mp-item {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: default;
+}
+.mp-item.is-primary {
+  background: rgba(245, 177, 79, 0.16);
+  color: var(--amber);
+  font-weight: 500;
+}
+.mp-item .ico {
+  display: grid; place-items: center;
+  color: rgba(240,241,245,0.5);
+  font-size: 11px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-item .ico { color: rgba(21, 33, 59, 0.5); }
+}
+.mp-item.is-primary .ico { color: var(--amber); }
+.mp-item .kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(240,241,245,0.5);
+  background: none;
+  border: none;
+  padding: 0;
+  letter-spacing: 0;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-item .kbd { color: rgba(21, 33, 59, 0.5); }
+}
+.mp-sep {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 5px 4px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-sep { background: rgba(0,0,0,0.07); }
+}
+.mp-submenu-arrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(240,241,245,0.45);
+}
+.mp-last-event {
+  padding: 8px 10px 6px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  margin-top: 5px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-last-event { border-top-color: rgba(0,0,0,0.07); }
+}
+.mp-last-event-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(240,241,245,0.45);
+  margin-bottom: 4px;
+}
+.mp-last-event-content {
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.mp-last-event-content strong {
+  font-weight: 500;
+  color: rgba(240,241,245,0.9);
+}
+.mp-last-event-content .meta {
+  display: block;
+  color: rgba(240,241,245,0.55);
+  font-size: 10.5px;
+  margin-top: 1px;
+}
+.mp-last-event-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(240,241,245,0.45);
+  text-align: right;
+  white-space: nowrap;
+  padding-top: 2px;
+}
+@media (prefers-color-scheme: light) {
+  .mp-last-event-content strong { color: #15213b; }
+  .mp-last-event-content .meta { color: rgba(21,33,59,0.55); }
+  .mp-last-event-time { color: rgba(21, 33, 59, 0.45); }
+  .mp-last-event-label { color: rgba(21,33,59,0.45); }
+}
+
+.dropdown-notes {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+.dropdown-notes h4 {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  margin-bottom: 6px;
+  margin-top: 22px;
+}
+.dropdown-notes h4:first-child { margin-top: 0; }
+.dropdown-notes p { margin-bottom: 10px; }
+.dropdown-notes code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-card);
+  border: 1px solid var(--hairline);
+  color: var(--amber);
+}
+
+/* ─────────────────────────────────────────────────
+ * § 03 — Onboarding (5-step flow)
+ * ───────────────────────────────────────────────── */
+.onboard-flow {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+@media (max-width: 1100px) { .onboard-flow { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .onboard-flow { grid-template-columns: 1fr; } }
+
+.onboard-card {
+  border-radius: 16px;
+  background: linear-gradient(180deg, #1c2a4f 0%, #11203f 100%);
+  border: 1px solid var(--hairline-bold);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 50px -20px rgba(0,0,0,0.5);
+  position: relative;
+  color: #fff;
+}
+.onboard-card-step {
+  position: absolute;
+  top: 14px; right: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4);
+}
+.onboard-progress {
+  display: flex; gap: 4px;
+  padding: 14px 16px 0;
+}
+.onboard-progress span {
+  width: 18px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.18);
+}
+.onboard-progress span.active {
+  background: var(--amber);
+  box-shadow: 0 0 6px rgba(245,177,79,0.55);
+}
+.onboard-body {
+  padding: 28px 22px 22px;
+  flex: 1;
+  display: flex; flex-direction: column;
+  text-align: center;
+  gap: 12px;
+}
+.onboard-h {
+  font-family: var(--font-display);
+  font-size: 17px; font-weight: 600; letter-spacing: -0.015em;
+  margin-top: 4px;
+}
+.onboard-sub {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.55;
+}
+.onboard-cta {
+  margin-top: auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--amber);
+  color: var(--navy-deep);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  align-self: stretch;
+  text-align: center;
+}
+.onboard-cta.ghost {
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Welcome glyph */
+.onboard-hero-glyph {
+  width: 80px; height: 80px;
+  margin: 12px auto 4px;
+  border-radius: 18px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 12px 28px rgba(245, 177, 79, 0.18);
+}
+.onboard-feature-list {
+  display: grid; gap: 8px;
+  text-align: left;
+  margin-top: 8px;
+}
+.onboard-feature {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 11px;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.45;
+}
+.onboard-feature .ico {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: rgba(245,177,79,0.12);
+  color: var(--amber);
+  display: grid; place-items: center;
+  font-size: 10px;
+}
+.onboard-feature strong {
+  color: #fff; font-weight: 600;
+  display: block;
+  font-size: 11.5px;
+  margin-bottom: 1px;
+}
+
+/* Permission rows */
+.onboard-perm-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 11.5px;
+}
+.onboard-perm-row:last-of-type { border-bottom: none; }
+.onboard-perm-row .perm-ico {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  display: grid; place-items: center;
+  font-size: 13px;
+}
+.onboard-perm-row .perm-name {
+  color: #fff; font-weight: 500; font-size: 12px;
+}
+.onboard-perm-row .perm-pill {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.perm-pill.granted { background: rgba(52, 199, 89, 0.16); color: #34c759; }
+.perm-pill.deferred { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+.perm-pill.pending { background: rgba(245, 177, 79, 0.16); color: var(--amber); }
+
+/* Hotkey reveal */
+.onboard-hotkey {
+  display: flex; gap: 6px;
+  justify-content: center;
+  margin: 18px 0;
+}
+.onboard-hotkey .key {
+  width: 36px; height: 44px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--amber);
+  box-shadow: 0 4px 0 rgba(255,255,255,0.04) inset, 0 2px 0 rgba(0,0,0,0.3);
+}
+
+/* Hear alarm */
+.onboard-speaker {
+  margin: 14px auto;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(255,69,58,0.25), transparent 70%), rgba(255,69,58,0.1);
+  border: 1px solid rgba(255,69,58,0.3);
+  display: grid; place-items: center;
+  font-size: 32px;
+  color: #ff8478;
+}
+.onboard-wave {
+  height: 30px;
+  margin: 8px 0 4px;
+  position: relative;
+}
+.onboard-wave svg { display: block; width: 100%; height: 100%; }
+
+/* Done */
+.onboard-check {
+  width: 80px; height: 80px;
+  margin: 12px auto 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, rgba(245,177,79,0.18), transparent 70%);
+  display: grid; place-items: center;
+  font-size: 40px;
+  color: var(--amber);
+}
+.onboard-pills {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  justify-content: center;
+  margin: 8px auto 4px;
+}
+.onboard-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.78);
+}
+.onboard-pill.amber {
+  background: rgba(245,177,79,0.1);
+  border-color: rgba(245,177,79,0.3);
+  color: var(--amber);
+}
+
+/* ─────────────────────────────────────────────────
+ * § 04 — Settings (sidebar + tabs)
+ * ───────────────────────────────────────────────── */
+.settings-frame {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--hairline-bold);
+  overflow: hidden;
+  background: #1a2440;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  box-shadow: 0 50px 100px -30px rgba(0,0,0,0.6);
+  color: #f0f1f5;
+}
+.settings-frame.compact { grid-template-columns: 180px 1fr; }
+@media (max-width: 760px) { .settings-frame { grid-template-columns: 1fr; } .set-sidebar { display: none; } }
+
+.set-titlebar {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 38px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; padding: 0 14px; gap: 8px;
+}
+.set-titlebar .title {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  color: rgba(255,255,255,0.65);
+}
+
+.set-sidebar {
+  background: rgba(0,0,0,0.22);
+  padding: 10px 8px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  font-size: 12px;
+}
+.set-side-item {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: rgba(255,255,255,0.78);
+  margin-bottom: 1px;
+}
+.set-side-item .tile {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  display: grid; place-items: center;
+  color: #fff; font-size: 11px;
+  font-weight: 600;
+}
+.set-side-item.is-active {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-weight: 500;
+}
+
+.set-content {
+  padding: 26px 28px;
+  min-height: 360px;
+  position: relative;
+}
+.set-h1 {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 600;
+  letter-spacing: -0.018em;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.set-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 20px;
+  line-height: 1.55;
+}
+.set-sec-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin: 18px 0 10px;
+}
+
+/* Sound rows */
+.set-sound-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.set-sound-row:last-of-type { border-bottom: none; }
+.set-sound-row .sico {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: var(--amber);
+  display: grid; place-items: center;
+  font-size: 12px;
+  color: var(--navy-deep);
+  font-weight: 700;
+}
+.set-sound-row .sico.alt {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.6);
+}
+.set-sound-title {
+  font-size: 13px; color: #fff; font-weight: 500;
+  line-height: 1.3;
+}
+.set-sound-blurb {
+  font-size: 11px; color: rgba(255,255,255,0.55);
+  margin-top: 2px; line-height: 1.4;
+}
+.set-sound-play {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: grid; place-items: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 10px;
+}
+.set-sound-tick {
+  width: 18px;
+  text-align: center;
+  font-weight: 700;
+  color: rgba(255,255,255,0.15);
+}
+.set-sound-row.is-on .set-sound-tick { color: var(--amber); }
+
+/* Mode cards */
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+@media (max-width: 920px) { .mode-cards { grid-template-columns: repeat(2, 1fr); } }
+
+.mode-card {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.025);
+  padding: 14px 14px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 168px;
+}
+.mode-card .bars {
+  display: flex; gap: 3px; margin-bottom: 4px;
+}
+.mode-card .bars span {
+  flex: 1; height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,0.1);
+}
+.mode-card[data-fierce="1"] .bars span:nth-child(-n+1),
+.mode-card[data-fierce="2"] .bars span:nth-child(-n+2),
+.mode-card[data-fierce="3"] .bars span:nth-child(-n+3),
+.mode-card[data-fierce="4"] .bars span:nth-child(-n+4),
+.mode-card[data-fierce="5"] .bars span:nth-child(-n+5) {
+  background: var(--amber);
+  box-shadow: 0 0 4px rgba(245,177,79,0.5);
+}
+.mode-card .mode-spec {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.mode-card h4 {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 600;
+  letter-spacing: -0.012em;
+  color: #fff;
+}
+.mode-card p {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.45;
+}
+.mode-card .specs {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.42);
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+/* Auto-arm + cloud */
+.autoarm-rules {
+  display: grid; gap: 6px;
+}
+.autoarm-rule {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.autoarm-rule .rico {
+  width: 32px; height: 32px;
+  border-radius: 7px;
+  background: var(--amber);
+  color: var(--navy-deep);
+  display: grid; place-items: center;
+  font-size: 14px;
+}
+.autoarm-rule .rname {
+  font-size: 13px; color: #fff; font-weight: 500;
+}
+.autoarm-rule .rdesc {
+  font-size: 11px; color: rgba(255,255,255,0.55);
+  margin-top: 2px;
+}
+.toggle {
+  width: 30px; height: 18px;
+  border-radius: 999px;
+  background: var(--green);
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+}
+.toggle::after {
+  content: ""; position: absolute;
+  top: 1px; left: 13px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle.off { background: rgba(255,255,255,0.18); }
+.toggle.off::after { left: 1px; }
+.autoarm-remove {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.4);
+  display: grid; place-items: center;
+  font-size: 11px;
+}
+
+.cloud-card {
+  margin-top: 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.025);
+  padding: 16px;
+}
+.cloud-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.cloud-head h5 {
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  color: #fff;
+  letter-spacing: -0.005em;
+}
+.cloud-picker {
+  display: flex; gap: 4px;
+  padding: 3px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 6px;
+  font-size: 11px;
+}
+.cloud-picker span {
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: rgba(255,255,255,0.6);
+}
+.cloud-picker span.on {
+  background: var(--amber);
+  color: var(--navy-deep);
+  font-weight: 500;
+}
+.cloud-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 540px) { .cloud-fields { grid-template-columns: 1fr; } }
+.cloud-field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 6px;
+}
+.cloud-field input {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+/* Defenses */
+.def-cat {
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.022);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.def-cat-head {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: default;
+}
+.def-cat-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 12px;
+}
+.def-cat-name {
+  font-size: 13px; color: #fff; font-weight: 500;
+}
+.def-cat-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.04em;
+}
+.def-status-pip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+.def-status-pip.ok { background: rgba(52, 199, 89, 0.15); color: #34c759; }
+.def-status-pip.warn { background: rgba(255, 159, 10, 0.18); color: #ff9f0a; }
+.def-status-pip.fail { background: rgba(255, 69, 58, 0.18); color: #ff453a; }
+
+.def-cat-body {
+  padding: 4px 14px 12px 54px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.15);
+}
+.def-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.05);
+  font-size: 12px;
+}
+.def-row:last-child { border-bottom: none; }
+.def-row .check {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 9px;
+  font-weight: 700;
+}
+.def-row .check.pass { background: rgba(52, 199, 89, 0.18); color: #34c759; }
+.def-row .check.warn { background: rgba(255, 159, 10, 0.22); color: #ff9f0a; }
+.def-row-title { color: rgba(255,255,255,0.82); }
+.def-row-fix {
+  font-size: 11px;
+  color: var(--amber);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* ─────────────────────────────────────────────────
+ * § 05 — Event Log
+ * ───────────────────────────────────────────────── */
+.evlog-frame {
+  border: 1px solid var(--hairline-bold);
+  border-radius: 14px;
+  background: #16223e;
+  overflow: hidden;
+  box-shadow: 0 50px 100px -30px rgba(0,0,0,0.6);
+  color: #f0f1f5;
+}
+.evlog-titlebar {
+  position: relative;
+  height: 38px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; padding: 0 14px; gap: 8px;
+}
+.evlog-titlebar .title {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-family: var(--font-display); font-size: 13px; font-weight: 600;
+  color: rgba(255,255,255,0.65);
+}
+.evlog-toolbar {
+  padding: 16px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+.evlog-filters {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.evlog-filter {
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-family: var(--font-text);
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.evlog-filter.on {
+  background: var(--amber);
+  color: var(--navy-deep);
+  border-color: var(--amber);
+  font-weight: 500;
+}
+.evlog-search {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  min-width: 200px;
+}
+.evlog-export {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--amber);
+  color: var(--navy-deep);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--amber);
+}
+
+.evlog-list {
+  padding: 8px 22px 22px;
+  display: grid;
+  gap: 2px;
+}
+.evlog-item {
+  display: grid;
+  grid-template-columns: 92px 16px 1fr auto;
+  align-items: start;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: relative;
+}
+.evlog-item:last-of-type { border-bottom: none; }
+.evlog-time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.02em;
+  padding-top: 2px;
+}
+.evlog-time .day {
+  display: block;
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.35);
+  margin-top: 2px;
+}
+.evlog-pip-wrap {
+  display: flex; flex-direction: column;
+  align-items: center;
+  height: 100%;
+  padding-top: 6px;
+}
+.evlog-pip {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--evpip, #f5b14f);
+  box-shadow: 0 0 8px var(--evpip, #f5b14f);
+  z-index: 1;
+}
+.evlog-pip-line {
+  width: 1px;
+  flex: 1;
+  background: rgba(255,255,255,0.08);
+  margin-top: 4px;
+}
+.evlog-content { display: flex; flex-direction: column; gap: 4px; }
+.evlog-trans {
+  font-family: var(--font-display);
+  font-size: 14px; font-weight: 500;
+  color: #fff;
+  letter-spacing: -0.005em;
+}
+.evlog-trans strong { color: var(--amber); font-weight: 600; }
+.evlog-meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.55);
+}
+.evlog-meta-item {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.evlog-meta-item::before {
+  content: ""; width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+}
+.evlog-action {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.4);
+  padding-top: 4px;
+}
+
+/* Expanded event */
+.evlog-item.is-open { padding-bottom: 22px; }
+.evlog-detail {
+  grid-column: 3 / -1;
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 760px) { .evlog-detail { grid-template-columns: 1fr; } }
+.evlog-detail-card {
+  background: rgba(0,0,0,0.22);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 12px;
+}
+.evlog-detail-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 8px;
+  display: block;
+}
+.evlog-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.evlog-photo {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 40%, rgba(245,177,79,0.5), transparent 65%),
+    #1c2a4f;
+  position: relative;
+  overflow: hidden;
+}
+.evlog-photo.more {
+  background: rgba(255,255,255,0.05);
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+}
+
+.evlog-audio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.evlog-audio-play {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--navy-deep);
+  display: grid; place-items: center;
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+.evlog-audio-wave {
+  flex: 1;
+  display: flex; align-items: center; gap: 1.5px;
+  height: 26px;
+}
+.evlog-audio-wave span {
+  flex: 1;
+  background: rgba(245,177,79,0.55);
+  border-radius: 1px;
+  min-width: 2px;
+}
+.evlog-audio-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+}
+
+.evlog-map-tile {
+  height: 110px;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  background: #2a3a64;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.evlog-map-pin {
+  position: absolute;
+  left: 52%; top: 48%;
+  width: 14px; height: 14px;
+  border-radius: 50% 50% 50% 0;
+  background: #ff453a;
+  transform: rotate(-45deg);
+  box-shadow: 0 4px 12px rgba(255, 69, 58, 0.5);
+}
+.evlog-map-pin::after {
+  content: ""; position: absolute;
+  left: 4px; top: 4px;
+  width: 6px; height: 6px;
+  border-radius: 50%; background: #fff;
+}
+.evlog-map-meta {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 6px 10px;
+  background: rgba(11, 21, 48, 0.75);
+  backdrop-filter: blur(8px);
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.78);
+  display: flex; justify-content: space-between;
+}
+
+.evlog-chain {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.02em;
+  line-height: 1.65;
+}
+.evlog-chain strong { color: var(--amber); font-weight: 500; }
+.evlog-chain-ok {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(52, 199, 89, 0.16);
+  color: #34c759;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* ─────────────────────────────────────────────────
+ * § 06 — Arming overlay
+ * ───────────────────────────────────────────────── */
+.arming-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 760px) { .arming-row { grid-template-columns: 1fr; } }
+.arming-frame {
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--hairline-bold);
+}
+.arming-frame .scene {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+}
+.arming-frame.arm .scene {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 36%, rgba(245, 177, 79, 0.32), transparent 60%),
+    radial-gradient(ellipse 100% 80% at 50% 100%, rgba(11, 21, 48, 0.6), transparent 60%),
+    linear-gradient(180deg, #1c2a4f 0%, #0b1530 100%);
+}
+.arming-frame.disarm .scene {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 36%, rgba(167, 198, 237, 0.18), transparent 60%),
+    linear-gradient(180deg, #1c2a4f 0%, #0b1530 100%);
+  opacity: 0.85;
+}
+.arming-frame .lighthouse {
+  width: 30%; height: auto;
+  filter: drop-shadow(0 18px 40px rgba(245, 177, 79, 0.35));
+  position: relative; z-index: 1;
+}
+.arming-frame.disarm .lighthouse {
+  filter: drop-shadow(0 18px 40px rgba(167, 198, 237, 0.18));
+  opacity: 0.8;
+}
+.arming-caption {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 14%;
+  text-align: center;
+  color: #fff;
+  z-index: 2;
+}
+.arming-caption .heading {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.arming-caption .sub {
+  display: block;
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.005em;
+}
+.arming-frame.disarm .arming-caption {
+  color: rgba(255,255,255,0.78);
+}
+.arming-state-tag {
+  position: absolute;
+  top: 14px; left: 14px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(11, 21, 48, 0.7);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+  z-index: 3;
+}
+.arming-state-tag.amber { color: var(--amber); border-color: rgba(245,177,79,0.4); }
+
+/* ─────────────────────────────────────────────────
+ * § 07 — Evidence delivery
+ * ───────────────────────────────────────────────── */
+.delivery-row {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (max-width: 920px) { .delivery-row { grid-template-columns: 1fr; } }
+
+/* iPhone frame */
+.iphone-frame {
+  width: 380px;
+  max-width: 100%;
+  aspect-ratio: 9 / 19.5;
+  border-radius: 52px;
+  background: #16161c;
+  border: 8px solid #1a1a22;
+  padding: 14px 10px 18px;
+  position: relative;
+  box-shadow:
+    0 40px 80px -30px rgba(0,0,0,0.7),
+    0 0 0 2px rgba(255,255,255,0.04) inset;
+  display: flex; flex-direction: column;
+}
+.iphone-island {
+  width: 110px; height: 32px;
+  background: #000;
+  border-radius: 999px;
+  margin: 0 auto 10px;
+}
+.iphone-status {
+  display: flex; justify-content: space-between;
+  padding: 0 18px;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.iphone-status .right { letter-spacing: 0.04em; font-size: 11px; opacity: 0.85; }
+.iphone-screen {
+  flex: 1;
+  background: linear-gradient(180deg, #0b1530 0%, #161e3d 100%);
+  border-radius: 32px;
+  margin: 0 4px;
+  padding: 18px 14px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.iphone-thread-header {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 16px;
+}
+.iphone-thread-header .ts {
+  display: block;
+  font-weight: 400;
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 2px;
+}
+
+.imsg-bubble {
+  background: #0a84ff;
+  color: #fff;
+  border-radius: 18px 18px 4px 18px;
+  padding: 10px 14px;
+  margin-left: auto;
+  max-width: 86%;
+  font-size: 13.5px;
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+.imsg-bubble strong { font-weight: 600; }
+.imsg-photos {
+  margin-left: auto;
+  max-width: 86%;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.imsg-photo {
+  aspect-ratio: 1;
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 40%, rgba(245, 177, 79, 0.6), transparent 65%),
+    #1c2a4f;
+  position: relative;
+}
+.imsg-photo:nth-child(2) {
+  background:
+    radial-gradient(ellipse 50% 55% at 60% 50%, rgba(248, 200, 130, 0.5), transparent 70%),
+    #2a3a64;
+}
+.imsg-photo:nth-child(3) {
+  background:
+    radial-gradient(ellipse 55% 60% at 40% 45%, rgba(245, 177, 79, 0.55), transparent 65%),
+    #1a2a52;
+}
+.imsg-photo:nth-child(4) {
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 50%, rgba(248, 200, 130, 0.45), transparent 70%),
+    #21305c;
+}
+
+.imsg-map {
+  margin-left: auto;
+  max-width: 86%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #2a3a64;
+  margin-bottom: 6px;
+}
+.imsg-map-canvas {
+  height: 92px;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 14px 14px;
+  position: relative;
+}
+.imsg-map-pin {
+  position: absolute;
+  left: 55%; top: 48%;
+  width: 14px; height: 14px;
+  border-radius: 50% 50% 50% 0;
+  background: #ff453a;
+  transform: rotate(-45deg);
+  box-shadow: 0 4px 10px rgba(255,69,58,0.5);
+}
+.imsg-map-pin::after {
+  content: ""; position: absolute;
+  left: 4px; top: 4px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+.imsg-map-meta {
+  padding: 8px 11px;
+  font-size: 11.5px;
+  color: #fff;
+  background: rgba(0,0,0,0.3);
+}
+.imsg-map-meta strong { display: block; margin-bottom: 1px; }
+.imsg-delivered {
+  text-align: right;
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  margin-top: 4px;
+}
+
+/* Mail.app window */
+.mail-window {
+  border-radius: 12px;
+  border: 1px solid var(--hairline-bold);
+  background: #16223e;
+  overflow: hidden;
+  box-shadow: 0 40px 80px -30px rgba(0,0,0,0.5);
+}
+.mail-tb {
+  height: 40px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center;
+  padding: 0 14px; gap: 14px;
+  position: relative;
+}
+.mail-tb .title {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 12.5px; font-weight: 600;
+  color: rgba(255,255,255,0.6);
+}
+.mail-tools {
+  margin-left: auto;
+  display: flex; gap: 8px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-family: var(--font-mono);
+}
+
+.mail-body {
+  padding: 22px 28px;
+}
+.mail-meta {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 4px 16px;
+  font-size: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 18px;
+}
+.mail-meta dt {
+  color: rgba(255,255,255,0.5);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  padding-top: 2px;
+}
+.mail-meta dd {
+  color: rgba(255,255,255,0.85);
+}
+.mail-meta strong { color: #fff; font-weight: 500; }
+.mail-subject {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: #fff;
+  margin-bottom: 14px;
+}
+.mail-content {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.78);
+}
+.mail-content p { margin-bottom: 10px; }
+.mail-attach-list {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255,255,255,0.1);
+}
+.mail-attach-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 8px;
+}
+.mail-attach {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.05);
+  font-size: 12px;
+}
+.mail-attach:last-child { border-bottom: none; }
+.mail-attach .att-icon {
+  width: 30px; height: 30px;
+  border-radius: 6px;
+  background: rgba(245, 177, 79, 0.15);
+  color: var(--amber);
+  display: grid; place-items: center;
+  font-size: 11px;
+}
+.mail-attach .att-name {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: #fff;
+}
+.mail-attach .att-size {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.45);
+}
+
+/* ─────────────────────────────────────────────────
+ * § 08 — Police PDF
+ * ───────────────────────────────────────────────── */
+.pdf-paper {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #f4eee1;
+  color: #0b1530;
+  padding: clamp(36px, 4vw, 64px);
+  border-radius: 4px;
+  box-shadow:
+    0 60px 100px -30px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(0,0,0,0.08);
+  font-family: var(--font-text);
+  font-size: 13px;
+  line-height: 1.55;
+  position: relative;
+}
+.pdf-paper::before {
+  content: ""; position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, #1c2a4f, var(--amber));
+}
+.pdf-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  border-bottom: 2px solid #0b1530;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+}
+.pdf-head h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: #0b1530;
+}
+.pdf-head .sub {
+  font-size: 11.5px;
+  color: rgba(11, 21, 48, 0.6);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.pdf-seal {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse 50% 50% at 50% 35%, var(--amber), transparent 70%),
+    #1c2a4f;
+  display: grid; place-items: center;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+.pdf-meta-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 6px 22px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  margin-bottom: 26px;
+}
+@media (max-width: 600px) {
+  .pdf-meta-grid { grid-template-columns: auto 1fr; }
+}
+.pdf-meta-grid dt {
+  color: rgba(11, 21, 48, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+.pdf-meta-grid dd { color: #0b1530; font-weight: 500; }
+
+.pdf-h {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #0b1530;
+  border-bottom: 1px solid rgba(11, 21, 48, 0.25);
+  padding-bottom: 4px;
+  margin: 22px 0 10px;
+}
+.pdf-evt-line {
+  display: grid;
+  grid-template-columns: 100px 1fr 90px;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 5px 0;
+  border-bottom: 1px dashed rgba(11, 21, 48, 0.12);
+}
+.pdf-evt-line:last-child { border-bottom: none; }
+.pdf-evt-line .ts { color: rgba(11, 21, 48, 0.65); }
+.pdf-evt-line .ev { color: #0b1530; font-weight: 500; }
+.pdf-evt-line .hash { color: #d99431; font-weight: 600; text-align: right; }
+
+.pdf-photo-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.pdf-photo-tile {
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 40%, rgba(245,177,79,0.5), transparent 65%),
+    #1c2a4f;
+  border-radius: 4px;
+  border: 1px solid rgba(11,21,48,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.pdf-photo-tile span {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(11, 21, 48, 0.78);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  padding: 2px 6px;
+  letter-spacing: 0.04em;
+}
+
+.pdf-chain-block {
+  margin: 18px 0 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(11, 21, 48, 0.2);
+  background: rgba(28, 42, 79, 0.04);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.7;
+  color: rgba(11, 21, 48, 0.78);
+  letter-spacing: 0.02em;
+}
+.pdf-chain-block strong { color: #0b1530; font-weight: 500; }
+.pdf-chain-block .h { color: #d99431; }
+.pdf-verified {
+  margin-top: 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: rgba(45, 125, 58, 0.14);
+  color: #2d7d3a;
+  border: 1px solid rgba(45, 125, 58, 0.3);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pdf-foot {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(11, 21, 48, 0.18);
+  display: flex; justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(11, 21, 48, 0.55);
+  letter-spacing: 0.04em;
+}
+.pdf-signing {
+  margin-top: 26px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(11, 21, 48, 0.15);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+}
+.pdf-sig {
+  font-size: 10.5px;
+  color: rgba(11, 21, 48, 0.6);
+}
+.pdf-sig .sig-line {
+  height: 1px;
+  background: rgba(11, 21, 48, 0.3);
+  margin-bottom: 6px;
+  margin-top: 30px;
+}
+
+/* ─────────────────────────────────────────────────
+ * § 09 — iOS companion
+ * ───────────────────────────────────────────────── */
+.ios-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: end;
+}
+@media (max-width: 920px) { .ios-row { grid-template-columns: 1fr; } }
+
+.ios-frame {
+  max-width: 320px;
+  margin: 0 auto;
+  aspect-ratio: 9 / 19.5;
+  border-radius: 44px;
+  background: #16161c;
+  border: 7px solid #1a1a22;
+  padding: 11px 8px 14px;
+  position: relative;
+  box-shadow:
+    0 40px 80px -30px rgba(0,0,0,0.7),
+    0 0 0 1.5px rgba(255,255,255,0.04) inset;
+  display: flex; flex-direction: column;
+}
+.ios-island {
+  width: 88px; height: 26px;
+  background: #000;
+  border-radius: 999px;
+  margin: 0 auto 8px;
+}
+.ios-status {
+  display: flex; justify-content: space-between;
+  padding: 0 14px;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.ios-screen {
+  flex: 1;
+  background: linear-gradient(180deg, #0b1530 0%, #16223e 100%);
+  border-radius: 26px;
+  margin: 0 3px;
+  padding: 18px 12px 14px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  color: #f0f1f5;
+}
+.ios-screen .nav-h {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-bottom: 12px;
+}
+
+/* Status screen */
+.ios-status-glyph {
+  width: 88px; height: 88px;
+  margin: 14px auto 8px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  border-radius: 22px;
+  filter: drop-shadow(0 12px 28px rgba(245, 177, 79, 0.25));
+}
+.ios-status-h {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.ios-status-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  margin-bottom: 22px;
+}
+.ios-disarm {
+  margin-top: auto;
+  padding: 13px;
+  border-radius: 14px;
+  background: var(--amber);
+  color: var(--navy-deep);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  box-shadow: 0 8px 24px -8px rgba(245,177,79,0.55);
+}
+.ios-last-event {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px;
+  font-size: 11.5px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.ios-last-event strong { color: #fff; font-weight: 500; display: block; }
+.ios-last-event span { color: rgba(255,255,255,0.45); font-family: var(--font-mono); font-size: 10px; }
+
+/* Events screen */
+.ios-event-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 12px;
+}
+.ios-event-row:last-child { border-bottom: none; }
+.ios-event-pip {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+.ios-event-pip.armed { background: #34c759; box-shadow: 0 0 6px rgba(52,199,89,0.6); }
+.ios-event-pip.grace { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.ios-event-pip.alarm { background: #ff453a; box-shadow: 0 0 8px rgba(255,69,58,0.7); }
+.ios-event-pip.idle  { background: rgba(255,255,255,0.3); }
+.ios-event-row .trans { font-weight: 500; color: #fff; line-height: 1.3; }
+.ios-event-row .meta {
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+.ios-event-row .ts {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(255,255,255,0.5);
+  text-align: right;
+}
+
+/* Map screen */
+.ios-map {
+  flex: 1;
+  margin: -14px -12px 0;
+  position: relative;
+  background: #1c2a4f;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+  overflow: hidden;
+}
+.ios-map-roads {
+  position: absolute; inset: 0;
+}
+.ios-map-roads::before, .ios-map-roads::after {
+  content: ""; position: absolute;
+}
+.ios-map-roads::before {
+  top: 38%; left: -10%; right: -10%;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  transform: rotate(-2deg);
+}
+.ios-map-roads::after {
+  left: 56%; top: -10%; bottom: -10%;
+  width: 4px;
+  background: rgba(255,255,255,0.06);
+}
+.ios-map-pin {
+  position: absolute;
+  top: 38%; left: 56%;
+  transform: translate(-50%, -100%);
+  width: 18px; height: 18px;
+  border-radius: 50% 50% 50% 0;
+  background: #ff453a;
+  transform: translate(-50%, -100%) rotate(-45deg);
+  box-shadow: 0 6px 14px rgba(255,69,58,0.6);
+}
+.ios-map-pin::after {
+  content: ""; position: absolute;
+  left: 5px; top: 5px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #fff;
+}
+.ios-map-pulse {
+  position: absolute;
+  top: 38%; left: 56%;
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: rgba(255, 69, 58, 0.16);
+  transform: translate(-50%, -50%);
+  animation: map-pulse 2.6s ease-out infinite;
+}
+@keyframes map-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-map-pulse { animation: none; opacity: 0.4; }
+}
+.ios-map-sheet {
+  position: absolute;
+  bottom: 14px; left: 14px; right: 14px;
+  background: rgba(22, 34, 62, 0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 11.5px;
+}
+.ios-map-sheet h5 {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ios-map-sheet p {
+  color: rgba(255,255,255,0.55);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.ios-tabbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px 4px 0;
+  margin: 8px -4px -4px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.ios-tab {
+  display: flex; flex-direction: column;
+  align-items: center;
+  font-size: 9px;
+  color: rgba(255,255,255,0.45);
+  padding: 4px 0 2px;
+  gap: 3px;
+}
+.ios-tab.on { color: var(--amber); }
+.ios-tab .gly {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.ios-label {
+  margin-top: 14px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.ios-label strong { color: var(--ink); font-weight: 500; }
+
+/* ─────────────────────────────────────────────────
+ * § 10 — Apple Watch
+ * ───────────────────────────────────────────────── */
+.watch-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+@media (max-width: 620px) { .watch-row { grid-template-columns: 1fr; } }
+
+.watch-frame {
+  width: 240px;
+  margin: 0 auto;
+  aspect-ratio: 220 / 270;
+  border-radius: 56px / 64px;
+  background: #18181d;
+  border: 10px solid #21222a;
+  padding: 8px;
+  position: relative;
+  box-shadow:
+    0 40px 80px -25px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+.watch-frame::before, .watch-frame::after {
+  content: ""; position: absolute;
+  right: -14px;
+  width: 6px;
+  background: #2a2b35;
+  border-radius: 2px;
+}
+.watch-frame::before { top: 22%; height: 32px; }
+.watch-frame::after { top: 50%; transform: translateY(-50%); height: 60px; width: 4px; }
+
+.watch-screen {
+  position: relative;
+  width: 100%; height: 100%;
+  border-radius: 48px / 56px;
+  overflow: hidden;
+  background: #0b1530;
+  padding: 16px 14px 14px;
+  display: flex; flex-direction: column;
+  color: #fff;
+}
+.watch-screen.armed {
+  background: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(245, 177, 79, 0.2), transparent 60%),
+              linear-gradient(180deg, #0b1530, #1c2a4f);
+}
+.watch-screen.alarm {
+  background: radial-gradient(ellipse 80% 50% at 50% 30%, rgba(255, 69, 58, 0.3), transparent 60%),
+              linear-gradient(180deg, #0b1530, #2a0c10);
+}
+.watch-time {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--amber);
+  margin-bottom: 4px;
+}
+.watch-screen.alarm .watch-time { color: #ff8478; }
+.watch-glyph {
+  width: 56px; height: 56px;
+  margin: 6px auto 8px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  border-radius: 14px;
+  filter: drop-shadow(0 8px 18px rgba(245, 177, 79, 0.4));
+}
+.watch-screen.alarm .watch-glyph {
+  filter: drop-shadow(0 8px 18px rgba(255, 69, 58, 0.5));
+}
+.watch-h {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-align: center;
+}
+.watch-sub {
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  margin-top: 1px;
+  margin-bottom: 8px;
+}
+.watch-screen.alarm .watch-sub { color: rgba(255, 132, 120, 0.78); }
+.watch-btn {
+  margin-top: auto;
+  padding: 9px 6px;
+  border-radius: 18px;
+  background: var(--amber);
+  color: var(--navy-deep);
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.watch-btn.danger {
+  background: #ff453a;
+  color: #fff;
+}
+
+/* ─────────────────────────────────────────────────
+ * § 11 — About
+ * ───────────────────────────────────────────────── */
+.about-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+@media (max-width: 760px) { .about-row { grid-template-columns: 1fr; } }
+
+.about-window {
+  max-width: 380px;
+  margin: 0 auto;
+  border-radius: 14px;
+  border: 1px solid var(--hairline-bold);
+  background: linear-gradient(180deg, #1c2a4f 0%, #11203f 100%);
+  overflow: hidden;
+  box-shadow: 0 40px 80px -25px rgba(0,0,0,0.6);
+  color: #fff;
+}
+.about-tb {
+  height: 32px;
+  display: flex; align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.about-body {
+  padding: 36px 28px 28px;
+  text-align: center;
+}
+.about-glyph {
+  width: 96px; height: 96px;
+  margin: 0 auto 18px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  border-radius: 22px;
+  filter: drop-shadow(0 10px 30px rgba(245, 177, 79, 0.3));
+}
+.about-name {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-bottom: 4px;
+}
+.about-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.about-version {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.6);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.about-author {
+  font-size: 13px;
+  color: rgba(255,255,255,0.78);
+  margin-bottom: 22px;
+}
+.about-actions {
+  display: flex; gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.about-action {
+  padding: 5px 11px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.75);
+}
+
+/* ─────────────────────────────────────────────────
+ * § 12 — Colophon / Footer
+ * ───────────────────────────────────────────────── */
+.colophon {
+  padding: 80px 0 64px;
+  border-top: 1px solid var(--hairline);
+  background: var(--bg);
+}
+.colophon-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 40px;
+}
+@media (max-width: 820px) { .colophon-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .colophon-grid { grid-template-columns: 1fr; } }
+
+.colophon-brand h4 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  margin-bottom: 12px;
+}
+.colophon-brand p {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.65;
+  max-width: 360px;
+}
+.colophon-col h5 {
+  font-family: var(--font-text);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.colophon-col ul { display: grid; gap: 10px; }
+.colophon-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.colophon-col a:hover { color: var(--amber); }
+
+.colophon-meta {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--hairline);
+  display: flex; justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+</style>
+</head>
+<body>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="../" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+      <span style="color: var(--ink-faint); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; margin-left: 8px;">/ concepts</span>
+    </a>
+    <nav class="nav-links" aria-label="Section index">
+      <a href="#s-02">Menubar</a>
+      <a href="#s-03">Onboarding</a>
+      <a href="#s-04">Settings</a>
+      <a href="#s-05">Event log</a>
+      <a href="#s-09">Companion</a>
+    </nav>
+    <a class="nav-back" href="../">← vakter.app</a>
+  </div>
+</header>
+
+<!-- ── Lighthouse beam (scroll-driven) ── -->
+<div class="beam-wrap" id="beam" aria-hidden="true"></div>
+
+<main>
+
+  <!-- ─── § 00 — Cover ─── -->
+  <section class="cover" aria-labelledby="cover-title">
+    <div class="container">
+      <div class="cover-grid">
+        <div class="cover-text reveal">
+          <span class="eyebrow">§ design book · vakter v1.4</span>
+          <h1 id="cover-title" class="display display-xl" style="margin-top: 28px;">
+            The night-watch, <br>
+            drawn in <span class="accent">full.</span>
+          </h1>
+          <p class="lead" style="margin-top: 28px; max-width: 580px;">
+            Every UI surface, hand-built in HTML so it scales arbitrarily,
+            edits cleanly, and stays in sync with the actual macOS app.
+            Treat this as the brand source-of-truth.
+          </p>
+          <dl class="cover-meta">
+            <div>
+              <dt>Version</dt>
+              <dd>v1.4</dd>
+            </div>
+            <div>
+              <dt>Tokens</dt>
+              <dd>navy · amber · cream</dd>
+            </div>
+            <div>
+              <dt>Surfaces</dt>
+              <dd>12</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>2026-05-20</dd>
+            </div>
+          </dl>
+        </div>
+
+        <figure class="cover-glyph reveal d2" role="img" aria-label="Vakter lighthouse glyph at the center of a navy gradient, with a slow rotating amber ring sweeping around it.">
+          <img class="glyph" src="../assets/screenshots/AppIcon.png" alt="">
+          <span class="lantern-pulse" aria-hidden="true"></span>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section index strip -->
+  <nav class="toc" aria-label="Table of contents">
+    <div class="container">
+      <div class="toc-list">
+        <a href="#s-01"><span class="toc-num">§ 01</span><span class="toc-name">Design tokens</span></a>
+        <a href="#s-02"><span class="toc-num">§ 02</span><span class="toc-name">Menubar</span></a>
+        <a href="#s-03"><span class="toc-num">§ 03</span><span class="toc-name">Onboarding</span></a>
+        <a href="#s-04"><span class="toc-num">§ 04</span><span class="toc-name">Settings</span></a>
+        <a href="#s-05"><span class="toc-num">§ 05</span><span class="toc-name">Event log</span></a>
+        <a href="#s-06"><span class="toc-num">§ 06</span><span class="toc-name">Arming overlay</span></a>
+        <a href="#s-07"><span class="toc-num">§ 07</span><span class="toc-name">Evidence delivery</span></a>
+        <a href="#s-08"><span class="toc-num">§ 08</span><span class="toc-name">Police PDF</span></a>
+        <a href="#s-09"><span class="toc-num">§ 09</span><span class="toc-name">iOS companion</span></a>
+        <a href="#s-10"><span class="toc-num">§ 10</span><span class="toc-name">Apple Watch</span></a>
+        <a href="#s-11"><span class="toc-num">§ 11</span><span class="toc-name">About</span></a>
+        <a href="#s-end"><span class="toc-num">§ 12</span><span class="toc-name">Colophon</span></a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── § 01 — Design tokens ─── -->
+  <section id="s-01" class="section" aria-labelledby="s-01-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 01 · design system</span>
+          <h2 id="s-01-title" class="display display-md">Tokens, in the open.</h2>
+          <p class="lead">The vocabulary every Vakter surface speaks. Colors, type, spacing, easing — drawn from the same brand sheet whether you're on the menu bar, the iPhone, or the Watch.</p>
+        </div>
+        <span class="section-num">§ 01 / 12</span>
+      </header>
+
+      <!-- Color swatches -->
+      <div class="tokens-grid reveal" role="list" aria-label="Color swatches">
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #0b1530;"></div>
+          <div class="token-meta">
+            <span class="token-name">Navy deep</span>
+            <span class="token-hex">#0b1530 · rgb 11 21 48</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #1c2a4f;"></div>
+          <div class="token-meta">
+            <span class="token-name">Navy</span>
+            <span class="token-hex">#1c2a4f · rgb 28 42 79</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #2a3a64;"></div>
+          <div class="token-meta">
+            <span class="token-name">Navy soft</span>
+            <span class="token-hex">#2a3a64 · rgb 42 58 100</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #f5b14f;"></div>
+          <div class="token-meta">
+            <span class="token-name">Lantern amber</span>
+            <span class="token-hex">#f5b14f · rgb 245 177 79</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #f8c882;"></div>
+          <div class="token-meta">
+            <span class="token-name">Amber warm</span>
+            <span class="token-hex">#f8c882 · rgb 248 200 130</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #d99431;"></div>
+          <div class="token-meta">
+            <span class="token-name">Amber deep</span>
+            <span class="token-hex">#d99431 · rgb 217 148 49</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch has-stroke" style="--swatch: #f4eee1;"></div>
+          <div class="token-meta">
+            <span class="token-name">Cream</span>
+            <span class="token-hex">#f4eee1 · light-mode base</span>
+          </div>
+        </div>
+        <div class="token-card token-color" role="listitem">
+          <div class="token-swatch" style="--swatch: #15213b;"></div>
+          <div class="token-meta">
+            <span class="token-name">Ink dark</span>
+            <span class="token-hex">#15213b · light-mode ink</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Type specimens -->
+      <div class="tokens-section">
+        <h3>Type scale</h3>
+        <div class="type-stack">
+          <div class="type-row">
+            <span class="display display-xl">Aa</span>
+            <span class="type-spec">Display XL · SF Pro Display 600 · clamp(56–132)</span>
+          </div>
+          <div class="type-row">
+            <span class="display display-lg">On watch</span>
+            <span class="type-spec">Display LG · 600 · -0.035em</span>
+          </div>
+          <div class="type-row">
+            <span class="display display-md">Vakter has the deck.</span>
+            <span class="type-spec">Display MD · 600 · -0.035em</span>
+          </div>
+          <div class="type-row">
+            <span class="display display-sm">Calm in normal use.</span>
+            <span class="type-spec">Display SM · 600 · -0.035em</span>
+          </div>
+          <div class="type-row">
+            <span class="lead">Calm in normal use. Fierce the moment someone tries to walk off with it.</span>
+            <span class="type-spec">Lead · SF Pro Display 400 · -0.012em</span>
+          </div>
+          <div class="type-row">
+            <span style="font-family: var(--font-text); font-size: 16px; line-height: 1.62;">The instant the lid closes, the cable pulls, or your trusted devices leave the room, the deck wakes. Photo burst. Ambient audio. iMessage to your phone.</span>
+            <span class="type-spec">Body · SF Pro Text 400 · 1.62</span>
+          </div>
+          <div class="type-row">
+            <span style="font-family: var(--font-mono); font-size: 13px; color: var(--amber);">pmset disablesleep 1</span>
+            <span class="type-spec">Mono · SF Mono · 13</span>
+          </div>
+          <div class="type-row">
+            <span class="serif-italic" style="font-size: 22px;">— the moment your Mac is leaving.</span>
+            <span class="type-spec">Serif accent · ui-serif italic 500</span>
+          </div>
+          <div class="type-row">
+            <span class="eyebrow">§ design book · vakter v1.4</span>
+            <span class="type-spec">Eyebrow · 11.5 · 0.18em · uppercase</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spacing -->
+      <div class="tokens-section">
+        <h3>Spacing</h3>
+        <div class="spacing-stack">
+          <div class="spacing-row"><span class="label">04 px</span><span class="spacing-bar" style="width: 4px;"></span></div>
+          <div class="spacing-row"><span class="label">08 px</span><span class="spacing-bar" style="width: 8px;"></span></div>
+          <div class="spacing-row"><span class="label">12 px</span><span class="spacing-bar" style="width: 12px;"></span></div>
+          <div class="spacing-row"><span class="label">20 px</span><span class="spacing-bar" style="width: 20px;"></span></div>
+          <div class="spacing-row"><span class="label">28 px</span><span class="spacing-bar" style="width: 28px;"></span></div>
+          <div class="spacing-row"><span class="label">40 px</span><span class="spacing-bar" style="width: 40px;"></span></div>
+          <div class="spacing-row"><span class="label">64 px</span><span class="spacing-bar" style="width: 64px;"></span></div>
+          <div class="spacing-row"><span class="label">96 px</span><span class="spacing-bar" style="width: 96px;"></span></div>
+        </div>
+      </div>
+
+      <!-- Easing -->
+      <div class="tokens-section">
+        <h3>Easing</h3>
+        <div class="easing-grid">
+          <div class="easing-card">
+            <svg viewBox="0 0 100 60" aria-hidden="true">
+              <path d="M0 60 C 22 60, 36 16, 100 0" fill="none" stroke="#f5b14f" stroke-width="1.6" stroke-linecap="round"/>
+              <line x1="0" y1="60" x2="100" y2="60" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+              <line x1="0" y1="0" x2="0" y2="60" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+            </svg>
+            <div class="label"><strong>easing-out</strong><span>cubic-bezier(0.16, 1, 0.3, 1)</span></div>
+          </div>
+          <div class="easing-card">
+            <svg viewBox="0 0 100 60" aria-hidden="true">
+              <path d="M0 60 C 22 60, 64 16, 100 0" fill="none" stroke="#f5b14f" stroke-width="1.6" stroke-linecap="round"/>
+              <line x1="0" y1="60" x2="100" y2="60" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+              <line x1="0" y1="0" x2="0" y2="60" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+            </svg>
+            <div class="label"><strong>easing-base</strong><span>cubic-bezier(0.22, 0.61, 0.36, 1)</span></div>
+          </div>
+          <div class="easing-card">
+            <svg viewBox="0 0 100 60" aria-hidden="true">
+              <path d="M0 60 Q 50 60, 50 30 T 100 0" fill="none" stroke="#f5b14f" stroke-width="1.6" stroke-linecap="round"/>
+              <line x1="0" y1="60" x2="100" y2="60" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+              <line x1="0" y1="0" x2="0" y2="60" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/>
+            </svg>
+            <div class="label"><strong>spring-tactile</strong><span>spring · response 0.45 · damp 0.7</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 02 — Menubar ─── -->
+  <section id="s-02" class="section" aria-labelledby="s-02-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 02 · menubar</span>
+          <h2 id="s-02-title" class="display display-md">Four states. <span class="serif-italic">One glance.</span></h2>
+          <p class="lead">The lighthouse glyph at 18 pt in your menu bar — the entire app's status, encoded in a single icon. Below: the dropdown with the new "Last event" preview row.</p>
+        </div>
+        <span class="section-num">§ 02 / 12</span>
+      </header>
+
+      <!-- States -->
+      <div class="menubar-states reveal">
+
+        <!-- Unarmed -->
+        <article class="menubar-state">
+          <div class="menubar-strip-mock">
+            <span class="apple"></span>
+            <span style="font-weight: 600;">Finder</span>
+            <span>File</span>
+            <span>Edit</span>
+            <div class="right">
+              <span class="menubar-shield" aria-hidden="true">
+                <svg viewBox="0 0 18 18">
+                  <path d="M5 4 h8 v2 h-1 v3 l2 1 v5 h-10 v-5 l2 -1 v-3 h-1 z" fill="rgba(255,255,255,0.65)"/>
+                </svg>
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 11px;">9:42 AM</span>
+            </div>
+          </div>
+          <div class="menubar-state-body">
+            <span class="menubar-state-label">Unarmed</span>
+            <p class="menubar-state-desc">Calm grey silhouette. No lantern. Vakter is awake but the deck is empty.</p>
+            <span class="menubar-state-pip" style="--pip-color: rgba(255,255,255,0.4);">off watch</span>
+          </div>
+        </article>
+
+        <!-- Armed -->
+        <article class="menubar-state">
+          <div class="menubar-strip-mock">
+            <span class="apple"></span>
+            <span style="font-weight: 600;">Finder</span>
+            <span>File</span>
+            <span>Edit</span>
+            <div class="right">
+              <span class="menubar-shield" aria-hidden="true">
+                <svg viewBox="0 0 18 18">
+                  <path d="M5 4 h8 v2 h-1 v3 l2 1 v5 h-10 v-5 l2 -1 v-3 h-1 z" fill="#f5b14f"/>
+                  <circle cx="9" cy="6" r="1.4" fill="#fff7d6"/>
+                </svg>
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 11px;">9:43 AM</span>
+            </div>
+          </div>
+          <div class="menubar-state-body">
+            <span class="menubar-state-label">Armed</span>
+            <p class="menubar-state-desc">Amber silhouette, warm lantern lit. The watch is set. Hotkey will disarm.</p>
+            <span class="menubar-state-pip" style="--pip-color: #34c759;">on watch</span>
+          </div>
+        </article>
+
+        <!-- Grace -->
+        <article class="menubar-state">
+          <div class="menubar-strip-mock">
+            <span class="apple"></span>
+            <span style="font-weight: 600;">Finder</span>
+            <span>File</span>
+            <span>Edit</span>
+            <div class="right">
+              <span class="menubar-shield" aria-hidden="true">
+                <svg viewBox="0 0 18 18">
+                  <defs>
+                    <radialGradient id="pulse-grace" cx="50%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#f8c882"/>
+                      <stop offset="100%" stop-color="#d99431"/>
+                    </radialGradient>
+                  </defs>
+                  <circle cx="9" cy="9" r="8" fill="rgba(245,177,79,0.15)"/>
+                  <path d="M5 4 h8 v2 h-1 v3 l2 1 v5 h-10 v-5 l2 -1 v-3 h-1 z" fill="url(#pulse-grace)"/>
+                  <circle cx="9" cy="6" r="1.4" fill="#fff7d6"/>
+                </svg>
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 11px;">9:43 AM</span>
+            </div>
+          </div>
+          <div class="menubar-state-body">
+            <span class="menubar-state-label">Grace</span>
+            <p class="menubar-state-desc">A trigger fired. Slow amber pulse for 6 seconds — enough to disarm if it was you.</p>
+            <span class="menubar-state-pip" style="--pip-color: #f5b14f;">grace · 6.0 s</span>
+          </div>
+        </article>
+
+        <!-- Alarm -->
+        <article class="menubar-state">
+          <div class="menubar-strip-mock">
+            <span class="apple"></span>
+            <span style="font-weight: 600;">Finder</span>
+            <span>File</span>
+            <span>Edit</span>
+            <div class="right">
+              <span class="menubar-shield" aria-hidden="true">
+                <svg viewBox="0 0 18 18">
+                  <path d="M5 4 h8 v2 h-1 v3 l2 1 v5 h-10 v-5 l2 -1 v-3 h-1 z" fill="#ff453a"/>
+                  <circle cx="9" cy="6" r="1.4" fill="#fff"/>
+                  <circle cx="14.5" cy="4" r="2.5" fill="#ff453a" stroke="#0b1530" stroke-width="1"/>
+                  <text x="14.5" y="5.4" text-anchor="middle" font-family="ui-monospace,SF Mono,monospace" font-size="3.6" font-weight="700" fill="#fff">!</text>
+                </svg>
+              </span>
+              <span style="font-family: var(--font-mono); font-size: 11px;">9:43 AM</span>
+            </div>
+          </div>
+          <div class="menubar-state-body">
+            <span class="menubar-state-label">Alarm</span>
+            <p class="menubar-state-desc">Red shield, exclamation badge. The siren is firing. Photos, audio, location, iMessage all in motion.</p>
+            <span class="menubar-state-pip" style="--pip-color: #ff453a;">alarm engaged</span>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Dropdown -->
+      <div class="dropdown-frame reveal">
+        <div>
+          <div class="macos-menubar-pop" role="img" aria-label="The Vakter menu-bar dropdown showing two-line header, primary disarm action, Mode submenu, Diagnostics submenu, Settings, Quit, and a Last-event preview row.">
+            <div class="mp-header">
+              <div class="mp-header-title">Vakter</div>
+              <div class="mp-header-status"><span class="pip"></span>On watch · Normal mode · 14 m</div>
+            </div>
+
+            <div class="mp-item is-primary">
+              <span class="ico">⌖</span>
+              <span>Disarm Vakter</span>
+              <span class="kbd">⌃⌥⌘L</span>
+            </div>
+
+            <div class="mp-sep"></div>
+
+            <div class="mp-item">
+              <span class="ico">◔</span>
+              <span>Mode: Normal</span>
+              <span class="mp-submenu-arrow">▸</span>
+            </div>
+            <div class="mp-item">
+              <span class="ico">⊜</span>
+              <span>Diagnostics</span>
+              <span class="mp-submenu-arrow">▸</span>
+            </div>
+
+            <div class="mp-sep"></div>
+
+            <div class="mp-item">
+              <span class="ico">⚐</span>
+              <span>Show last alarm…</span>
+              <span class="kbd">⌘E</span>
+            </div>
+            <div class="mp-item">
+              <span class="ico">⚙</span>
+              <span>Settings…</span>
+              <span class="kbd">⌘,</span>
+            </div>
+            <div class="mp-item">
+              <span class="ico">✕</span>
+              <span>Quit Vakter</span>
+              <span class="kbd">⌘Q</span>
+            </div>
+
+            <!-- BONUS: Last event preview row (proposed) -->
+            <div class="mp-last-event">
+              <div>
+                <div class="mp-last-event-label">Last event</div>
+                <div class="mp-last-event-content">
+                  <strong>Grace → Alarm</strong>
+                  <span class="meta">3 photos · 10 s audio · lid close</span>
+                </div>
+              </div>
+              <div class="mp-last-event-time">
+                14:32:46<br>
+                <span style="opacity:0.7;">today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="dropdown-notes">
+          <h4>Two-line header</h4>
+          <p>The wordmark on line one, a humanized status sentence with a state-colored dot on line two. Bartender / Things 3 pattern. Reads at a glance.</p>
+
+          <h4>Primary action up top</h4>
+          <p>Disarm (or Arm) is the only thing in the amber tile. Keyboard <code>⌃⌥⌘L</code> mirrors the global hotkey so muscle memory carries.</p>
+
+          <h4>Mode + Diagnostics as submenus</h4>
+          <p>The dropdown stays short. Five modes nest under Mode; testAlarm / runArmDemo / simulateLidClose nest under Diagnostics.</p>
+
+          <h4>Bonus: <span style="color: var(--amber);">Last event row</span></h4>
+          <p>New in this concept. A two-line preview at the bottom of the menu — transition, evidence count, trigger, timestamp. One glance answers "did anything happen while I was away."</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 03 — Onboarding ─── -->
+  <section id="s-03" class="section" aria-labelledby="s-03-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 03 · onboarding</span>
+          <h2 id="s-03-title" class="display display-md">Five steps. <span class="serif-italic">Then you're set.</span></h2>
+          <p class="lead">The first-launch flow. Calm tone, one decision per step, no skip buttons. By step five Vakter is armed, the user has heard the alarm, and the hotkey lives in their head.</p>
+        </div>
+        <span class="section-num">§ 03 / 12</span>
+      </header>
+
+      <div class="onboard-flow reveal">
+
+        <!-- Step 1: Welcome -->
+        <article class="onboard-card">
+          <div class="onboard-progress">
+            <span class="active"></span><span></span><span></span><span></span><span></span>
+          </div>
+          <span class="onboard-card-step">01 / 05</span>
+          <div class="onboard-body">
+            <div class="onboard-hero-glyph" aria-hidden="true"></div>
+            <span style="font-family: var(--font-display); font-size: 26px; font-weight: 600; letter-spacing: -0.025em; color: #fff;">Vakter</span>
+            <span class="eyebrow" style="margin: -8px auto 4px; color: var(--amber); font-size: 10px;">Norwegian — the night-watchmen</span>
+            <p class="onboard-sub">The night-watch for your Mac — calm when you're nearby, fierce the moment someone tries to walk off with it.</p>
+
+            <ul class="onboard-feature-list">
+              <li class="onboard-feature">
+                <span class="ico">⌘</span>
+                <span><strong>One shortcut</strong>Press ⌃⌥⌘L anywhere — lock &amp; arm in one motion.</span>
+              </li>
+              <li class="onboard-feature">
+                <span class="ico">⊕</span>
+                <span><strong>Smart triggers</strong>Lid close, unplug, Bluetooth peers leaving.</span>
+              </li>
+              <li class="onboard-feature">
+                <span class="ico">✓</span>
+                <span><strong>Calm disarm</strong>Touch ID. macOS already verified you.</span>
+              </li>
+            </ul>
+
+            <button class="onboard-cta">Get started →</button>
+          </div>
+        </article>
+
+        <!-- Step 2: Permissions -->
+        <article class="onboard-card">
+          <div class="onboard-progress">
+            <span></span><span class="active"></span><span></span><span></span><span></span>
+          </div>
+          <span class="onboard-card-step">02 / 05</span>
+          <div class="onboard-body" style="text-align: left;">
+            <h3 class="onboard-h" style="text-align: left; font-size: 22px; margin: 4px 0 6px;">Permissions</h3>
+            <p class="onboard-sub" style="text-align: left; margin-bottom: 8px;">Vakter only asks for what it actually uses.</p>
+
+            <div style="margin-top: 4px;">
+              <div class="onboard-perm-row">
+                <span class="perm-ico" style="background: rgba(245,177,79,0.16); color: var(--amber);">⌖</span>
+                <div>
+                  <div class="perm-name">Camera</div>
+                  <div style="font-size: 10.5px; color: rgba(255,255,255,0.55); margin-top: 2px;">Photo burst on alarm.</div>
+                </div>
+                <span class="perm-pill granted">Granted</span>
+              </div>
+              <div class="onboard-perm-row">
+                <span class="perm-ico" style="background: rgba(0,122,255,0.18); color: #5ac8fa;">⌒</span>
+                <div>
+                  <div class="perm-name">Bluetooth</div>
+                  <div style="font-size: 10.5px; color: rgba(255,255,255,0.55); margin-top: 2px;">Trusted-peer proximity disarm.</div>
+                </div>
+                <span class="perm-pill deferred">Will be asked</span>
+              </div>
+              <div class="onboard-perm-row">
+                <span class="perm-ico" style="background: rgba(255,159,10,0.18); color: #ffcc4d;">▸</span>
+                <div>
+                  <div class="perm-name">Login items</div>
+                  <div style="font-size: 10.5px; color: rgba(255,255,255,0.55); margin-top: 2px;">Helper LaunchAgent on login.</div>
+                </div>
+                <span class="perm-pill pending">Approve once</span>
+              </div>
+            </div>
+
+            <button class="onboard-cta" style="margin-top: 18px;">Continue</button>
+          </div>
+        </article>
+
+        <!-- Step 3: Hotkey reveal -->
+        <article class="onboard-card">
+          <div class="onboard-progress">
+            <span></span><span></span><span class="active"></span><span></span><span></span>
+          </div>
+          <span class="onboard-card-step">03 / 05</span>
+          <div class="onboard-body">
+            <h3 class="onboard-h">Your shortcut</h3>
+            <p class="onboard-sub">Press this combo anywhere. Vakter locks the screen and goes on watch in one motion.</p>
+
+            <div class="onboard-hotkey" aria-label="Hotkey: Control Option Command L">
+              <span class="key">⌃</span>
+              <span class="key">⌥</span>
+              <span class="key">⌘</span>
+              <span class="key">L</span>
+            </div>
+
+            <p style="font-size: 10.5px; color: rgba(255,255,255,0.45); font-family: var(--font-mono); letter-spacing: 0.04em;">tap to test · click to remap</p>
+
+            <button class="onboard-cta ghost" style="margin-top: 14px;">Press to test</button>
+            <button class="onboard-cta">Continue</button>
+          </div>
+        </article>
+
+        <!-- Step 4: Hear alarm -->
+        <article class="onboard-card">
+          <div class="onboard-progress">
+            <span></span><span></span><span></span><span class="active"></span><span></span>
+          </div>
+          <span class="onboard-card-step">04 / 05</span>
+          <div class="onboard-body">
+            <h3 class="onboard-h">Hear the alarm</h3>
+            <p class="onboard-sub">This is the sound a thief hears. Try it now so you trust it'll fire when you walk away.</p>
+
+            <div class="onboard-speaker" aria-hidden="true">♪</div>
+
+            <div class="onboard-wave" aria-hidden="true">
+              <svg viewBox="0 0 240 30" preserveAspectRatio="none">
+                <path d="M0 15 Q 8 5 16 15 T 32 15 T 48 15 T 64 15 T 80 4 T 96 15 T 112 26 T 128 15 T 144 15 T 160 8 T 176 22 T 192 15 T 208 15 T 224 15 T 240 15"
+                      fill="none" stroke="rgba(255,69,58,0.7)" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <button class="onboard-cta" style="background: #ff453a; color: #fff;">▶ Play the alarm</button>
+            <p style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 8px; line-height: 1.4;">Volume is temporarily forced to max on internal speakers, then restored.</p>
+            <button class="onboard-cta ghost" style="margin-top: auto;">Continue</button>
+          </div>
+        </article>
+
+        <!-- Step 5: Done -->
+        <article class="onboard-card">
+          <div class="onboard-progress">
+            <span></span><span></span><span></span><span></span><span class="active"></span>
+          </div>
+          <span class="onboard-card-step">05 / 05</span>
+          <div class="onboard-body">
+            <div class="onboard-check" aria-hidden="true">✓</div>
+            <h3 class="onboard-h" style="font-size: 22px;">You're set.</h3>
+            <p class="onboard-sub">Vakter is on watch in your menu bar. Press ⌃⌥⌘L whenever you walk away.</p>
+
+            <div class="onboard-pills">
+              <span class="onboard-pill">Hotkey · ⌃⌥⌘L</span>
+              <span class="onboard-pill amber">Ready to arm</span>
+            </div>
+
+            <button class="onboard-cta" style="margin-top: auto;">Finish</button>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 04 — Settings ─── -->
+  <section id="s-04" class="section" aria-labelledby="s-04-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 04 · settings</span>
+          <h2 id="s-04-title" class="display display-md">A sidebar, the way Apple does it.</h2>
+          <p class="lead">The Settings window mirrors System Settings — vibrant material sidebar, color-tinted icon tiles, one pane at a time. Four key tabs shown in detail.</p>
+        </div>
+        <span class="section-num">§ 04 / 12</span>
+      </header>
+
+      <!-- Sound tab -->
+      <div class="reveal" style="margin-bottom: 36px;">
+        <div class="settings-frame" role="img" aria-label="Vakter Settings window, Sound tab. Sidebar shows 10 categories with colored icon tiles. Main pane shows sectioned sound list under 'Recorded' and 'Synthesised' headings.">
+          <div class="set-titlebar">
+            <div class="mac-traffic"><span></span><span></span><span></span></div>
+            <span class="title">Settings — Sound</span>
+          </div>
+          <aside class="set-sidebar" aria-label="Settings sidebar">
+            <div class="set-side-item"><span class="tile" style="background:#8e8e93;">○</span><span>General</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#af52de;">⌘</span><span>Shortcut</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#5ac8fa;">▦</span><span>Modes</span></div>
+            <div class="set-side-item is-active"><span class="tile" style="background:#ff2d55;">♪</span><span>Sound</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#34c759;">✓</span><span>Defenses</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ffcc00;">◎</span><span>Auto-arm &amp; Cloud</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff9500;">⌘</span><span>Notifications</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#5e5ce6;">⌒</span><span>Trusted Devices</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff3b30;">⊘</span><span>Privacy</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#bf5af2;">⊜</span><span>Event Log</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#64d2ff;">i</span><span>About</span></div>
+          </aside>
+          <div class="set-content">
+            <h3 class="set-h1">Sound</h3>
+            <p class="set-sub">Pick the siren that fires when an alarm starts. The voice cue plays in your locale's language after the first tone.</p>
+
+            <div class="set-sec-label">Recorded · sample-quality</div>
+
+            <div class="set-sound-row is-on">
+              <span class="sico">♪</span>
+              <div>
+                <div class="set-sound-title">Pulse Alarm</div>
+                <div class="set-sound-blurb">Two-tone, rapid. Disorienting and unmistakable.</div>
+              </div>
+              <span class="set-sound-play">▶</span>
+              <span class="set-sound-tick">✓</span>
+            </div>
+            <div class="set-sound-row">
+              <span class="sico alt">♪</span>
+              <div>
+                <div class="set-sound-title">Rhythmic Klaxon</div>
+                <div class="set-sound-blurb">Old-school maritime. Loud, slow, ominous.</div>
+              </div>
+              <span class="set-sound-play">▶</span>
+              <span class="set-sound-tick">✓</span>
+            </div>
+            <div class="set-sound-row">
+              <span class="sico alt">♪</span>
+              <div>
+                <div class="set-sound-title">Urgent Beacon</div>
+                <div class="set-sound-blurb">Single rising tone. Punches through ambient noise.</div>
+              </div>
+              <span class="set-sound-play">▶</span>
+              <span class="set-sound-tick">✓</span>
+            </div>
+
+            <div class="set-sec-label">Synthesised · zero footprint</div>
+
+            <div class="set-sound-row">
+              <span class="sico alt">∿</span>
+              <div>
+                <div class="set-sound-title">Dual Tone</div>
+                <div class="set-sound-blurb">European emergency-vehicle pattern.</div>
+              </div>
+              <span class="set-sound-play">▶</span>
+              <span class="set-sound-tick">✓</span>
+            </div>
+            <div class="set-sound-row">
+              <span class="sico alt">∿</span>
+              <div>
+                <div class="set-sound-title">Japanese Two-Tone</div>
+                <div class="set-sound-blurb">High-pitched 1.3/1.7 kHz at 2 Hz.</div>
+              </div>
+              <span class="set-sound-play">▶</span>
+              <span class="set-sound-tick">✓</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modes + Auto-arm row -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 36px;" class="reveal d1">
+
+        <!-- Modes tab -->
+        <div class="settings-frame compact">
+          <div class="set-titlebar">
+            <div class="mac-traffic"><span></span><span></span><span></span></div>
+            <span class="title">Settings — Modes</span>
+          </div>
+          <aside class="set-sidebar">
+            <div class="set-side-item"><span class="tile" style="background:#8e8e93;">○</span><span>General</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#af52de;">⌘</span><span>Shortcut</span></div>
+            <div class="set-side-item is-active"><span class="tile" style="background:#5ac8fa;">▦</span><span>Modes</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff2d55;">♪</span><span>Sound</span></div>
+          </aside>
+          <div class="set-content">
+            <h3 class="set-h1" style="font-size: 18px;">Modes</h3>
+            <p class="set-sub" style="font-size: 12px;">Five tempers. Each adjusts grace, audibility, and what counts as a trigger.</p>
+
+            <div class="mode-cards">
+              <article class="mode-card" data-fierce="2">
+                <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                <span class="mode-spec">Loaner</span>
+                <h4>Forgiving</h4>
+                <p>30 s grace. For when you hand the Mac over briefly.</p>
+                <div class="specs">grace 30s · loud · cap —</div>
+              </article>
+              <article class="mode-card" data-fierce="2">
+                <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                <span class="mode-spec">Library</span>
+                <h4>Silent</h4>
+                <p>No siren — evidence still captured.</p>
+                <div class="specs">grace 6s · silent · cap —</div>
+              </article>
+              <article class="mode-card" data-fierce="3">
+                <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                <span class="mode-spec">Normal</span>
+                <h4>Everyday</h4>
+                <p>Default. The 95% case.</p>
+                <div class="specs">grace 6s · loud · cap —</div>
+              </article>
+              <article class="mode-card" data-fierce="4">
+                <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                <span class="mode-spec">Café</span>
+                <h4>Considerate</h4>
+                <p>30 s alarm cap. Shared-space friendly.</p>
+                <div class="specs">grace 12s · loud · cap 30s</div>
+              </article>
+              <article class="mode-card" data-fierce="5">
+                <div class="bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+                <span class="mode-spec">Travel</span>
+                <h4>Paranoid</h4>
+                <p>3 s grace. Tight BT trust radius.</p>
+                <div class="specs">grace 3s · loud · cap —</div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auto-arm tab -->
+        <div class="settings-frame compact">
+          <div class="set-titlebar">
+            <div class="mac-traffic"><span></span><span></span><span></span></div>
+            <span class="title">Settings — Auto-arm &amp; Cloud</span>
+          </div>
+          <aside class="set-sidebar">
+            <div class="set-side-item"><span class="tile" style="background:#8e8e93;">○</span><span>General</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff2d55;">♪</span><span>Sound</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#34c759;">✓</span><span>Defenses</span></div>
+            <div class="set-side-item is-active"><span class="tile" style="background:#ffcc00;">◎</span><span>Auto-arm</span></div>
+          </aside>
+          <div class="set-content">
+            <h3 class="set-h1" style="font-size: 18px;">Auto-arm &amp; Cloud</h3>
+            <p class="set-sub" style="font-size: 12px;">Forget the hotkey. Vakter arms itself when these conditions hold.</p>
+
+            <div class="set-sec-label">Active rules</div>
+
+            <div class="autoarm-rules">
+              <div class="autoarm-rule">
+                <span class="rico">⏰</span>
+                <div>
+                  <div class="rname">Idle 5 minutes</div>
+                  <div class="rdesc">No input for 5 min → arm</div>
+                </div>
+                <span class="toggle"></span>
+                <span class="autoarm-remove">−</span>
+              </div>
+              <div class="autoarm-rule">
+                <span class="rico">⌒</span>
+                <div>
+                  <div class="rname">Off home Wi-Fi</div>
+                  <div class="rdesc">Disconnect from "Apartment" → arm</div>
+                </div>
+                <span class="toggle"></span>
+                <span class="autoarm-remove">−</span>
+              </div>
+              <div class="autoarm-rule">
+                <span class="rico">◐</span>
+                <div>
+                  <div class="rname">Daily at 18:00</div>
+                  <div class="rdesc">Weekdays · end-of-work</div>
+                </div>
+                <span class="toggle off"></span>
+                <span class="autoarm-remove">−</span>
+              </div>
+            </div>
+
+            <div class="cloud-card">
+              <div class="cloud-head">
+                <h5>Cloud evidence backup</h5>
+                <div class="cloud-picker">
+                  <span>Off</span>
+                  <span class="on">B2</span>
+                  <span>Pre-signed</span>
+                </div>
+              </div>
+              <div class="cloud-fields">
+                <div class="cloud-field">
+                  <label>Key ID</label>
+                  <input value="K001-vakter-evidence-abc" readonly>
+                </div>
+                <div class="cloud-field">
+                  <label>Bucket ID</label>
+                  <input value="b2-vakter-events-2026" readonly>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Defenses -->
+      <div class="reveal d2">
+        <div class="settings-frame">
+          <div class="set-titlebar">
+            <div class="mac-traffic"><span></span><span></span><span></span></div>
+            <span class="title">Settings — Defenses</span>
+          </div>
+          <aside class="set-sidebar" aria-label="Settings sidebar">
+            <div class="set-side-item"><span class="tile" style="background:#8e8e93;">○</span><span>General</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#af52de;">⌘</span><span>Shortcut</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#5ac8fa;">▦</span><span>Modes</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff2d55;">♪</span><span>Sound</span></div>
+            <div class="set-side-item is-active"><span class="tile" style="background:#34c759;">✓</span><span>Defenses</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ffcc00;">◎</span><span>Auto-arm</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff9500;">⌘</span><span>Notifications</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#5e5ce6;">⌒</span><span>Trusted Devices</span></div>
+            <div class="set-side-item"><span class="tile" style="background:#ff3b30;">⊘</span><span>Privacy</span></div>
+          </aside>
+          <div class="set-content">
+            <h3 class="set-h1">Defenses</h3>
+            <p class="set-sub">Pareto-style checklist. The boring security stuff macOS lets you turn on, but most people forget. We check it for you every 4 hours.</p>
+
+            <div class="def-cat" open>
+              <div class="def-cat-head">
+                <span class="def-cat-icon" style="background: rgba(52,199,89,0.18); color: #34c759;">⊕</span>
+                <span class="def-cat-name">Identity &amp; sign-in</span>
+                <span class="def-cat-meta">5 / 5 passing</span>
+                <span class="def-status-pip ok">all good</span>
+              </div>
+              <div class="def-cat-body">
+                <div class="def-row">
+                  <span class="check pass">✓</span>
+                  <span class="def-row-title">FileVault is enabled</span>
+                  <span class="def-row-fix">passing</span>
+                </div>
+                <div class="def-row">
+                  <span class="check pass">✓</span>
+                  <span class="def-row-title">Apple ID has 2FA</span>
+                  <span class="def-row-fix">passing</span>
+                </div>
+                <div class="def-row">
+                  <span class="check pass">✓</span>
+                  <span class="def-row-title">Find My Mac is on</span>
+                  <span class="def-row-fix">passing</span>
+                </div>
+                <div class="def-row">
+                  <span class="check pass">✓</span>
+                  <span class="def-row-title">Activation Lock is on</span>
+                  <span class="def-row-fix">passing</span>
+                </div>
+                <div class="def-row">
+                  <span class="check pass">✓</span>
+                  <span class="def-row-title">Automatic login is off</span>
+                  <span class="def-row-fix">passing</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="def-cat">
+              <div class="def-cat-head">
+                <span class="def-cat-icon" style="background: rgba(245,177,79,0.18); color: var(--amber);">⌖</span>
+                <span class="def-cat-name">Filesystem</span>
+                <span class="def-cat-meta">3 / 4 passing</span>
+                <span class="def-status-pip warn">1 to fix</span>
+              </div>
+            </div>
+
+            <div class="def-cat">
+              <div class="def-cat-head">
+                <span class="def-cat-icon" style="background: rgba(52,199,89,0.18); color: #34c759;">⌒</span>
+                <span class="def-cat-name">Network</span>
+                <span class="def-cat-meta">4 / 4 passing</span>
+                <span class="def-status-pip ok">all good</span>
+              </div>
+            </div>
+
+            <div class="def-cat">
+              <div class="def-cat-head">
+                <span class="def-cat-icon" style="background: rgba(52,199,89,0.18); color: #34c759;">◐</span>
+                <span class="def-cat-name">Sleep &amp; lock</span>
+                <span class="def-cat-meta">3 / 3 passing</span>
+                <span class="def-status-pip ok">all good</span>
+              </div>
+            </div>
+
+            <div class="def-cat">
+              <div class="def-cat-head">
+                <span class="def-cat-icon" style="background: rgba(255,69,58,0.2); color: #ff453a;">⊜</span>
+                <span class="def-cat-name">App integrity</span>
+                <span class="def-cat-meta">2 / 4 passing</span>
+                <span class="def-status-pip fail">2 to fix</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 05 — Event Log ─── -->
+  <section id="s-05" class="section" aria-labelledby="s-05-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 05 · event log</span>
+          <h2 id="s-05-title" class="display display-md">A forensic timeline you'd hand a cop.</h2>
+          <p class="lead">Every state transition, photo, audio clip, and location is sealed into a SHA-256 chain. The chain is the chain-of-custody. One click exports it as a PDF.</p>
+        </div>
+        <span class="section-num">§ 05 / 12</span>
+      </header>
+
+      <div class="evlog-frame reveal" role="img" aria-label="Event log window with filter chips, search field, and a vertical timeline of state transitions. One alarm event is expanded to show photo grid, audio waveform, location map, and Merkle chain hash links.">
+        <div class="evlog-titlebar">
+          <div class="mac-traffic"><span></span><span></span><span></span></div>
+          <span class="title">Event Log — Today</span>
+        </div>
+
+        <div class="evlog-toolbar">
+          <div class="evlog-filters" role="tablist">
+            <span class="evlog-filter on">All · 24</span>
+            <span class="evlog-filter">Armed · 8</span>
+            <span class="evlog-filter">Grace · 4</span>
+            <span class="evlog-filter">Alarm · 1</span>
+            <span class="evlog-filter">Audio · 1</span>
+            <span class="evlog-filter">Photos · 1</span>
+            <span class="evlog-filter">Location · 9</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="evlog-search">
+              <span style="opacity: 0.5;">⌕</span>
+              <span>Search hash, trigger…</span>
+            </div>
+            <button class="evlog-export">↓ Export PDF</button>
+          </div>
+        </div>
+
+        <div class="evlog-list" role="list">
+
+          <article class="evlog-item">
+            <div class="evlog-time">15:08:11<span class="day">today</span></div>
+            <div class="evlog-pip-wrap">
+              <span class="evlog-pip" style="--evpip: #34c759;"></span>
+              <span class="evlog-pip-line"></span>
+            </div>
+            <div class="evlog-content">
+              <span class="evlog-trans">Unarmed → <strong>Armed</strong></span>
+              <div class="evlog-meta">
+                <span class="evlog-meta-item">user action · hotkey</span>
+                <span class="evlog-meta-item">normal mode</span>
+                <span class="evlog-meta-item">trusted peers: 3</span>
+              </div>
+            </div>
+            <span class="evlog-action">expand ▾</span>
+          </article>
+
+          <article class="evlog-item is-open">
+            <div class="evlog-time">14:32:46<span class="day">today</span></div>
+            <div class="evlog-pip-wrap">
+              <span class="evlog-pip" style="--evpip: #ff453a;"></span>
+              <span class="evlog-pip-line"></span>
+            </div>
+            <div class="evlog-content">
+              <span class="evlog-trans">Grace → <strong>Alarm engaged</strong></span>
+              <div class="evlog-meta">
+                <span class="evlog-meta-item">trigger · lid close</span>
+                <span class="evlog-meta-item">3 photos</span>
+                <span class="evlog-meta-item">10 s audio</span>
+                <span class="evlog-meta-item">location captured</span>
+              </div>
+            </div>
+            <span class="evlog-action">collapse ▴</span>
+
+            <!-- Expanded detail -->
+            <div class="evlog-detail">
+
+              <div class="evlog-detail-card">
+                <span class="evlog-detail-label">Photo burst · 3 frames</span>
+                <div class="evlog-photo-grid">
+                  <div class="evlog-photo"></div>
+                  <div class="evlog-photo"></div>
+                  <div class="evlog-photo"></div>
+                  <div class="evlog-photo more">+0</div>
+                </div>
+                <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 10.5px; color: rgba(255,255,255,0.5); letter-spacing: 0.02em;">
+                  photo-01.jpg · 57.5 KB<br>
+                  photo-02.jpg · 144.2 KB<br>
+                  photo-03.jpg · 140.4 KB
+                </div>
+              </div>
+
+              <div class="evlog-detail-card">
+                <span class="evlog-detail-label">Ambient audio · 10 s</span>
+                <div class="evlog-audio">
+                  <button class="evlog-audio-play" aria-label="Play audio clip">▶</button>
+                  <div class="evlog-audio-wave" aria-hidden="true">
+                    <span style="height: 6px;"></span>
+                    <span style="height: 10px;"></span>
+                    <span style="height: 18px;"></span>
+                    <span style="height: 12px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 8px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 24px;"></span>
+                    <span style="height: 14px;"></span>
+                    <span style="height: 19px;"></span>
+                    <span style="height: 10px;"></span>
+                    <span style="height: 13px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 16px;"></span>
+                    <span style="height: 9px;"></span>
+                    <span style="height: 18px;"></span>
+                    <span style="height: 12px;"></span>
+                    <span style="height: 20px;"></span>
+                    <span style="height: 15px;"></span>
+                    <span style="height: 11px;"></span>
+                    <span style="height: 17px;"></span>
+                    <span style="height: 9px;"></span>
+                    <span style="height: 14px;"></span>
+                    <span style="height: 22px;"></span>
+                    <span style="height: 18px;"></span>
+                    <span style="height: 10px;"></span>
+                    <span style="height: 13px;"></span>
+                    <span style="height: 7px;"></span>
+                  </div>
+                  <span class="evlog-audio-meta">audio-01.m4a · 10.0 s</span>
+                </div>
+                <div style="margin-top: 10px; font-family: var(--font-mono); font-size: 10.5px; color: rgba(255,255,255,0.5);">
+                  AAC · 22 kHz mono · 33.5 KB
+                </div>
+              </div>
+
+              <div class="evlog-detail-card">
+                <span class="evlog-detail-label">Last known location</span>
+                <div class="evlog-map-tile" aria-hidden="true">
+                  <span class="evlog-map-pin"></span>
+                  <div class="evlog-map-meta">
+                    <span>52.3789°N · 4.9008°E</span>
+                    <span style="color: var(--amber);">±18 m</span>
+                  </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 11.5px; color: rgba(255,255,255,0.65);">
+                  Probed via CoreLocation · 14:32:48
+                </div>
+              </div>
+
+              <div class="evlog-detail-card">
+                <span class="evlog-detail-label">Merkle chain · sealed</span>
+                <div class="evlog-chain">
+                  <div><strong>hash</strong>     6109c9883a · 1d75aef0…</div>
+                  <div><strong>prev</strong>     38f55dfd6f · 73c401af…</div>
+                  <div><strong>signed</strong>   2026-05-20T14:32:46Z</div>
+                </div>
+                <span class="evlog-chain-ok">✓ Chain intact (n=24)</span>
+              </div>
+
+            </div>
+          </article>
+
+          <article class="evlog-item">
+            <div class="evlog-time">14:32:40<span class="day">today</span></div>
+            <div class="evlog-pip-wrap">
+              <span class="evlog-pip" style="--evpip: #f5b14f;"></span>
+              <span class="evlog-pip-line"></span>
+            </div>
+            <div class="evlog-content">
+              <span class="evlog-trans">Armed → <strong>Grace</strong></span>
+              <div class="evlog-meta">
+                <span class="evlog-meta-item">trigger · lid close</span>
+                <span class="evlog-meta-item">grace · 6 s</span>
+              </div>
+            </div>
+            <span class="evlog-action">expand ▾</span>
+          </article>
+
+          <article class="evlog-item">
+            <div class="evlog-time">12:08:33<span class="day">today</span></div>
+            <div class="evlog-pip-wrap">
+              <span class="evlog-pip" style="--evpip: #34c759;"></span>
+              <span class="evlog-pip-line"></span>
+            </div>
+            <div class="evlog-content">
+              <span class="evlog-trans">Unarmed → <strong>Armed</strong></span>
+              <div class="evlog-meta">
+                <span class="evlog-meta-item">user action · menu bar</span>
+                <span class="evlog-meta-item">cafe mode</span>
+              </div>
+            </div>
+            <span class="evlog-action">expand ▾</span>
+          </article>
+
+          <article class="evlog-item">
+            <div class="evlog-time">09:43:01<span class="day">today</span></div>
+            <div class="evlog-pip-wrap">
+              <span class="evlog-pip" style="--evpip: rgba(255,255,255,0.4);"></span>
+            </div>
+            <div class="evlog-content">
+              <span class="evlog-trans">Armed → <strong>Unarmed</strong></span>
+              <div class="evlog-meta">
+                <span class="evlog-meta-item">screen unlocked</span>
+                <span class="evlog-meta-item">touch ID</span>
+              </div>
+            </div>
+            <span class="evlog-action">expand ▾</span>
+          </article>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 06 — Arming overlay ─── -->
+  <section id="s-06" class="section" aria-labelledby="s-06-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 06 · arming overlay</span>
+          <h2 id="s-06-title" class="display display-md">The handoff.</h2>
+          <p class="lead">The full-screen moment that fires the instant Vakter takes the deck. Lives for ~0.6 s before the system lock takes over. Two variants: arming, and the calmer disarming acknowledgment.</p>
+        </div>
+        <span class="section-num">§ 06 / 12</span>
+      </header>
+
+      <div class="arming-row reveal">
+
+        <figure class="arming-frame arm">
+          <span class="arming-state-tag amber">arming · t=0.3 s</span>
+          <div class="scene">
+            <img class="lighthouse" src="../assets/screenshots/AppIcon.png" alt="">
+          </div>
+          <div class="arming-caption">
+            <span class="heading">On watch</span>
+            <span class="sub">Vakter has the deck.</span>
+          </div>
+        </figure>
+
+        <figure class="arming-frame disarm">
+          <span class="arming-state-tag">disarming · t=0.2 s</span>
+          <div class="scene">
+            <img class="lighthouse" src="../assets/screenshots/AppIcon.png" alt="">
+          </div>
+          <div class="arming-caption">
+            <span class="heading">Off watch</span>
+            <span class="sub">Welcome back.</span>
+          </div>
+        </figure>
+
+      </div>
+
+      <p class="body-prose" style="margin-top: 28px; max-width: 720px;">
+        Borderless transparent <code style="font-family: var(--font-mono); font-size: 13px; color: var(--amber);">NSWindow</code> at <code style="font-family: var(--font-mono); font-size: 13px; color: var(--amber);">.floating</code> level, full-screen, <code style="font-family: var(--font-mono); font-size: 13px; color: var(--amber);">ignoresMouseEvents = true</code>. Fades in 0.18 s, holds 0.24 s, fades out 0.18 s. The screen-lock animation takes over before the user can interact — by design.
+      </p>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 07 — Evidence delivery ─── -->
+  <section id="s-07" class="section" aria-labelledby="s-07-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 07 · evidence delivery</span>
+          <h2 id="s-07-title" class="display display-md">Two channels. <span class="serif-italic">Same payload.</span></h2>
+          <p class="lead">iMessage from your Apple ID to your own phone. Email from your Mail.app to anyone you trust. Both carry the photos, audio, and Maps URL. Both leave a paper trail in your sent folder.</p>
+        </div>
+        <span class="section-num">§ 07 / 12</span>
+      </header>
+
+      <div class="delivery-row reveal">
+
+        <!-- iPhone -->
+        <div class="iphone-frame" role="img" aria-label="iPhone screen showing an iMessage thread from Vakter with the alert text, 4 evidence photos, a Maps card with a pin, and a delivered timestamp.">
+          <div class="iphone-island" aria-hidden="true"></div>
+          <div class="iphone-status">
+            <span class="left">14:33</span>
+            <span class="right">●●● 5G ▮▮</span>
+          </div>
+          <div class="iphone-screen">
+            <div class="iphone-thread-header">
+              Vakter
+              <span class="ts">Today · 14:32</span>
+            </div>
+
+            <div class="imsg-bubble">
+              <strong>Vakter alert — your Mac.</strong><br>
+              Lid closed while armed · 14:32:46<br>
+              3 photos · 10 s audio captured
+            </div>
+
+            <div class="imsg-photos" aria-label="Evidence photo grid, 4 thumbnails">
+              <div class="imsg-photo"></div>
+              <div class="imsg-photo"></div>
+              <div class="imsg-photo"></div>
+              <div class="imsg-photo"></div>
+            </div>
+
+            <div class="imsg-map" aria-label="Last known location map">
+              <div class="imsg-map-canvas">
+                <span class="imsg-map-pin"></span>
+              </div>
+              <div class="imsg-map-meta">
+                <strong>Café Stadhouderskade</strong>
+                <span style="font-size: 10.5px; opacity: 0.7;">maps.apple.com/?ll=52.3789,4.9008</span>
+              </div>
+            </div>
+
+            <div class="imsg-delivered">Delivered · 14:32:48</div>
+          </div>
+        </div>
+
+        <!-- Mail.app -->
+        <div class="mail-window" role="img" aria-label="Mail.app desktop window showing a Vakter alert email with metadata, subject line, body, and three attachments.">
+          <div class="mail-tb">
+            <div class="mac-traffic"><span></span><span></span><span></span></div>
+            <span class="title">Inbox — Mail</span>
+            <div class="mail-tools">
+              <span>Reply</span><span>Forward</span><span>Archive</span>
+            </div>
+          </div>
+          <div class="mail-body">
+            <dl class="mail-meta">
+              <dt>From</dt>
+              <dd><strong>Vakter (your Mac)</strong> · vakter@vakter.local</dd>
+              <dt>To</dt>
+              <dd>you@example.com</dd>
+              <dt>Reply-to</dt>
+              <dd>trusted-friend@example.com</dd>
+              <dt>Date</dt>
+              <dd>20 May 2026 · 14:32:48 CEST</dd>
+            </dl>
+            <h3 class="mail-subject">Vakter alert — your Mac</h3>
+            <div class="mail-content">
+              <p><strong>Your Mac was grabbed.</strong> The lid closed while Vakter was armed in Café mode. The siren is firing locally and the system is locked.</p>
+              <p>Three photos and ten seconds of ambient audio were captured. The last known location is attached as an Apple Maps URL.</p>
+              <p><strong>Map:</strong> <a style="color: var(--amber);" href="#">https://maps.apple.com/?ll=52.3789,4.9008&amp;q=Vakter+alert</a></p>
+              <p>— Vakter on <em>Jonathan's MacBook Pro</em></p>
+            </div>
+
+            <div class="mail-attach-list">
+              <div class="mail-attach-label">Attachments · 4 items</div>
+              <div class="mail-attach">
+                <span class="att-icon">⎙</span>
+                <span class="att-name">photo-01.jpg</span>
+                <span class="att-size">57.5 KB</span>
+              </div>
+              <div class="mail-attach">
+                <span class="att-icon">⎙</span>
+                <span class="att-name">photo-02.jpg</span>
+                <span class="att-size">144.2 KB</span>
+              </div>
+              <div class="mail-attach">
+                <span class="att-icon">⎙</span>
+                <span class="att-name">photo-03.jpg</span>
+                <span class="att-size">140.4 KB</span>
+              </div>
+              <div class="mail-attach">
+                <span class="att-icon">♪</span>
+                <span class="att-name">audio-01.m4a</span>
+                <span class="att-size">33.5 KB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 08 — PDF report ─── -->
+  <section id="s-08" class="section" aria-labelledby="s-08-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 08 · pdf report</span>
+          <h2 id="s-08-title" class="display display-md">A document, not a screenshot.</h2>
+          <p class="lead">The forensic export. Real PDF on cream paper with the chain of custody on the page itself. Cop-ready, insurance-adjuster-ready, court-ready. Renders in &lt; 200 ms.</p>
+        </div>
+        <span class="section-num">§ 08 / 12</span>
+      </header>
+
+      <article class="pdf-paper reveal" role="img" aria-label="A printed PDF incident report on cream paper showing device metadata, an 8-event timeline with hash links, photo and audio manifests, a cryptographic chain-of-custody block, a green Chain integrity verified stamp, and signing space.">
+
+        <header class="pdf-head">
+          <div>
+            <h3>Vakter — Incident report</h3>
+            <div class="sub">Generated 2026-05-20 · 14:34:12 CEST · report id 6109c9883a</div>
+          </div>
+          <div class="pdf-seal" aria-hidden="true">V</div>
+        </header>
+
+        <dl class="pdf-meta-grid">
+          <dt>Device</dt><dd>MacBook Pro 14" · A2779</dd>
+          <dt>Serial</dt><dd>C02XXXX0XX0X</dd>
+          <dt>macOS</dt><dd>Sonoma 14.5 · 23F79</dd>
+          <dt>Owner</dt><dd>Jonathan Gebru</dd>
+          <dt>Trigger</dt><dd>Lid close (armed)</dd>
+          <dt>Mode</dt><dd>Café (30 s cap)</dd>
+          <dt>Duration</dt><dd>14:32:46 → 14:33:16</dd>
+          <dt>Evidence</dt><dd>3 photo · 1 audio · 1 location</dd>
+        </dl>
+
+        <h4 class="pdf-h">Event timeline</h4>
+
+        <div class="pdf-evt-line"><span class="ts">14:31:55Z</span><span class="ev">user · armed via hotkey ⌃⌥⌘L</span><span class="hash">a1d53d…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:32:00Z</span><span class="ev">power · cable disconnected</span><span class="hash">c8221b…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:32:40Z</span><span class="ev">trigger · lid close (armed → grace)</span><span class="hash">38f55d…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:32:46Z</span><span class="ev">grace expired (grace → alarm)</span><span class="hash">6109c9…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:32:48Z</span><span class="ev">capture · location probed (52.3789°N, 4.9008°E)</span><span class="hash">a4d12e…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:32:56Z</span><span class="ev">capture · 3 photos + 1 audio sealed</span><span class="hash">31943b…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:33:02Z</span><span class="ev">delivery · iMessage handoff ok</span><span class="hash">7b9914…</span></div>
+        <div class="pdf-evt-line"><span class="ts">14:33:16Z</span><span class="ev">user · disarmed via screen unlock</span><span class="hash">8b3204…</span></div>
+
+        <h4 class="pdf-h">Photo manifest</h4>
+        <div class="pdf-photo-row">
+          <div class="pdf-photo-tile"><span>photo-01.jpg</span></div>
+          <div class="pdf-photo-tile"><span>photo-02.jpg</span></div>
+          <div class="pdf-photo-tile"><span>photo-03.jpg</span></div>
+          <div class="pdf-photo-tile" style="background: rgba(11,21,48,0.1);"><span style="background: rgba(11,21,48,0.4);">+ next page</span></div>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: rgba(11,21,48,0.55); margin-top: 8px; line-height: 1.7;">
+          photo-01.jpg · 57.5 KB · sha256 a1d53d9d44 7e21cb20…<br>
+          photo-02.jpg · 144.2 KB · sha256 c8221b8f2a 9b41ef34…<br>
+          photo-03.jpg · 140.4 KB · sha256 7b9914ad22 1c802d55…
+        </div>
+
+        <h4 class="pdf-h">Audio manifest</h4>
+        <div style="font-family: var(--font-mono); font-size: 11px; color: #0b1530; line-height: 1.6;">
+          audio-01.m4a · 10.0 s · AAC 22 kHz mono · <span class="h" style="color:#d99431;">31943b10 02ad119c…</span>
+        </div>
+
+        <h4 class="pdf-h">Cryptographic chain-of-custody</h4>
+        <div class="pdf-chain-block">
+          The eight events above form a SHA-256 Merkle chain. Each event's
+          <strong>previousHash</strong> field equals the prior event's
+          <strong>hash</strong> field. The complete chain has been verified by
+          Vakter at export time.<br><br>
+          <span class="h">root hash       8b3204a91e 4cd25bf3 7a112d09 c5e8f244</span><br>
+          <span class="h">first event     a1d53d9d44 7e21cb20 1f8a3e22 b9914ad2</span><br>
+          <span class="h">chain length    8 events · 0 gaps · 0 mutations</span><br>
+        </div>
+        <span class="pdf-verified">✓ Chain integrity verified</span>
+
+        <div class="pdf-signing">
+          <div class="pdf-sig">
+            <div class="sig-line"></div>
+            Owner signature · Jonathan Gebru
+          </div>
+          <div class="pdf-sig">
+            <div class="sig-line"></div>
+            Receiving officer · printed name + date
+          </div>
+        </div>
+
+        <footer class="pdf-foot">
+          <span>vakter.app · v1.4 · page 1 of 2</span>
+          <span>generated by VakterApp on Mac</span>
+        </footer>
+      </article>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 09 — iOS companion ─── -->
+  <section id="s-09" class="section" aria-labelledby="s-09-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 09 · iOS companion</span>
+          <h2 id="s-09-title" class="display display-md">Your phone, in on the watch.</h2>
+          <p class="lead">Mirrors the Mac state in near real time over your own iCloud. Three tabs: Status (the home), Events (the chain), Map (last known location).</p>
+        </div>
+        <span class="section-num">§ 09 / 12</span>
+      </header>
+
+      <div class="ios-row reveal">
+
+        <!-- Status -->
+        <div>
+          <div class="ios-frame" role="img" aria-label="iPhone Status screen: lighthouse glyph, 'On watch' headline, 'Normal mode', big amber Disarm button, last-event preview row.">
+            <div class="ios-island" aria-hidden="true"></div>
+            <div class="ios-status">
+              <span>14:33</span>
+              <span style="opacity: 0.85;">●●● 5G ▮▮</span>
+            </div>
+            <div class="ios-screen">
+              <div class="nav-h">Status</div>
+              <div class="ios-status-glyph" aria-hidden="true"></div>
+              <div class="ios-status-h">On watch</div>
+              <div class="ios-status-sub">Jonathan's Mac · Normal mode</div>
+              <div class="ios-last-event">
+                <div>
+                  <strong>Armed</strong>
+                  <span style="display: block; color: rgba(255,255,255,0.5); font-family: var(--font-text); font-size: 10.5px;">via hotkey · 14 m ago</span>
+                </div>
+                <span>14:08</span>
+              </div>
+              <div class="ios-disarm">Disarm</div>
+              <nav class="ios-tabbar">
+                <div class="ios-tab on"><span class="gly">⌖</span><span>Status</span></div>
+                <div class="ios-tab"><span class="gly">⊜</span><span>Events</span></div>
+                <div class="ios-tab"><span class="gly">⌭</span><span>Map</span></div>
+                <div class="ios-tab"><span class="gly">⚙</span><span>Settings</span></div>
+              </nav>
+            </div>
+          </div>
+          <div class="ios-label"><strong>Status</strong> · home tab</div>
+        </div>
+
+        <!-- Events -->
+        <div>
+          <div class="ios-frame" role="img" aria-label="iPhone Events tab: a vertical list of recent events with colored state pips, transition text, and timestamps.">
+            <div class="ios-island" aria-hidden="true"></div>
+            <div class="ios-status">
+              <span>14:33</span>
+              <span style="opacity: 0.85;">●●● 5G ▮▮</span>
+            </div>
+            <div class="ios-screen">
+              <div class="nav-h">Events</div>
+              <div style="font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin: -6px 0 6px;">Today · 5</div>
+
+              <div class="ios-event-row">
+                <span class="ios-event-pip armed"></span>
+                <div>
+                  <span class="trans">Armed via hotkey</span>
+                  <span class="meta">normal mode · 3 trusted peers</span>
+                </div>
+                <span class="ts">14:08</span>
+              </div>
+              <div class="ios-event-row">
+                <span class="ios-event-pip idle"></span>
+                <div>
+                  <span class="trans">Disarmed</span>
+                  <span class="meta">screen unlock · touch ID</span>
+                </div>
+                <span class="ts">12:08</span>
+              </div>
+              <div class="ios-event-row">
+                <span class="ios-event-pip alarm"></span>
+                <div>
+                  <span class="trans">Alarm engaged</span>
+                  <span class="meta">lid close · 3 photo · 10 s audio</span>
+                </div>
+                <span class="ts">11:32</span>
+              </div>
+              <div class="ios-event-row">
+                <span class="ios-event-pip grace"></span>
+                <div>
+                  <span class="trans">Grace · 6 s</span>
+                  <span class="meta">lid close while armed</span>
+                </div>
+                <span class="ts">11:32</span>
+              </div>
+              <div class="ios-event-row">
+                <span class="ios-event-pip armed"></span>
+                <div>
+                  <span class="trans">Armed via auto-arm</span>
+                  <span class="meta">idle 5 min → arm</span>
+                </div>
+                <span class="ts">11:24</span>
+              </div>
+
+              <nav class="ios-tabbar" style="margin-top: auto;">
+                <div class="ios-tab"><span class="gly">⌖</span><span>Status</span></div>
+                <div class="ios-tab on"><span class="gly">⊜</span><span>Events</span></div>
+                <div class="ios-tab"><span class="gly">⌭</span><span>Map</span></div>
+                <div class="ios-tab"><span class="gly">⚙</span><span>Settings</span></div>
+              </nav>
+            </div>
+          </div>
+          <div class="ios-label"><strong>Events</strong> · chain timeline</div>
+        </div>
+
+        <!-- Map -->
+        <div>
+          <div class="ios-frame" role="img" aria-label="iPhone Map tab: a stylized Maps view with a red pin at the last known location and a sheet showing the latest event's metadata.">
+            <div class="ios-island" aria-hidden="true"></div>
+            <div class="ios-status">
+              <span>14:33</span>
+              <span style="opacity: 0.85;">●●● 5G ▮▮</span>
+            </div>
+            <div class="ios-screen">
+              <div class="nav-h">Map</div>
+              <div class="ios-map" aria-hidden="true">
+                <div class="ios-map-roads"></div>
+                <div class="ios-map-pulse"></div>
+                <div class="ios-map-pin"></div>
+                <div class="ios-map-sheet">
+                  <h5>Café Stadhouderskade</h5>
+                  <p>52.3789°N · 4.9008°E · ±18 m<br>last seen 11:32 · alarm event</p>
+                </div>
+              </div>
+              <nav class="ios-tabbar">
+                <div class="ios-tab"><span class="gly">⌖</span><span>Status</span></div>
+                <div class="ios-tab"><span class="gly">⊜</span><span>Events</span></div>
+                <div class="ios-tab on"><span class="gly">⌭</span><span>Map</span></div>
+                <div class="ios-tab"><span class="gly">⚙</span><span>Settings</span></div>
+              </nav>
+            </div>
+          </div>
+          <div class="ios-label"><strong>Map</strong> · last known</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 10 — Apple Watch ─── -->
+  <section id="s-10" class="section" aria-labelledby="s-10-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 10 · apple watch</span>
+          <h2 id="s-10-title" class="display display-md">Arm from the wrist.</h2>
+          <p class="lead">A single Watch tile. Tap to arm, tap to disarm, tap to hush. Pairs with the iPhone via WatchConnectivity. No CloudKit on the Watch — keeps the battery happy.</p>
+        </div>
+        <span class="section-num">§ 10 / 12</span>
+      </header>
+
+      <div class="watch-row reveal">
+
+        <div>
+          <div class="watch-frame" role="img" aria-label="Apple Watch screen, armed state: amber lighthouse glyph, 'On watch' headline, 'Normal mode', amber Disarm button.">
+            <div class="watch-screen armed">
+              <div class="watch-time">9:42</div>
+              <div class="watch-glyph" aria-hidden="true"></div>
+              <div class="watch-h">On watch</div>
+              <div class="watch-sub">Normal · 14 m</div>
+              <div class="watch-btn">Disarm</div>
+            </div>
+          </div>
+          <div class="ios-label"><strong>Armed</strong> · normal mode</div>
+        </div>
+
+        <div>
+          <div class="watch-frame" role="img" aria-label="Apple Watch screen, alarm state: red glyph, 'Alarm engaged', red Disarm button.">
+            <div class="watch-screen alarm">
+              <div class="watch-time" style="color: #ff8478;">14:32</div>
+              <div class="watch-glyph" aria-hidden="true"></div>
+              <div class="watch-h">Alarm engaged</div>
+              <div class="watch-sub">lid close · 14 s ago</div>
+              <div class="watch-btn danger">Disarm</div>
+            </div>
+          </div>
+          <div class="ios-label"><strong>Alarm</strong> · siren firing</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot"></div></div>
+
+  <!-- ─── § 11 — About ─── -->
+  <section id="s-11" class="section" aria-labelledby="s-11-title">
+    <div class="container">
+      <header class="head-group">
+        <div>
+          <span class="eyebrow">§ 11 · about</span>
+          <h2 id="s-11-title" class="display display-md">Built by one person.</h2>
+          <p class="lead">The smallest window in the app. The biggest tell about who made it.</p>
+        </div>
+        <span class="section-num">§ 11 / 12</span>
+      </header>
+
+      <div class="about-row reveal">
+
+        <div class="about-window" role="img" aria-label="About Vakter window: lighthouse glyph, version v1.4 build 1, 'Built by Jonathan Gebru', Norwegian etymology subtitle, action buttons for privacy, vakter.app, and changelog.">
+          <div class="about-tb">
+            <div class="mac-traffic"><span></span><span></span><span></span></div>
+          </div>
+          <div class="about-body">
+            <div class="about-glyph" aria-hidden="true"></div>
+            <div class="about-name">Vakter</div>
+            <div class="about-eyebrow">Norwegian — the night-watchmen</div>
+            <div class="about-version">v1.4 · build 142 · arm64</div>
+            <div class="about-author">Built by Jonathan Gebru. Solo dev. Email replies within a day.</div>
+            <div class="about-actions">
+              <span class="about-action">Privacy &amp; security</span>
+              <span class="about-action">vakter.app</span>
+              <span class="about-action">Changelog</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="dropdown-notes" style="max-width: 460px;">
+          <h4>Why this window matters</h4>
+          <p>Every Mac utility has one. Most are perfunctory. Vakter's About window is a single moment where the brand voice gets to breathe: the etymology line, the named human, the unceremonious version string in monospace.</p>
+          <h4>What's intentionally absent</h4>
+          <p>No "Send feedback" button hiding a Typeform. No copyright wall. No legal notices stuffed below the fold. The About window is signed-by-the-developer, then it ends. Read SECURITY.md or the EULA if you want to.</p>
+          <h4>Three actions, three destinations</h4>
+          <p>Privacy &amp; security opens the architecture page. vakter.app opens the marketing site. Changelog opens the release-notes page. Everything else is a setting.</p>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── § 12 — Colophon / Footer ─── -->
+  <footer id="s-end" class="colophon" role="contentinfo" aria-labelledby="s-end-title">
+    <div class="container">
+
+      <div class="head-group" style="margin-bottom: 36px;">
+        <div>
+          <span class="eyebrow">§ 12 · colophon</span>
+          <h2 id="s-end-title" class="display display-md" style="margin-top: 16px;">End of the log.</h2>
+        </div>
+        <span class="section-num">§ 12 / 12</span>
+      </div>
+
+      <div class="colophon-grid">
+        <div class="colophon-brand">
+          <h4>The design book.</h4>
+          <p>
+            Every surface above is hand-built in HTML — no Figma export, no
+            screenshot trickery. Edit the source, scale to any resolution,
+            stay in sync with the actual macOS app. The brand source of truth.
+          </p>
+          <p style="margin-top: 14px; font-size: 12px; color: var(--ink-faint); font-family: var(--font-mono); letter-spacing: 0.04em;">
+            Set in -apple-system display + text · ui-mono · ui-serif italic accents · no Google Fonts · no third-party scripts · no analytics.
+          </p>
+        </div>
+
+        <div class="colophon-col">
+          <h5>Product</h5>
+          <ul>
+            <li><a href="../#what-it-does">What it does</a></li>
+            <li><a href="../#modes">Modes</a></li>
+            <li><a href="../#architecture">Architecture</a></li>
+            <li><a href="../#pricing">Pricing</a></li>
+            <li><a href="../#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="colophon-col">
+          <h5>For press</h5>
+          <ul>
+            <li><a href="../press/">Press kit</a></li>
+            <li><a href="../press/#assets">High-res assets</a></li>
+            <li><a href="../press/#copy">Copy snippets</a></li>
+            <li><a href="mailto:press@vakter.app">press@vakter.app</a></li>
+          </ul>
+        </div>
+
+        <div class="colophon-col">
+          <h5>Contact</h5>
+          <ul>
+            <li><a href="mailto:support@vakter.app">support@</a></li>
+            <li><a href="mailto:security@vakter.app">security@</a></li>
+            <li><a href="mailto:licensing@vakter.app">licensing@</a></li>
+            <li><a href="mailto:hi@vakter.app">hi@</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="colophon-meta">
+        <span>vakter.app/concepts · v1.4 · © 2026 Jonathan Gebru</span>
+        <span>Designed on a Mac. Signed by Apple. Hosted on your disk.</span>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  // Lighthouse beam: constant slow rotation + scroll modulation.
+  (function () {
+    var beam = document.getElementById('beam');
+    if (!beam) return;
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return;
+
+    var startTime = performance.now();
+    var lastScroll = window.scrollY;
+    var scrollBoost = 0;
+
+    function tick(now) {
+      var elapsed = (now - startTime) / 1000;
+      // base rotation: 360° per 24s
+      var base = (elapsed / 24) * 360;
+      // scroll boost decays
+      scrollBoost *= 0.94;
+      var rot = base + scrollBoost;
+      beam.style.transform = 'rotate(' + rot.toFixed(2) + 'deg)';
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // Each scroll tick nudges the beam — feels like scrolling drives it
+    window.addEventListener('scroll', function () {
+      var dy = window.scrollY - lastScroll;
+      lastScroll = window.scrollY;
+      scrollBoost += dy * 0.08;
+    }, { passive: true });
+  })();
+
+  // Reveal-on-scroll
+  (function () {
+    if (!('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.reveal').forEach(function (n) { n.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.05 });
+    document.querySelectorAll('.reveal').forEach(function (n) { io.observe(n); });
+  })();
+</script>
+
+</body>
+</html>

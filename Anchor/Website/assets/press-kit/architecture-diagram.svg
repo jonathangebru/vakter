@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img"
+     aria-label="Vakter architecture: menubar app talks XPC to the helper LaunchAgent, which talks XPC to the privileged daemon (root). All peers pinned to Team ID 9TA5GB5UJH.">
+  <title>Vakter architecture</title>
+
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"  stop-color="#0b1530"/>
+      <stop offset="100%" stop-color="#11203f"/>
+    </linearGradient>
+    <pattern id="dotted" x="0" y="0" width="8" height="1" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="4" height="1" fill="#3d4d75"/>
+    </pattern>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Canvas -->
+  <rect width="1200" height="600" fill="url(#bg)"/>
+
+  <!-- Subtle ambient amber glow on the right (root daemon side) -->
+  <ellipse cx="950" cy="300" rx="280" ry="180" fill="#f5b14f" opacity="0.05"/>
+
+  <!-- Title -->
+  <text x="60" y="60" fill="#e9ecf3"
+        font-family="-apple-system, 'SF Pro Display', Inter, system-ui, sans-serif"
+        font-size="22" font-weight="600" letter-spacing="-0.5">
+    Vakter — privilege boundary
+  </text>
+  <text x="60" y="84" fill="#7e89a5"
+        font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+        font-size="11" letter-spacing="0.5">
+    three binaries · one asks for root · everything else runs as you
+  </text>
+
+  <!-- Box: menubar -->
+  <g transform="translate(60, 180)">
+    <rect width="280" height="180" rx="14" ry="14"
+          fill="none" stroke="#3d4d75" stroke-width="1.2"/>
+    <text x="20" y="34" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="10" letter-spacing="2">MENUBAR</text>
+    <text x="20" y="74" fill="#e9ecf3"
+          font-family="-apple-system, 'SF Pro Display', Inter, system-ui, sans-serif"
+          font-size="24" font-weight="600" letter-spacing="-0.5">
+      Vakter.app
+    </text>
+    <text x="20" y="106" fill="#a8b1c8"
+          font-family="-apple-system, system-ui, sans-serif"
+          font-size="13">SwiftUI UI · Settings · Onboarding</text>
+    <text x="20" y="148" fill="#a8b1c8"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="12">
+      <tspan fill="#f5b14f">●</tspan> runs as you
+    </text>
+    <text x="20" y="166" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="11">
+      no elevated privilege
+    </text>
+  </g>
+
+  <!-- Box: helper -->
+  <g transform="translate(450, 180)">
+    <rect width="280" height="180" rx="14" ry="14"
+          fill="none" stroke="#3d4d75" stroke-width="1.2"/>
+    <text x="20" y="34" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="10" letter-spacing="2">LAUNCHAGENT · HELPER</text>
+    <text x="20" y="74" fill="#e9ecf3"
+          font-family="-apple-system, 'SF Pro Display', Inter, system-ui, sans-serif"
+          font-size="24" font-weight="600" letter-spacing="-0.5">
+      VakterHelper
+    </text>
+    <text x="20" y="106" fill="#a8b1c8"
+          font-family="-apple-system, system-ui, sans-serif"
+          font-size="13">State machine · Observers · Capture</text>
+    <text x="20" y="148" fill="#a8b1c8"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="12">
+      <tspan fill="#f5b14f">●</tspan> runs as you
+    </text>
+    <text x="20" y="166" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="11">
+      always-on background process
+    </text>
+  </g>
+
+  <!-- Box: privileged daemon (highlighted) -->
+  <g transform="translate(840, 180)">
+    <rect width="300" height="180" rx="14" ry="14"
+          fill="#1c2a4f" stroke="#f5b14f" stroke-width="1.6"
+          opacity="0.95" filter="url(#glow)"/>
+    <text x="20" y="34" fill="#f5b14f"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="10" letter-spacing="2">LAUNCHDAEMON · PRIVILEGED</text>
+    <text x="20" y="74" fill="#fff"
+          font-family="-apple-system, 'SF Pro Display', Inter, system-ui, sans-serif"
+          font-size="22" font-weight="600" letter-spacing="-0.5">
+      VakterPrivilegedDaemon
+    </text>
+    <text x="20" y="106" fill="#d9deeb"
+          font-family="-apple-system, system-ui, sans-serif"
+          font-size="13">
+      One job: <tspan fill="#f5b14f" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="12">pmset disablesleep</tspan>
+    </text>
+    <text x="20" y="148" fill="#f5b14f"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="12" font-weight="600">
+      ● runs as root
+    </text>
+    <text x="20" y="166" fill="#f8c882"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="11">
+      ~150 lines of C · audited by Apple
+    </text>
+  </g>
+
+  <!-- XPC connector: menubar → helper -->
+  <g>
+    <line x1="340" y1="270" x2="450" y2="270" stroke="url(#dotted)" stroke-width="1.5"/>
+    <polygon points="450,270 442,266 442,274" fill="#7e89a5"/>
+    <text x="395" y="258" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="10" letter-spacing="1.5" text-anchor="middle">XPC</text>
+    <text x="395" y="290" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="9" letter-spacing="1" text-anchor="middle">peer-pinned</text>
+  </g>
+
+  <!-- XPC connector: helper → daemon -->
+  <g>
+    <line x1="730" y1="270" x2="840" y2="270" stroke="url(#dotted)" stroke-width="1.5"/>
+    <polygon points="840,270 832,266 832,274" fill="#f5b14f"/>
+    <text x="785" y="258" fill="#f5b14f"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="10" letter-spacing="1.5" text-anchor="middle">XPC</text>
+    <text x="785" y="290" fill="#7e89a5"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace"
+          font-size="9" letter-spacing="1" text-anchor="middle">peer-pinned</text>
+  </g>
+
+  <!-- Footer band -->
+  <g transform="translate(60, 480)">
+    <line x1="0" y1="0" x2="1080" y2="0" stroke="#3d4d75" stroke-width="0.8" stroke-dasharray="4 4"/>
+    <text x="0" y="32" fill="#a8b1c8"
+          font-family="-apple-system, system-ui, sans-serif"
+          font-size="14">
+      All XPC peers pinned to Developer ID
+      <tspan font-family="ui-monospace, 'SF Mono', Menlo, monospace" fill="#f5b14f" font-size="12"> 9TA5GB5UJH</tspan>.
+      Mismatched signers are rejected at the connection layer.
+    </text>
+    <text x="0" y="58" fill="#7e89a5"
+          font-family="-apple-system, system-ui, sans-serif"
+          font-size="12">
+      vakter.app · v1.4 · Notarised by Apple · Hardened Runtime · macOS 14.0+
+    </text>
+  </g>
+</svg>
