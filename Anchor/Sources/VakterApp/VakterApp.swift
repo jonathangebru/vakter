@@ -32,11 +32,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// "Access Security › Firewall & Sharing › …" submenus.
     private(set) var defensesScheduler: DefensesScheduler?
 
+    /// Owns the fullscreen "STOLEN MAC" takeover that fires on every
+    /// transition into the `.alarm` state. Held on the AppDelegate so
+    /// the controller (and its NSWindow set) outlives the snapshot
+    /// closure that triggers it. Exposed `internal` so the Settings
+    /// "Preview stealth overlay" button can drive the same controller
+    /// — keeping one source of truth for the overlay surface.
+    ///
+    /// Lazily initialised in `applicationDidFinishLaunching` (which
+    /// is @MainActor-isolated under AppKit) rather than as a stored
+    /// default — the controller's init is @MainActor and the nonisolated
+    /// AppDelegate stored-default context can't reach it under Swift 6.
+    private(set) var stealthOverlay: StealthOverlayWindowController?
+
+    /// The previous snapshot's state. Tracked so we only treat
+    /// .alarm as a *transition* (not as repeated alarm snapshots).
+    /// Avoids re-creating the overlay windows on every periodic
+    /// snapshot republish while the alarm is still firing.
+    private var lastStealthState: VakterState = .unarmed
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[Vakter] launched")
 
         // Hide Dock icon — menubar-only.
         NSApp.setActivationPolicy(.accessory)
+
+        // Allocate the stealth overlay controller now that we're on
+        // the main actor. See `stealthOverlay` doc for why this isn't
+        // a stored default. The controller is cheap (no windows held
+        // until `show()` is called) so eager init is fine.
+        stealthOverlay = StealthOverlayWindowController()
 
         // Register the bundled helper LaunchAgent. macOS will either auto-
         // enable it (if previously approved) or mark it as requiresApproval
@@ -96,6 +121,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             NSLog("[AppDelegate] CloudKitPublisher enabled.")
+        }
+
+        // Feature #24 — stealth lock-screen takeover.
+        //
+        // Tee the snapshot one more time so we drive the
+        // fullscreen "STOLEN MAC" overlay window. We do this AFTER the
+        // CloudKit tee so both observers keep receiving every push.
+        //
+        // Trigger model:
+        //   - on transition INTO .alarm:    show the overlay
+        //   - on transition OUT of .alarm:  dismiss the overlay
+        //
+        // We deliberately key on the *transition* (lastStealthState !=
+        // .alarm && new == .alarm) rather than "any .alarm snapshot":
+        // the helper republishes snapshots periodically and we don't
+        // want to tear down + rebuild the windows on every republish
+        // while the alarm is firing.
+        //
+        // .grace MUST NOT trigger the overlay. The most common
+        // false-positive pattern (lid bumped at a café) goes through
+        // grace; the user disarms before grace expires and no overlay
+        // is ever shown. Only when grace times out does the helper
+        // transition to .alarm and we light up.
+        let snapshotChainBeforeStealth = client.onSnapshot
+        client.onSnapshot = { [weak self] snapshot in
+            snapshotChainBeforeStealth?(snapshot)
+            Task { @MainActor in
+                self?.handleStealthOverlayTransition(snapshot: snapshot)
+            }
         }
 
         defenses.start()
@@ -209,6 +263,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApp.setActivationPolicy(.accessory)
                 self?.onboardingWindow = nil
             }
+        }
+    }
+
+    /// Drive the fullscreen stealth overlay window from helper snapshots.
+    ///
+    /// Called once per snapshot push (after the CloudKit tee). Only the
+    /// transitions in/out of `.alarm` produce side effects — all other
+    /// snapshot pushes are no-ops here, including the periodic
+    /// republishes that happen while the helper is in steady state.
+    ///
+    /// The handler reads `StealthOverlayConfigStore` at the moment of
+    /// firing rather than caching at launch, so a user can edit the
+    /// "if found, please contact" card and the next alarm will pick
+    /// up the new text without an app relaunch.
+    ///
+    /// Guaranteed contract (used by acceptance criteria #7 + #8 of
+    /// Issue #24):
+    ///   • `.grace` is NOT a trigger — only `.alarm`.
+    ///   • Empty user config does NOT silently no-op — the overlay still
+    ///     appears using the model's `displayMessage` fallback.
+    @MainActor
+    private func handleStealthOverlayTransition(snapshot: VakterSnapshot) {
+        let prev = lastStealthState
+        let new  = snapshot.state
+        lastStealthState = new
+
+        if prev != .alarm && new == .alarm {
+            let cfg = StealthOverlayConfigStore.load()
+            NSLog(
+                "[AppDelegate] alarm entered — showing stealth overlay (config empty=%@)",
+                cfg.isEmpty ? "yes (default copy)" : "no"
+            )
+            stealthOverlay?.show(config: cfg, autoDismissAfter: nil)
+            return
+        }
+
+        // Any transition leaving .alarm dismisses the overlay. Includes
+        // the .alarm → .unarmed disarm path AND the rare .alarm →
+        // .grace path (the helper currently never does this, but if it
+        // ever does we don't want a lingering ghost overlay).
+        if prev == .alarm && new != .alarm {
+            NSLog("[AppDelegate] alarm cleared — dismissing stealth overlay (new state=%@)",
+                  new.rawValue)
+            stealthOverlay?.dismiss()
         }
     }
 
