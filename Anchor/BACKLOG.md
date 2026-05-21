@@ -8,6 +8,48 @@ Order = roughly priority × impact ÷ effort.
 
 ---
 
+## Currently in flight (strategist-commissioned)
+
+| Epic | Features | Memo | Status |
+|---|---|---|---|
+| [#9 Deploy vakter.app — pre-flight, host config, 30-min runbook](https://github.com/jonathangebru/vakter/issues/9) | [#10](https://github.com/jonathangebru/vakter/issues/10) [#11](https://github.com/jonathangebru/vakter/issues/11) [#12](https://github.com/jonathangebru/vakter/issues/12) [#13](https://github.com/jonathangebru/vakter/issues/13) [#14](https://github.com/jonathangebru/vakter/issues/14) [#15](https://github.com/jonathangebru/vakter/issues/15) [#16](https://github.com/jonathangebru/vakter/issues/16) | `.claude/strategy/2026-05-21-deploy-vakter-app-the-launch-linchpin.md` | Done — runbook complete; awaiting human deploy step |
+| [#18 Epic A: v1.4.2 — Pre-launch reality check](https://github.com/jonathangebru/vakter/issues/18) | [#20](https://github.com/jonathangebru/vakter/issues/20) [#21](https://github.com/jonathangebru/vakter/issues/21) [#22](https://github.com/jonathangebru/vakter/issues/22) [#23](https://github.com/jonathangebru/vakter/issues/23) [#24](https://github.com/jonathangebru/vakter/issues/24) [#25](https://github.com/jonathangebru/vakter/issues/25) [#26](https://github.com/jonathangebru/vakter/issues/26) [#27](https://github.com/jonathangebru/vakter/issues/27) [#28](https://github.com/jonathangebru/vakter/issues/28) [#29](https://github.com/jonathangebru/vakter/issues/29) | `.claude/strategy/2026-05-21-feature-audit-and-roadmap.md` | In Progress — 10 features Ready to dispatch |
+| [#19 Epic B: v1.5 — Calm follow-up](https://github.com/jonathangebru/vakter/issues/19) | [#30](https://github.com/jonathangebru/vakter/issues/30) [#31](https://github.com/jonathangebru/vakter/issues/31) [#32](https://github.com/jonathangebru/vakter/issues/32) [#33](https://github.com/jonathangebru/vakter/issues/33) [#34](https://github.com/jonathangebru/vakter/issues/34) [#35](https://github.com/jonathangebru/vakter/issues/35) [#36](https://github.com/jonathangebru/vakter/issues/36) [#37](https://github.com/jonathangebru/vakter/issues/37) [#38](https://github.com/jonathangebru/vakter/issues/38) | same memo | Backlog — dispatch-blocked until Epic #18 ships + post-launch retro filed |
+
+Sequencing note: Epic A blocks launch. Begin in parallel with the
+human-side deployment of #9. The five-day fix list inside Epic A
+clears the credibility, polish, and one-cinematic-moment problems
+identified in the feature-audit memo.
+
+---
+
+## What's already shipping (per the 2026-05-21 feature audit)
+
+`STRATEGY.md §1` lists v1.2 state. **The code has moved well past that.**
+Audit-confirmed (see `.claude/strategy/2026-05-21-feature-audit-and-roadmap.md`):
+
+- 10s ambient audio capture on alarm (was "v1.3 deliverable")
+- Tamper-evident SHA-256 Merkle event chain (was "v1.3 deliverable")
+- Police-ready PDF export (was "v1.3 deliverable")
+- Email evidence delivery as a multi-channel fallback (was "v1.5 deferred")
+- User-owned cloud-evidence backup, B2 or presigned-URL (was "v1.4 deferred")
+- CloudKit publisher + iOS + Apple Watch companion source (was "v1.4 epic")
+- Auto-arm engine with 4 trigger types (was "v1.5 deferred")
+- Find My token clearing + Apple ID change watchers (uncredited in §1)
+- System-wake belt-and-braces alarm fallback (uncredited in §1)
+- macOS-native crash report harvest (no PLCrashReporter needed)
+- XPC peer code-sig verification under Team ID 9TA5GB5UJH
+
+**Known shipping gaps** (close in Epic A pre-launch):
+- README claims 20 defenses checks; actual is 12 — fix the count OR ship 8 more checks
+- Bluetooth "trusted-device disarm" claim in README is misleading — trust is informational only
+- Sparkle integration documented in SPARKLE_SETUP.md but not wired
+- `Sources/VakterApp/VakterIntents.swift:19-26` has a `TODO(week-3)` for actually wiring intents to the helper — surface exists, doesn't act
+- `Sources/VakterHelper/XPCService.swift:127` returns empty stub for defenses checklist
+- Settings ships 11 tabs, BACKLOG #6 calls for ≤6
+
+---
+
 ## Pre-MacPaw-submission (1-2 weeks)
 
 These should land before the first paid release on MacPaw / Setapp.
