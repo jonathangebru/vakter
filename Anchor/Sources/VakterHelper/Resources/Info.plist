@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+
+    <!-- Matches the binary filename in Contents/MacOS/ after build-app.sh
+         renames it from the SwiftPM product name. -->
+    <key>CFBundleExecutable</key>
+    <string>VakterHelper</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>app.vakter.mac.helper</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <!-- The privileged-auth dialog shown by AuthorizationCopyRights pulls
+         its title from CFBundleName. We embed this Info.plist into the
+         helper Mach-O via -sectcreate (see Package.swift) so macOS reads
+         "Vakter" as the requester name instead of falling back to the
+         binary filename "VakterHelper". -->
+    <key>CFBundleName</key>
+    <string>Vakter</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.1.0</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>LSBackgroundOnly</key>
+    <true/>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+
+    <!-- Camera usage string is required even for a background daemon —
+         macOS pops the permission prompt on first AVCaptureSession.startRunning
+         and uses this string in the dialog. -->
+    <key>NSCameraUsageDescription</key>
+    <string>Vakter uses the FaceTime camera to capture photos when the alarm fires, so you can see who tried to take your Mac.</string>
+
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Vakter uses Bluetooth to detect when your trusted devices are nearby, dampening false alarms.</string>
+
+    <!-- LocationProbe.swift uses CLLocationManager to attach a Maps URL
+         to the iMessage evidence Vakter sends to your phone when an alarm
+         fires. Without this usage string the helper would crash on the
+         first CLLocationManager call. -->
+    <key>NSLocationUsageDescription</key>
+    <string>Vakter attaches a Maps link to the iMessage evidence it sends to your phone when the alarm fires, so you can see where your Mac was.</string>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Vakter attaches a Maps link to the iMessage evidence it sends to your phone when the alarm fires, so you can see where your Mac was.</string>
+</dict>
+</plist>

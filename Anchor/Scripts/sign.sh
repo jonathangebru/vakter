@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Codesign the Anchor.app bundle and the embedded helper.
+# Codesign the Vakter.app bundle and the embedded helper + privileged daemon.
 #
 # Identity is auto-detected from your keychain. If you have more than one
 # Developer ID Application identity, set DEVELOPER_ID_APPLICATION explicitly.
@@ -24,12 +24,15 @@ fi
 echo "==> Signing as: ${DEVELOPER_ID_APPLICATION}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${ROOT}/build/Anchor.app"
-HELPER="${APP}/Contents/MacOS/AnchorHelper"
-DAEMON="${APP}/Contents/MacOS/AnchorPrivilegedDaemon"
-APP_ENT="${ROOT}/Sources/AnchorApp/Resources/Anchor.entitlements"
-HELPER_ENT="${ROOT}/Sources/AnchorHelper/Resources/AnchorHelper.entitlements"
-DAEMON_ENT="${ROOT}/Sources/AnchorPrivilegedDaemon/Resources/AnchorPrivilegedDaemon.entitlements"
+APP="${ROOT}/build/Vakter.app"
+# Binary filenames inside the bundle have been renamed by build-app.sh
+# from the SwiftPM product names to user-visible Vakter names.
+APP_BIN="${APP}/Contents/MacOS/Vakter"
+HELPER="${APP}/Contents/MacOS/VakterHelper"
+DAEMON="${APP}/Contents/MacOS/VakterPrivilegedDaemon"
+APP_ENT="${ROOT}/Sources/VakterApp/Resources/Vakter.entitlements"
+HELPER_ENT="${ROOT}/Sources/VakterHelper/Resources/VakterHelper.entitlements"
+DAEMON_ENT="${ROOT}/Sources/VakterPrivilegedDaemon/Resources/VakterPrivilegedDaemon.entitlements"
 
 [[ -e "${APP}" ]] || { echo "Build first (./Scripts/build-app.sh)"; exit 1; }
 
@@ -48,6 +51,9 @@ codesign --force --options runtime \
   --sign "${DEVELOPER_ID_APPLICATION}" \
   --timestamp \
   "${HELPER}"
+
+# (App binary is signed implicitly as part of the bundle below, but we
+# could also sign it explicitly — codesign on the .app bundle covers it.)
 
 echo "==> Signing app"
 codesign --force --options runtime \

@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Package the signed, notarised Anchor.app into a distributable .dmg
+# Package the signed, notarised Vakter.app into a distributable .dmg
 # that a friend can download, open, and drag into /Applications.
 #
 # Prerequisites (run in order before this script):
-#   ./Scripts/build-app.sh     → produces build/Anchor.app
+#   ./Scripts/build-app.sh     → produces build/Vakter.app
 #   ./Scripts/sign.sh          → signs everything inside the bundle
 #   ./Scripts/notarize.sh      → submits to Apple + staples the ticket
 #
-# Output: build/Anchor.dmg
+# Output: build/Vakter.dmg (notarised + stapled)
 #
 # The .dmg layout is the standard Mac convention:
-#   - Anchor.app (the bundle, draggable)
+#   - Vakter.app (the bundle, draggable)
 #   - Applications  (a symlink the user drags into)
 # So friends just open the .dmg and drag the icon to the symlink.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="${ROOT}/build/Anchor.app"
-DMG="${ROOT}/build/Anchor.dmg"
+APP="${ROOT}/build/Vakter.app"
+DMG="${ROOT}/build/Vakter.dmg"
 STAGING="${ROOT}/build/dmg-staging"
 
 [[ -e "${APP}" ]] || {
@@ -40,29 +40,32 @@ fi
 echo "==> Building staging directory at ${STAGING}"
 rm -rf "${STAGING}"
 mkdir -p "${STAGING}"
-cp -R "${APP}" "${STAGING}/Anchor.app"
+cp -R "${APP}" "${STAGING}/Vakter.app"
 ln -s /Applications "${STAGING}/Applications"
 
 # Optional: a small README inside the .dmg explaining what to do.
 cat > "${STAGING}/Read me first.txt" << 'EOF'
-Anchor
+Vakter
 
-1. Drag Anchor into the Applications folder shortcut next to it.
-2. Open Anchor from your Applications folder.
+1. Drag Vakter into the Applications folder shortcut next to it.
+2. Open Vakter from your Applications folder.
 3. The first launch will ask you to approve a Login Item — say yes.
 4. You'll be walked through a brief setup.
 
-Anchor lives in your menu bar (look for the dark anchor icon top
-right). Press the shortcut whenever you walk away from your Mac.
+Vakter — Norwegian for "the night-watchmen on a ship." Calm 99% of the
+time, fierce the moment it has to be. Look for the dark shield icon in
+your menu bar. Press your shortcut whenever you walk away from your Mac.
 EOF
 
 echo "==> Creating .dmg"
 rm -f "${DMG}"
+# Also clean up the legacy Anchor.dmg if present from a pre-rebrand build.
+rm -f "${ROOT}/build/Anchor.dmg" "${ROOT}/build/Anchor.zip"
 
 # hdiutil create — produces an APFS-formatted compressed disk image.
 # Note: macOS 11+ prefers UDZO for compatibility across Intel + ARM.
 /usr/bin/hdiutil create \
-    -volname "Anchor" \
+    -volname "Vakter" \
     -srcfolder "${STAGING}" \
     -ov \
     -format UDZO \
@@ -85,15 +88,27 @@ elif [[ -z "${DEVELOPER_ID_APPLICATION:-}" ]]; then
     fi
 fi
 
+# Notarise + staple the DMG itself. Without this, downloaders see a
+# "verifying" Gatekeeper delay on first open (online check). With
+# stapling, the download experience is completely offline-friendly.
+NOTARY_PROFILE="${NOTARY_PROFILE:-anchor-notarytool}"
+if /usr/bin/xcrun stapler validate "${APP}" >/dev/null 2>&1; then
+    echo "==> Notarising the DMG (uses '${NOTARY_PROFILE}' keychain profile)"
+    if /usr/bin/xcrun notarytool submit "${DMG}" \
+            --keychain-profile "${NOTARY_PROFILE}" \
+            --wait >/dev/null 2>&1; then
+        echo "==> Stapling notarisation ticket to .dmg"
+        /usr/bin/xcrun stapler staple "${DMG}" >/dev/null || true
+    else
+        echo "   (DMG notarisation skipped — set up the profile with:"
+        echo "    xcrun notarytool store-credentials ${NOTARY_PROFILE} ...)"
+        echo "   The .app inside is already stapled, so installs still work."
+    fi
+fi
+
 echo ""
 echo "✅ Wrote ${DMG} ($(du -h "${DMG}" | cut -f1))"
 echo ""
 echo "Share this file by AirDrop, Slack, Dropbox, or upload to your"
 echo "website. To install, the recipient double-clicks the .dmg and"
-echo "drags Anchor into Applications."
-echo ""
-echo "Want to also notarise the .dmg itself (some download paths"
-echo "trigger an extra Gatekeeper pass on the .dmg)? Run:"
-echo "    xcrun notarytool submit \"${DMG}\" \\"
-echo "        --keychain-profile anchor-notarytool --wait"
-echo "    xcrun stapler staple \"${DMG}\""
+echo "drags Vakter into Applications."

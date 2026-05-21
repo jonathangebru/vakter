@@ -1,11 +1,15 @@
 #!/usr/bin/env swift
 
-// Renders the Anchor app icon at all required iconset sizes via direct
+// Renders the Vakter app icon at all required iconset sizes via direct
 // Core Graphics / NSBitmapImageRep — no SwiftUI ImageRenderer (which
 // hangs in plain `swift` CLI without a full AppKit runloop).
 //
-// Usage:  cd Anchor && swift Scripts/generate-icon.swift
-// Output: Sources/AnchorApp/Resources/AppIcon.icns
+// Brand: a stylised lighthouse silhouette on a deep-navy squircle,
+// with a warm amber lantern at the lamp room. Mirrors the
+// `LighthouseGlyph` SwiftUI Shape used in the in-app hero contexts.
+//
+// Usage:  cd Vakter && swift Scripts/generate-icon.swift
+// Output: Sources/VakterApp/Resources/AppIcon.icns
 
 import AppKit
 import CoreGraphics
@@ -29,7 +33,14 @@ func drawIcon(size pixels: Int) -> NSBitmapImageRep? {
         return nil
     }
 
-    // 1. Squircle background with diagonal gradient.
+    // Flip the Y axis so the rest of this function can use the same
+    // "Y increases downward" convention as SwiftUI / UIKit. Without
+    // this, paths read upside-down because NSBitmapImageRep contexts
+    // are natively bottom-up.
+    ctx.translateBy(x: 0, y: s)
+    ctx.scaleBy(x: 1, y: -1)
+
+    // 1. Squircle background with diagonal navy gradient.
     let cornerRadius = s * 0.22
     let bgRect = CGRect(x: 0, y: 0, width: s, height: s)
     let bgPath = CGPath(roundedRect: bgRect,
@@ -43,7 +54,7 @@ func drawIcon(size pixels: Int) -> NSBitmapImageRep? {
         colorsSpace: CGColorSpaceCreateDeviceRGB(),
         colors: [
             CGColor(red: 0.14, green: 0.24, blue: 0.42, alpha: 1.0),
-            CGColor(red: 0.07, green: 0.16, blue: 0.32, alpha: 1.0)
+            CGColor(red: 0.05, green: 0.12, blue: 0.26, alpha: 1.0)
         ] as CFArray,
         locations: [0, 1]
     )!
@@ -68,101 +79,275 @@ func drawIcon(size pixels: Int) -> NSBitmapImageRep? {
     ctx.strokePath()
     ctx.restoreGState()
 
-    // 3. The anchor glyph in ivory. Centered, scaled to ~62% of icon.
-    let glyphSize = s * 0.62
+    // Layout — the lighthouse glyph occupies ~70% of the canvas, centred.
+    let glyphHeight = s * 0.78
+    let glyphWidth  = s * 0.58
     let glyphRect = CGRect(
-        x: (s - glyphSize) / 2,
-        y: (s - glyphSize) / 2,
-        width: glyphSize, height: glyphSize
+        x: (s - glyphWidth) / 2,
+        y: (s - glyphHeight) / 2,
+        width: glyphWidth, height: glyphHeight
     )
-    let glyphPath = anchorGlyphPath(in: glyphRect)
+
+    // The lantern centre is ~16% from the TOP of the glyph rect (matches
+    // the lantern room's vertical centre at frac 0.16 inside the glyph).
+    // In NSGraphicsContext (flipped coordinates, Y=0 at top), this is
+    // simply glyphRect.minY + glyphHeight * 0.16.
+    let lampCenter = CGPoint(
+        x: s / 2,
+        y: glyphRect.minY + glyphHeight * 0.16
+    )
+
+    // 3. Warm amber lantern halo. Soft radial glow centred at the
+    // lantern room. Painted BEFORE the silhouette so the lighthouse
+    // cuts a clean shape out of the glow.
+    let haloGradient = CGGradient(
+        colorsSpace: CGColorSpaceCreateDeviceRGB(),
+        colors: [
+            CGColor(red: 0.98, green: 0.78, blue: 0.40, alpha: 0.75),
+            CGColor(red: 0.95, green: 0.62, blue: 0.20, alpha: 0.0)
+        ] as CFArray,
+        locations: [0, 1]
+    )!
+    ctx.saveGState()
+    ctx.addPath(bgPath)
+    ctx.clip()  // confine the halo to the squircle
+    ctx.drawRadialGradient(
+        haloGradient,
+        startCenter: lampCenter, startRadius: s * 0.03,
+        endCenter:   lampCenter, endRadius:   s * 0.62,
+        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+    )
+    ctx.restoreGState()
+
+    // 4. Two soft amber beams stretching horizontally from the lantern.
+    //    Stylised, not realistic — adds energy and pulls the eye to
+    //    the light source.
+    if pixels >= 64 {
+        ctx.saveGState()
+        ctx.addPath(bgPath)
+        ctx.clip()
+        let beamHeight = s * 0.07
+        let beamLength = s * 0.42
+        // Left beam
+        let leftBeam = CGGradient(
+            colorsSpace: CGColorSpaceCreateDeviceRGB(),
+            colors: [
+                CGColor(red: 1.0, green: 0.88, blue: 0.55, alpha: 0.0),
+                CGColor(red: 1.0, green: 0.85, blue: 0.50, alpha: 0.55)
+            ] as CFArray,
+            locations: [0, 1]
+        )!
+        let leftRect = CGRect(
+            x: lampCenter.x - beamLength, y: lampCenter.y - beamHeight / 2,
+            width: beamLength, height: beamHeight
+        )
+        ctx.saveGState()
+        ctx.addRect(leftRect)
+        ctx.clip()
+        ctx.drawLinearGradient(
+            leftBeam,
+            start: CGPoint(x: leftRect.minX, y: leftRect.midY),
+            end:   CGPoint(x: leftRect.maxX, y: leftRect.midY),
+            options: []
+        )
+        ctx.restoreGState()
+        // Right beam (mirror)
+        let rightRect = CGRect(
+            x: lampCenter.x, y: lampCenter.y - beamHeight / 2,
+            width: beamLength, height: beamHeight
+        )
+        let rightBeam = CGGradient(
+            colorsSpace: CGColorSpaceCreateDeviceRGB(),
+            colors: [
+                CGColor(red: 1.0, green: 0.85, blue: 0.50, alpha: 0.55),
+                CGColor(red: 1.0, green: 0.88, blue: 0.55, alpha: 0.0)
+            ] as CFArray,
+            locations: [0, 1]
+        )!
+        ctx.saveGState()
+        ctx.addRect(rightRect)
+        ctx.clip()
+        ctx.drawLinearGradient(
+            rightBeam,
+            start: CGPoint(x: rightRect.minX, y: rightRect.midY),
+            end:   CGPoint(x: rightRect.maxX, y: rightRect.midY),
+            options: []
+        )
+        ctx.restoreGState()
+        ctx.restoreGState()
+    }
+
+    // 5. Lighthouse silhouette in ivory.
+    let glyphPath = lighthouseGlyphPath(in: glyphRect)
     ctx.saveGState()
     ctx.setFillColor(red: 0.98, green: 0.97, blue: 0.94, alpha: 1.0)
     ctx.addPath(glyphPath)
-    ctx.fillPath(using: .evenOdd)
+    ctx.fillPath(using: .winding)
+    ctx.restoreGState()
+
+    // 6. The lantern light itself — a bright amber dot inside the
+    //    lantern room with a soft local bloom.
+    let lightSize = s * 0.055
+    let lightRect = CGRect(
+        x: lampCenter.x - lightSize / 2,
+        y: lampCenter.y - lightSize / 2,
+        width: lightSize, height: lightSize
+    )
+    ctx.saveGState()
+    let bloomGrad = CGGradient(
+        colorsSpace: CGColorSpaceCreateDeviceRGB(),
+        colors: [
+            CGColor(red: 1.0, green: 0.95, blue: 0.65, alpha: 1.0),
+            CGColor(red: 0.95, green: 0.70, blue: 0.25, alpha: 0.0)
+        ] as CFArray,
+        locations: [0, 1]
+    )!
+    ctx.drawRadialGradient(
+        bloomGrad,
+        startCenter: lampCenter, startRadius: 0,
+        endCenter:   lampCenter, endRadius:   lightSize * 1.9,
+        options: []
+    )
+    ctx.setFillColor(red: 1.0, green: 0.92, blue: 0.55, alpha: 1.0)
+    ctx.addEllipse(in: lightRect)
+    ctx.fillPath()
     ctx.restoreGState()
 
     NSGraphicsContext.restoreGraphicsState()
     return rep
 }
 
-// MARK: - Anchor glyph (mirrors AnchorGlyph.swift)
+// MARK: - Lighthouse glyph path
+//
+// Stronger silhouette than the original draft. Classic profile:
+// chunky stepped base, gently tapered tower, distinctly wider gallery
+// walkway, clear lantern room, full rounded dome, slender finial.
+// Read at 16pt and at 1024pt without losing identity.
+//
+// Y convention: this function uses the SwiftUI-style "Y increases
+// downward" convention (minY = top of rect, maxY = bottom). The
+// caller flips the rect / context for Core Graphics rendering.
 
-func anchorGlyphPath(in rect: CGRect) -> CGPath {
+func lighthouseGlyphPath(in rect: CGRect) -> CGPath {
     let path = CGMutablePath()
-    let inset = rect.width * 0.08
+    let inset = rect.width * 0.04
     let inner = rect.insetBy(dx: inset, dy: inset)
-
-    let centerX = inner.midX
+    let cx = inner.midX
     let topY = inner.minY
     let bottomY = inner.maxY
+    let h = inner.height
+    let w = inner.width
 
-    let ringDiameter = inner.width * 0.22
-    let ringCenterY = topY + ringDiameter * 0.55
-    let ringRect = CGRect(
-        x: centerX - ringDiameter / 2, y: ringCenterY - ringDiameter / 2,
-        width: ringDiameter, height: ringDiameter
-    )
-    path.addEllipse(in: ringRect)
+    // Vertical layout (% of height, from top down):
+    //   0..6    finial
+    //   6..10   dome (half-circle on top of lantern room)
+    //   10..22  lantern room (with cross-glass implied)
+    //   22..27  gallery walkway (overhang)
+    //   27..82  tower (tapered, slight cigar)
+    //   82..95  base step
+    //   95..100 ground line
 
-    let shaftTop = ringCenterY + ringDiameter * 0.45
-    let shaftBottom = bottomY - inner.height * 0.05
+    // 1) BASE STEP — chunky horizontal block at the very bottom.
+    let baseTopFrac: CGFloat = 0.82
+    let baseBottomFrac: CGFloat = 0.95
+    let baseTopY = topY + h * baseTopFrac
+    let baseBottomY = topY + h * baseBottomFrac
+    let baseHalf = w * 0.42
+    path.addRect(CGRect(
+        x: cx - baseHalf, y: baseTopY,
+        width: baseHalf * 2, height: baseBottomY - baseTopY
+    ))
 
-    let crossY = shaftTop + inner.height * 0.10
-    let crossWidth = inner.width * 0.45
-    let crossThick = inner.height * 0.06
-    let crossRect = CGRect(
-        x: centerX - crossWidth / 2, y: crossY - crossThick / 2,
-        width: crossWidth, height: crossThick
-    )
-    path.addRoundedRect(in: crossRect, cornerWidth: crossThick / 2, cornerHeight: crossThick / 2)
+    // Ground line — a wider, very thin "soil" line under the base.
+    let groundY = topY + h * 0.95
+    let groundHalf = w * 0.48
+    path.addRect(CGRect(
+        x: cx - groundHalf, y: groundY,
+        width: groundHalf * 2, height: h * 0.04
+    ))
 
-    let shaftThick = inner.width * 0.07
-    let shaftRect = CGRect(
-        x: centerX - shaftThick / 2, y: shaftTop,
-        width: shaftThick, height: shaftBottom - shaftTop
-    )
-    path.addRoundedRect(in: shaftRect, cornerWidth: shaftThick / 2, cornerHeight: shaftThick / 2)
+    // 2) TOWER — long tapered trapezoid from base to gallery.
+    //    Slight cigar curve via two small intermediate widths so the
+    //    silhouette doesn't look like a column.
+    let towerTopFrac: CGFloat = 0.27
+    let towerTopY = topY + h * towerTopFrac
+    let towerBottomY = baseTopY
+    let towerHalfBottom = w * 0.30
+    let towerHalfMid    = w * 0.26   // narrowest waist
+    let towerHalfTop    = w * 0.28
+    let midY = (towerTopY + towerBottomY) / 2
 
-    let armSpan = inner.width * 0.78
-    let armDip = inner.height * 0.08
-    let armRise = inner.height * 0.18
-    let leftBase = CGPoint(x: centerX - inner.width * 0.05, y: shaftBottom)
-    let rightBase = CGPoint(x: centerX + inner.width * 0.05, y: shaftBottom)
-
-    let leftTip = CGPoint(x: centerX - armSpan / 2, y: shaftBottom - armRise)
-    let leftDip = CGPoint(x: centerX - armSpan / 4, y: shaftBottom + armDip)
-    let leftThick = inner.width * 0.05
-    path.move(to: CGPoint(x: leftBase.x, y: leftBase.y - leftThick))
+    path.move(to: CGPoint(x: cx - towerHalfBottom, y: towerBottomY))
+    // Up the left side with a soft curve through the mid-waist.
     path.addQuadCurve(
-        to: CGPoint(x: leftTip.x, y: leftTip.y),
-        control: CGPoint(x: leftDip.x, y: leftDip.y - armDip * 0.4)
+        to: CGPoint(x: cx - towerHalfTop, y: towerTopY),
+        control: CGPoint(x: cx - towerHalfMid, y: midY)
     )
-    path.addLine(to: CGPoint(x: leftTip.x + leftThick * 0.6, y: leftTip.y + leftThick * 0.6))
+    // Across the top of the tower.
+    path.addLine(to: CGPoint(x: cx + towerHalfTop, y: towerTopY))
+    // Down the right side, mirrored curve.
     path.addQuadCurve(
-        to: CGPoint(x: leftBase.x, y: leftBase.y + leftThick),
-        control: CGPoint(x: leftDip.x, y: leftDip.y + leftThick * 0.4)
+        to: CGPoint(x: cx + towerHalfBottom, y: towerBottomY),
+        control: CGPoint(x: cx + towerHalfMid, y: midY)
     )
     path.closeSubpath()
 
-    let rightTip = CGPoint(x: centerX + armSpan / 2, y: shaftBottom - armRise)
-    let rightDip = CGPoint(x: centerX + armSpan / 4, y: shaftBottom + armDip)
-    let rightThick = inner.width * 0.05
-    path.move(to: CGPoint(x: rightBase.x, y: rightBase.y - rightThick))
-    path.addQuadCurve(
-        to: CGPoint(x: rightTip.x, y: rightTip.y),
-        control: CGPoint(x: rightDip.x, y: rightDip.y - armDip * 0.4)
+    // 3) GALLERY WALKWAY — overhanging horizontal block above the tower,
+    //    clearly wider than the tower top.
+    let galleryTopFrac: CGFloat = 0.22
+    let galleryBottomFrac: CGFloat = 0.27
+    let galleryTopY = topY + h * galleryTopFrac
+    let galleryBottomY = topY + h * galleryBottomFrac
+    let galleryHalf = w * 0.36
+    path.addRect(CGRect(
+        x: cx - galleryHalf, y: galleryTopY,
+        width: galleryHalf * 2, height: galleryBottomY - galleryTopY
+    ))
+
+    // 4) LANTERN ROOM — taller than wide, with a small horizontal
+    //    cap-rail at the bottom edge (implies the glass-room walls).
+    let lanternTopFrac: CGFloat = 0.10
+    let lanternBottomFrac: CGFloat = 0.22
+    let lanternTopY = topY + h * lanternTopFrac
+    let lanternBottomY = topY + h * lanternBottomFrac
+    let lanternHalf = w * 0.22
+    let lanternRect = CGRect(
+        x: cx - lanternHalf, y: lanternTopY,
+        width: lanternHalf * 2,
+        height: lanternBottomY - lanternTopY
     )
-    path.addLine(to: CGPoint(x: rightTip.x - rightThick * 0.6, y: rightTip.y + rightThick * 0.6))
-    path.addQuadCurve(
-        to: CGPoint(x: rightBase.x, y: rightBase.y + rightThick),
-        control: CGPoint(x: rightDip.x, y: rightDip.y + rightThick * 0.4)
+    let lanternCorner = min(lanternRect.width, lanternRect.height) * 0.12
+    path.addRoundedRect(
+        in: lanternRect,
+        cornerWidth: lanternCorner, cornerHeight: lanternCorner
+    )
+
+    // 5) DOME — proper half-circle sitting on top of the lantern.
+    //    Radius equals the lantern's half-width so the dome fits the
+    //    lantern exactly with no overhang. We've flipped the rendering
+    //    context (see drawIcon) so Y increases downward; sweeping the
+    //    arc from 180° → 360° clockwise produces the visual TOP half.
+    let domeRadius = lanternHalf
+    let domeCenterY = lanternTopY
+    path.move(to: CGPoint(x: cx - domeRadius, y: domeCenterY))
+    path.addArc(
+        center: CGPoint(x: cx, y: domeCenterY),
+        radius: domeRadius,
+        startAngle: .pi,
+        endAngle: 2 * .pi,
+        clockwise: false
     )
     path.closeSubpath()
 
-    let holeInset = ringDiameter * 0.32
-    let holeRect = ringRect.insetBy(dx: holeInset, dy: holeInset)
-    path.addEllipse(in: holeRect)
+    // 6) FINIAL — slim vertical needle above the dome.
+    let finialHeight = h * 0.05
+    let finialThick  = w * 0.018
+    let finialTopY = topY + h * 0.01
+    let finialBottomY = finialTopY + finialHeight
+    path.addRect(CGRect(
+        x: cx - finialThick / 2, y: finialTopY,
+        width: finialThick, height: finialBottomY - finialTopY
+    ))
 
     return path
 }
@@ -171,7 +356,7 @@ func anchorGlyphPath(in rect: CGRect) -> CGPath {
 
 let here = FileManager.default.currentDirectoryPath
 let iconsetDir = "\(here)/build/AppIcon.iconset"
-let outIcns    = "\(here)/Sources/AnchorApp/Resources/AppIcon.icns"
+let outIcns    = "\(here)/Sources/VakterApp/Resources/AppIcon.icns"
 
 try? FileManager.default.removeItem(atPath: iconsetDir)
 try? FileManager.default.createDirectory(

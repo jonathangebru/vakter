@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>Vakter</string>
+
+    <!-- CFBundleExecutable must match the actual binary filename inside
+         Contents/MacOS/. We rename the binary on copy in build-app.sh,
+         so the SwiftPM build product ("VakterApp") becomes "Vakter"
+         in the assembled bundle. -->
+    <key>CFBundleExecutable</key>
+    <string>Vakter</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>app.vakter.mac</string>
+
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <key>CFBundleName</key>
+    <string>Vakter</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.1.0</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!-- Used by MacPaw / App Store to categorise. "Utilities" is the
+         right bucket for an anti-theft alarm. -->
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+
+    <!-- Surfaced in About dialogs + the Finder Get Info pane.
+         Year is left forward-looking so the binary doesn't visibly
+         date itself every January. -->
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 Vakter. All rights reserved.</string>
+
+    <!-- Menubar-only — no Dock icon, no main window. -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <!-- Permission usage strings (shown in the macOS TCC prompts). -->
+    <key>NSCameraUsageDescription</key>
+    <string>Vakter uses the FaceTime camera to capture photos when the alarm fires, so you can see who tried to take your Mac.</string>
+
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Vakter uses Bluetooth to sense whether your trusted devices (phone, AirPods, watch) are near, so it doesn't fire false alarms when you're present.</string>
+
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Vakter uses AppleEvents to send evidence to your phone via Messages.app when the alarm fires.</string>
+
+    <!-- Location is requested from the menubar app (where the TCC prompt
+         can show) so the helper can attach a Maps URL to the iMessage
+         evidence. Optional — alarm still works without it. -->
+    <key>NSLocationUsageDescription</key>
+    <string>Vakter attaches a Maps link to the iMessage evidence it sends to your phone when the alarm fires, so you know where your Mac was. Optional — the alarm still fires without it.</string>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Vakter attaches a Maps link to the iMessage evidence it sends to your phone when the alarm fires, so you know where your Mac was. Optional — the alarm still fires without it.</string>
+
+    <!-- Vakter URL scheme — used by Shortcuts / future deep links. -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>app.vakter.mac</string>
+            <key>CFBundleURLSchemes</key>
+            <array><string>vakter</string></array>
+        </dict>
+    </array>
+</dict>
+</plist>
