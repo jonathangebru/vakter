@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Privacy Policy — Vakter</title>
+<meta name="description" content="Vakter runs entirely on your Mac. No servers, no telemetry, no accounts. What data the app accesses, what it does with it, and what it does not do.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/favicons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/favicons/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicons/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter — Privacy Policy page
+ * Shell matches vakter.app exactly: navy + amber, system fonts,
+ * ship's-log numbered sections, zero external dependencies.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  --radius-sm:  6px;
+  --radius:     12px;
+
+  --maxw:       860px;
+  --gutter:     clamp(20px, 4vw, 56px);
+
+  --t-fast:    160ms;
+  --t-base:    320ms;
+  --t-slow:    640ms;
+  --easing:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote, table { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17.5px);
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.05), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.5), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.back-link:hover { color: var(--amber); }
+.back-arrow {
+  display: inline-block;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+
+/* ─── Layout ─── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ─── Page header ─── */
+.page-header {
+  padding: clamp(56px, 7vw, 96px) 0 clamp(40px, 5vw, 64px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+
+.page-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  margin-bottom: 20px;
+}
+
+.page-lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(16px, 1.2vw + 10px, 20px);
+  line-height: 1.52;
+  color: var(--ink-soft);
+  letter-spacing: -0.01em;
+  max-width: 640px;
+}
+
+/* ─── Prose body ─── */
+.prose {
+  padding: clamp(48px, 6vw, 80px) 0 clamp(64px, 8vw, 120px);
+}
+
+/* Section ship's-log dividers */
+.log-section {
+  padding: clamp(36px, 4vw, 56px) 0;
+  border-bottom: 1px solid var(--hairline);
+  position: relative;
+}
+.log-section:first-child { padding-top: 0; }
+
+.log-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.log-section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.log-section h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(22px, 2.4vw, 30px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 0;
+}
+
+.log-section h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(16px, 1.4vw, 20px);
+  letter-spacing: -0.012em;
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 28px 0 12px;
+}
+.log-section h3:first-child { margin-top: 0; }
+
+.log-section p {
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.log-section p:last-child { margin-bottom: 0; }
+
+.log-section strong { color: var(--ink); font-weight: 600; }
+.log-section em { font-style: italic; }
+
+/* ─── Summary blockquote ─── */
+.summary-box {
+  border-left: 3px solid var(--amber);
+  padding: 18px 24px;
+  margin: 24px 0;
+  background: rgba(245, 177, 79, 0.04);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(16px, 1.2vw + 10px, 19px);
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+/* ─── Lists ─── */
+.prose-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+}
+.prose-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.prose-list li::before {
+  content: "–";
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* ─── Code ─── */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+/* ─── Tables ─── */
+.table-wrap {
+  overflow-x: auto;
+  margin: 20px 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline-bold);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+thead tr {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--hairline-bold);
+}
+th {
+  text-align: left;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+td {
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--hairline);
+  line-height: 1.55;
+  vertical-align: top;
+  font-size: 14px;
+}
+tbody tr:last-child td { border-bottom: none; }
+td code { font-size: 12px; }
+td strong { color: var(--ink); font-weight: 600; }
+
+/* ─── Rule dot (ship's-log accent divider) ─── */
+.rule-dot {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(245, 177, 79, 0.5);
+}
+.rule-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 0 0 4px var(--bg);
+}
+
+/* ─── Footer ─── */
+.footer {
+  border-top: 1px solid var(--hairline);
+  padding: 48px 0 40px;
+  background: var(--bg);
+}
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-col h5 {
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.footer-col ul { display: grid; gap: 9px; list-style: none; padding: 0; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.footer-col a:hover { color: var(--amber); }
+
+.footer-meta {
+  max-width: 1240px;
+  margin: 32px auto 0;
+  padding: 24px var(--gutter) 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--hairline);
+}
+.footer-meta-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--amber);
+  color: var(--navy-deep);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+    </a>
+    <a class="back-link" href="/">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      Back to vakter.app
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-header">
+    <div class="container">
+      <div class="eyebrow">§ privacy policy</div>
+      <h1 class="page-title">Vakter Privacy Policy</h1>
+      <p class="page-meta">Last updated: 14 May 2026</p>
+      <p class="page-lead">
+        Vakter is an anti-theft alarm for Mac. This document explains what data
+        the app accesses, what it does with it, and what it does not do.
+      </p>
+      <blockquote class="summary-box">
+        Vakter runs entirely on your Mac. It does not have servers. It does not
+        send your data anywhere unless you specifically configure it to. There are
+        no accounts, no telemetry, no analytics.
+      </blockquote>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot" style="margin: 0;"></div></div>
+
+  <div class="prose">
+    <div class="container">
+
+      <!-- § 1 — What Vakter accesses -->
+      <article class="log-section" aria-labelledby="s1">
+        <div class="log-section-header">
+          <h2 id="s1">1. What Vakter accesses</h2>
+          <span class="log-section-num">§ 01 / 08</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Where it lives</th>
+                <th>What Vakter does with it</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Webcam</strong> (FaceTime / built-in camera)</td>
+                <td>macOS, gated by Camera permission</td>
+                <td>Captures photos <strong>only during an active alarm</strong>. Frames are written to <code>~/Library/Application Support/Vakter/events/&lt;timestamp&gt;/</code> on your local disk.</td>
+              </tr>
+              <tr>
+                <td><strong>Bluetooth scanning</strong></td>
+                <td>macOS, gated by Bluetooth permission</td>
+                <td>Reads advertisements from nearby devices to detect when your trusted devices (phone, AirPods, watch — the ones you paired in Settings → Trusted Devices) leave Bluetooth range. Advertisements from devices you didn't add are not logged.</td>
+              </tr>
+              <tr>
+                <td><strong>System defaults / preferences</strong></td>
+                <td>Local shell-outs to <code>/usr/bin/defaults</code>, <code>/usr/sbin/spctl</code>, <code>/usr/sbin/csrutil</code>, <code>/usr/bin/fdesetup</code>, <code>/usr/sbin/nvram</code>, <code>/bin/launchctl</code></td>
+                <td>The Defenses checklist reads system-wide security settings (FileVault status, Firewall state, Find My, etc.) and reports them to you in the menubar dropdown. Results are written to <code>~/Library/Application Support/Vakter/defenses-checklist.json</code> on your local disk.</td>
+              </tr>
+              <tr>
+                <td><strong>Apple ID hash</strong></td>
+                <td>SHA-256 of the email in <code>MobileMeAccounts</code></td>
+                <td>Used to detect when the signed-in Apple ID changes while Vakter is armed (theft indicator). Only the hash is stored, never the email.</td>
+              </tr>
+              <tr>
+                <td><strong>Find My token</strong></td>
+                <td><code>nvram fmm-mobileme-token-FMM</code></td>
+                <td>Used to detect when Find My is disabled while Vakter is armed. Nothing is extracted from the token — only its presence or absence is observed.</td>
+              </tr>
+              <tr>
+                <td><strong>Location</strong> (optional)</td>
+                <td>macOS Location Services, gated by Location permission</td>
+                <td>If you've granted Location access and set an evidence recipient (Settings → Notifications), Vakter attaches an Apple Maps URL to the iMessage it sends you when the alarm fires. Location is not logged otherwise.</td>
+              </tr>
+              <tr>
+                <td><strong>Your iMessage recipient handle</strong> (if set)</td>
+                <td><code>~/Library/Application Support/Vakter/evidence-recipient.json</code></td>
+                <td>The phone number or Apple-ID email you designate as the alarm recipient. Stored locally only.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <!-- § 2 — What Vakter sends off your Mac -->
+      <article class="log-section" aria-labelledby="s2">
+        <div class="log-section-header">
+          <h2 id="s2">2. What Vakter sends off your Mac</h2>
+          <span class="log-section-num">§ 02 / 08</span>
+        </div>
+
+        <p>By default, <strong>nothing</strong>.</p>
+
+        <p>If you explicitly configure an Evidence Recipient under Settings →
+        Notifications, then when an alarm fires Vakter sends one iMessage to that
+        recipient containing:</p>
+
+        <ul class="prose-list">
+          <li>A short alarm summary ("Vakter alert — your Mac may have been moved or accessed")</li>
+          <li>An Apple Maps URL (if Location was granted)</li>
+          <li>The first few photos from the alarm burst (attached inline)</li>
+        </ul>
+
+        <p>The iMessage is sent <strong>directly through Apple's Messages.app</strong>
+        via the local AppleScript bridge. Vakter never sees the message after it leaves
+        Messages.app. Apple delivers the message under its own terms (see Apple's
+        iMessage privacy policy).</p>
+      </article>
+
+      <!-- § 3 — What Vakter does NOT do -->
+      <article class="log-section" aria-labelledby="s3">
+        <div class="log-section-header">
+          <h2 id="s3">3. What Vakter does not do</h2>
+          <span class="log-section-num">§ 03 / 08</span>
+        </div>
+
+        <ul class="prose-list">
+          <li><strong>No servers.</strong> Vakter has no backend infrastructure. There is
+            nothing for an attacker to breach because nothing leaves your Mac without your
+            configuration.</li>
+          <li><strong>No analytics.</strong> We don't count app launches, button taps, alarm
+            fires, or anything else. We have no idea who uses Vakter or how often.</li>
+          <li><strong>No accounts.</strong> There is no sign-in. You don't have a Vakter ID.</li>
+          <li><strong>No advertising.</strong> No ads, no ad SDKs, no profiling.</li>
+          <li><strong>No third-party SDKs.</strong> The only frameworks Vakter links are
+            Apple's first-party ones (<code>AppKit</code>, <code>AVFoundation</code>,
+            <code>CoreLocation</code>, <code>CoreBluetooth</code>, <code>SwiftUI</code>,
+            <code>Security</code>).</li>
+        </ul>
+      </article>
+
+      <!-- § 4 — Where the data lives -->
+      <article class="log-section" aria-labelledby="s4">
+        <div class="log-section-header">
+          <h2 id="s4">4. Where the data lives</h2>
+          <span class="log-section-num">§ 04 / 08</span>
+        </div>
+
+        <p>All Vakter data is stored under
+        <code>~/Library/Application Support/Vakter/</code> on your Mac. You can delete
+        it at any time. Specifically:</p>
+
+        <ul class="prose-list">
+          <li><code>events.jsonl</code> — the event log (one JSON line per arm / disarm / grace / alarm)</li>
+          <li><code>events/&lt;timestamp&gt;/photo-NN.jpg</code> — captured photos</li>
+          <li><code>evidence-recipient.json</code> — your iMessage recipient handle (if set)</li>
+          <li><code>defenses-checklist.json</code> — the last security-checklist scan</li>
+          <li><code>last-location.json</code> — the most recent successful CoreLocation fix</li>
+          <li><code>hotkey.json</code>, <code>alarm-sound.json</code>, <code>active-mode.json</code>, <code>menubar-appearance.json</code>, <code>grace.json</code> — your preferences</li>
+        </ul>
+
+        <p>Vakter also writes runtime logs to
+        <code>/tmp/vakter-helper.{out,err}.log</code> and
+        <code>/tmp/vakter-privileged.{out,err}.log</code> for debugging. These are
+        cleared on every reboot.</p>
+      </article>
+
+      <!-- § 5 — Your rights -->
+      <article class="log-section" aria-labelledby="s5">
+        <div class="log-section-header">
+          <h2 id="s5">5. Your rights</h2>
+          <span class="log-section-num">§ 05 / 08</span>
+        </div>
+
+        <p>Because Vakter has no server and stores no personal data outside your own Mac,
+        the data-subject rights afforded by GDPR / CCPA (access, correction, deletion,
+        portability) are satisfied by your existing control over your own file system.
+        Delete <code>~/Library/Application Support/Vakter/</code> and Vakter has nothing
+        of yours.</p>
+      </article>
+
+      <!-- § 6 — Children's privacy -->
+      <article class="log-section" aria-labelledby="s6">
+        <div class="log-section-header">
+          <h2 id="s6">6. Children's privacy</h2>
+          <span class="log-section-num">§ 06 / 08</span>
+        </div>
+
+        <p>Vakter doesn't knowingly collect anything from anyone, of any age.</p>
+      </article>
+
+      <!-- § 7 — Changes -->
+      <article class="log-section" aria-labelledby="s7">
+        <div class="log-section-header">
+          <h2 id="s7">7. Changes</h2>
+          <span class="log-section-num">§ 07 / 08</span>
+        </div>
+
+        <p>If we ever change this policy in a meaningful way — we add a feature that
+        talks to a server, for instance (currently no plans) — the new version will be
+        published here and reflected in the About tab inside Vakter. Continued use of
+        the app after a change constitutes acceptance.</p>
+      </article>
+
+      <!-- § 8 — Contact -->
+      <article class="log-section" aria-labelledby="s8" style="border-bottom: none;">
+        <div class="log-section-header">
+          <h2 id="s8">8. Contact</h2>
+          <span class="log-section-num">§ 08 / 08</span>
+        </div>
+
+        <p>Privacy questions:
+        <a href="mailto:support@vakter.app" style="color: var(--amber);">support@vakter.app</a>.</p>
+      </article>
+
+    </div><!-- .container -->
+  </div><!-- .prose -->
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h5>Product</h5>
+      <ul>
+        <li><a href="/#what-it-does">Features</a></li>
+        <li><a href="/#modes">Modes</a></li>
+        <li><a href="/#architecture">Architecture</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Trust</h5>
+      <ul>
+        <li><a href="/security/">Security</a></li>
+        <li><a href="/privacy/" aria-current="page">Privacy</a></li>
+        <li><a href="mailto:security@vakter.app">Disclosure</a></li>
+        <li><a href="/press/">Press kit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contact</h5>
+      <ul>
+        <li><a href="mailto:support@vakter.app">support@</a></li>
+        <li><a href="mailto:security@vakter.app">security@</a></li>
+        <li><a href="mailto:hi@vakter.app">hi@</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span class="footer-meta-mark">
+      <span class="brand-mark" aria-hidden="true" style="width: 18px; height: 18px; display: inline-block; border-radius: 4px; background-image: url(../assets/screenshots/AppIcon.png); background-size: cover; vertical-align: middle;"></span>
+      Vakter · vakter.app · © 2026
+    </span>
+    <span>Built on a Mac. Signed by Apple. Hosted on your disk.</span>
+  </div>
+</footer>
+
+</body>
+</html>

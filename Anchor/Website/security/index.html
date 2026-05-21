@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Security Architecture — Vakter</title>
+<meta name="description" content="The audit guide for security-conscious users and researchers. Process model, privilege boundaries, XPC peer authentication, event-log integrity, and responsible disclosure.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/favicons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/favicons/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicons/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter — Security Architecture page
+ * Shell matches vakter.app exactly: navy + amber, system fonts,
+ * ship's-log numbered sections, zero external dependencies.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  --radius-sm:  6px;
+  --radius:     12px;
+
+  --maxw:       860px;
+  --gutter:     clamp(20px, 4vw, 56px);
+
+  --t-fast:    160ms;
+  --t-base:    320ms;
+  --t-slow:    640ms;
+  --easing:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote, table { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17.5px);
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.05), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.5), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.back-link:hover { color: var(--amber); }
+.back-arrow {
+  display: inline-block;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+
+/* ─── Layout ─── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ─── Page header ─── */
+.page-header {
+  padding: clamp(56px, 7vw, 96px) 0 clamp(40px, 5vw, 64px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+
+.page-lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(16px, 1.2vw + 10px, 20px);
+  line-height: 1.52;
+  color: var(--ink-soft);
+  letter-spacing: -0.01em;
+  max-width: 640px;
+}
+
+/* ─── Prose body ─── */
+.prose {
+  padding: clamp(48px, 6vw, 80px) 0 clamp(64px, 8vw, 120px);
+}
+
+/* Section ship's-log dividers */
+.log-section {
+  padding: clamp(36px, 4vw, 56px) 0;
+  border-bottom: 1px solid var(--hairline);
+  position: relative;
+}
+.log-section:first-child { padding-top: 0; }
+
+.log-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.log-section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.log-section h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(22px, 2.4vw, 30px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 0;
+}
+
+.log-section h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(16px, 1.4vw, 20px);
+  letter-spacing: -0.012em;
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 28px 0 12px;
+}
+.log-section h3:first-child { margin-top: 0; }
+
+.log-section p {
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.log-section p:last-child { margin-bottom: 0; }
+
+.log-section strong { color: var(--ink); font-weight: 600; }
+
+.log-section em { font-style: italic; }
+
+/* ─── Lists ─── */
+.prose-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+}
+.prose-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.prose-list li::before {
+  content: "–";
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* ─── Code ─── */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--bg-card);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  color: var(--ink);
+}
+
+pre {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--bg-elev);
+  border: 1px solid var(--hairline-bold);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  overflow-x: auto;
+  margin: 20px 0;
+  color: var(--ink-soft);
+}
+pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* ─── Tables ─── */
+.table-wrap {
+  overflow-x: auto;
+  margin: 20px 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline-bold);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-family: var(--font-mono);
+}
+thead tr {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--hairline-bold);
+}
+th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+td {
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--hairline);
+  line-height: 1.5;
+  vertical-align: top;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+tbody tr:last-child td { border-bottom: none; }
+td code {
+  font-size: 12px;
+}
+td strong { color: var(--ink); font-weight: 600; }
+
+/* ─── Rule dot (ship's-log accent divider) ─── */
+.rule-dot {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(245, 177, 79, 0.5);
+}
+.rule-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 0 0 4px var(--bg);
+}
+
+/* ─── Callout box ─── */
+.callout {
+  background: rgba(245, 177, 79, 0.06);
+  border: 1px solid rgba(245, 177, 79, 0.2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 24px 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.callout strong { color: var(--amber); }
+
+/* ─── Footer ─── */
+.footer {
+  border-top: 1px solid var(--hairline);
+  padding: 48px 0 40px;
+  background: var(--bg);
+}
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-col h5 {
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.footer-col ul { display: grid; gap: 9px; list-style: none; padding: 0; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.footer-col a:hover { color: var(--amber); }
+
+.footer-meta {
+  max-width: 1240px;
+  margin: 32px auto 0;
+  padding: 24px var(--gutter) 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--hairline);
+}
+.footer-meta-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--amber);
+  color: var(--navy-deep);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+    </a>
+    <a class="back-link" href="/">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      Back to vakter.app
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-header">
+    <div class="container">
+      <div class="eyebrow">§ security architecture</div>
+      <h1 class="page-title">Vakter Security Architecture</h1>
+      <p class="page-lead">
+        The audit guide for security-conscious users, researchers, and reviewers.
+        Vakter runs two background processes — one in your user session, one as root
+        — to deliver lid-close-while-asleep alarms and evidence capture. Putting
+        that kind of trust in an indie app deserves a clear answer to <em>"what does
+        it actually do with that privilege?"</em>
+      </p>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot" style="margin: 0;"></div></div>
+
+  <div class="prose">
+    <div class="container">
+
+      <!-- § 1 — Process model -->
+      <article class="log-section" aria-labelledby="s1">
+        <div class="log-section-header">
+          <h2 id="s1">1. Process model</h2>
+          <span class="log-section-num">§ 01 / 10</span>
+        </div>
+
+        <p>Vakter ships three binaries:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Binary</th>
+                <th>Bundle path</th>
+                <th>Privilege</th>
+                <th>Lifetime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Vakter</code></td>
+                <td><code>Vakter.app/Contents/MacOS/Vakter</code></td>
+                <td>User (LSUIElement)</td>
+                <td>Foreground / menubar</td>
+              </tr>
+              <tr>
+                <td><code>VakterHelper</code></td>
+                <td><code>Vakter.app/Contents/MacOS/VakterHelper</code></td>
+                <td>User (LaunchAgent)</td>
+                <td>Per-user, always running</td>
+              </tr>
+              <tr>
+                <td><code>VakterPrivilegedDaemon</code></td>
+                <td><code>Vakter.app/Contents/MacOS/VakterPrivilegedDaemon</code></td>
+                <td><strong>root</strong> (LaunchDaemon)</td>
+                <td>System-wide, always running</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>All three are Developer-ID signed by Team ID <code>9TA5GB5UJH</code> (Jonathan
+        Gebru) with the macOS Hardened Runtime. The DMG is notarized by Apple on
+        every release.</p>
+
+        <h3>Why each process exists</h3>
+
+        <ul class="prose-list">
+          <li><strong><code>Vakter</code></strong> is the menubar UI. It owns no privileged
+            operations; it speaks to <code>VakterHelper</code> over XPC and to
+            <code>VakterPrivilegedDaemon</code> via <code>SMAppService</code> registration.
+            All UI lives here, nowhere else.</li>
+          <li><strong><code>VakterHelper</code></strong> is the always-running watcher.
+            It registers the global hotkey (<code>Carbon RegisterEventHotKey</code>),
+            tracks Bluetooth peer proximity (CoreBluetooth), runs the state machine,
+            captures photos and audio on alarm, and writes the event log. It runs as
+            your user, no elevated privilege.</li>
+          <li><strong><code>VakterPrivilegedDaemon</code></strong> exists for one reason:
+            to call <code>pmset disablesleep 1</code> while armed. macOS requires root for
+            that one call. The daemon refuses every other XPC method. It's ~600 lines.</li>
+        </ul>
+
+        <h3>What none of them do</h3>
+
+        <ul class="prose-list">
+          <li>No kernel extension. No <code>kextload</code>.</li>
+          <li>No System Extension. No Network Extension.</li>
+          <li>No firewall. No DNS interception. No traffic logging.</li>
+          <li>No telemetry to vakter.app or anywhere else.</li>
+          <li>No account system. No cloud storage.</li>
+          <li>No screen recording. No keylogging. No screenshot capture.</li>
+          <li>No reading of your other apps' data, keychain entries, or files.</li>
+        </ul>
+      </article>
+
+      <!-- § 2 — Privilege boundary -->
+      <article class="log-section" aria-labelledby="s2">
+        <div class="log-section-header">
+          <h2 id="s2">2. Privilege boundary — what each process can do</h2>
+          <span class="log-section-num">§ 02 / 10</span>
+        </div>
+
+        <h3><code>Vakter</code> (the menubar app)</h3>
+        <p>Sandboxed-equivalent operations only. Has TCC entries for:</p>
+        <ul class="prose-list">
+          <li>Camera (photo burst on alarm)</li>
+          <li>Microphone (audio capture on alarm)</li>
+          <li>Apple Events / Automation → Messages.app (to send the evidence iMessage)</li>
+          <li>Bluetooth (proximity disarm)</li>
+        </ul>
+
+        <h3><code>VakterHelper</code></h3>
+        <p>Same TCC surface as the app — no additional privilege. Talks XPC to the
+        privileged daemon for the one operation it can't perform itself (toggling
+        system-wide sleep disable).</p>
+
+        <h3><code>VakterPrivilegedDaemon</code></h3>
+        <p>Root, but has <strong>exactly one job</strong>: the XPC method
+        <code>setSleepDisabled(_ disabled: Bool, reply: @escaping (Bool) -> Void)</code>,
+        which shells out to <code>/usr/bin/pmset disablesleep 0</code> or
+        <code>… disablesleep 1</code>. The full Swift source is ~150 lines. There are no
+        other methods. There is no shell-out path that accepts user-controlled strings.</p>
+      </article>
+
+      <!-- § 3 — XPC peer authentication -->
+      <article class="log-section" aria-labelledby="s3">
+        <div class="log-section-header">
+          <h2 id="s3">3. XPC peer authentication</h2>
+          <span class="log-section-num">§ 03 / 10</span>
+        </div>
+
+        <p>Both XPC services use macOS 13+'s
+        <code>NSXPCConnection.setCodeSigningRequirement(_:)</code> to pin the peer's
+        code signature:</p>
+
+        <pre><code>anchor apple generic and certificate leaf[subject.OU] = "9TA5GB5UJH"</code></pre>
+
+        <p>This requirement rejects connections from any process that isn't signed by
+        an Apple-issued cert under Team ID <code>9TA5GB5UJH</code>. macOS evaluates the
+        requirement before any method is dispatched; mismatched peers receive
+        <code>NSXPCConnectionInvalid</code> and the connection is torn down.</p>
+
+        <p>Source: <code>Sources/VakterHelper/XPCPeerVerification.swift</code>.</p>
+
+        <div class="callout">
+          <strong>Why this matters.</strong> Without a peer requirement, any process
+          running as the same user could open the helper's Mach service and call
+          <code>arm()</code>, <code>disarm()</code>, <code>currentSnapshot()</code>, or
+          list/mutate trusted Bluetooth peers. With the Team ID pinned, only our own
+          signed binaries (the menubar app, the dev-only helper-poke CLI, or a future
+          Shortcuts extension) can call.
+        </div>
+      </article>
+
+      <!-- § 4 — Event log integrity -->
+      <article class="log-section" aria-labelledby="s4">
+        <div class="log-section-header">
+          <h2 id="s4">4. Event log integrity</h2>
+          <span class="log-section-num">§ 04 / 10</span>
+        </div>
+
+        <p>Every event written by the state machine is sealed into a SHA-256 Merkle
+        hash chain:</p>
+
+        <ul class="prose-list">
+          <li>Each event carries its own <code>eventHash</code> — SHA-256 over its
+            canonical JSON encoding (with <code>eventHash</code> itself nilled to avoid
+            self-reference)</li>
+          <li>Each event carries <code>previousEventHash</code> — the prior event's
+            <code>eventHash</code></li>
+          <li><code>EventChain.verify(_:)</code> walks the chain and reports the first break</li>
+        </ul>
+
+        <p>If anyone tampers with the on-disk <code>events.jsonl</code> — modifies a
+        field, swaps two events, deletes an event — the chain breaks visibly and the
+        police-ready PDF report stamps the break loud and red.</p>
+
+        <p>The chain doesn't <em>prevent</em> tampering (the log file is still on a disk
+        the thief may control after authenticating). It <em>proves</em> tampering to a
+        third party reading the exported report.</p>
+
+        <p>Source: <code>Sources/VakterShared/EventChain.swift</code>.</p>
+      </article>
+
+      <!-- § 5 — Data handling -->
+      <article class="log-section" aria-labelledby="s5">
+        <div class="log-section-header">
+          <h2 id="s5">5. Data handling</h2>
+          <span class="log-section-num">§ 05 / 10</span>
+        </div>
+
+        <h3>What's stored on disk</h3>
+
+        <ul class="prose-list">
+          <li><code>~/Library/Application Support/Vakter/events.jsonl</code> — the event log</li>
+          <li><code>~/Library/Application Support/Vakter/events/&lt;ts&gt;/photo-NN.jpg</code> — alarm-burst photos</li>
+          <li><code>~/Library/Application Support/Vakter/events/&lt;ts&gt;/audio-NN.m4a</code> — alarm ambient-audio clips</li>
+          <li><code>~/Library/Application Support/Vakter/last-location.json</code> — last successful CoreLocation probe (latitude/longitude/timestamp)</li>
+          <li><code>~/Library/Application Support/Vakter/evidence-recipient.json</code> — the iMessage handle the user configured (their own phone or Apple ID)</li>
+          <li><code>~/Library/Application Support/Vakter/trusted-peers.json</code> — Bluetooth identifiers of the user's trusted disarm devices</li>
+          <li><code>~/Library/Application Support/Vakter/hotkey.json</code> — the user's arming hotkey binding</li>
+          <li>UserDefaults under <code>vakter.*</code> keys — small persisted preferences</li>
+        </ul>
+
+        <h3>What's transmitted off-device</h3>
+
+        <p>Only one path: the iMessage evidence delivery on alarm. Sent <strong>through
+        Messages.app via <code>osascript</code></strong> to the recipient the user
+        configured. Vakter does not run its own SMS gateway, mail server, or HTTP
+        client.</p>
+
+        <p>No automatic uploads. No "phone home" check-ins. No analytics.</p>
+
+        <h3>Sparkle update checks (when enabled)</h3>
+
+        <p>If you enable auto-updates (<code>Sources/VakterApp/UpdaterController.swift</code>),
+        Vakter fetches <code>https://vakter.app/appcast.xml</code> once per 24 hours.
+        This is the only outbound request Vakter makes during normal operation. The
+        response is signed with our EdDSA public key, embedded in the app's
+        Info.plist; tampered responses are rejected by Sparkle.</p>
+      </article>
+
+      <!-- § 6 — Permissions -->
+      <article class="log-section" aria-labelledby="s6">
+        <div class="log-section-header">
+          <h2 id="s6">6. Permissions Vakter requests, and why</h2>
+          <span class="log-section-num">§ 06 / 10</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Permission</th>
+                <th>TCC key</th>
+                <th>Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Camera</td>
+                <td><code>NSCameraUsageDescription</code></td>
+                <td>Photo burst on alarm</td>
+              </tr>
+              <tr>
+                <td>Microphone</td>
+                <td><code>NSMicrophoneUsageDescription</code></td>
+                <td>10s ambient audio on alarm</td>
+              </tr>
+              <tr>
+                <td>Bluetooth</td>
+                <td><code>NSBluetoothAlwaysUsageDescription</code></td>
+                <td>Trusted-peer proximity disarm</td>
+              </tr>
+              <tr>
+                <td>Location</td>
+                <td><code>NSLocationUsageDescription</code></td>
+                <td>Best-known location attached to evidence iMessage</td>
+              </tr>
+              <tr>
+                <td>Apple Events → Messages</td>
+                <td><code>NSAppleEventsUsageDescription</code></td>
+                <td>Sending the evidence iMessage</td>
+              </tr>
+              <tr>
+                <td>Input Monitoring (helper)</td>
+                <td>implicit via Carbon</td>
+                <td>Global hotkey registration</td>
+              </tr>
+              <tr>
+                <td>Login Items (app)</td>
+                <td><code>SMAppService.mainAppService</code></td>
+                <td>Auto-launch on login</td>
+              </tr>
+              <tr>
+                <td>Login Items (helper)</td>
+                <td><code>SMAppService.daemon</code></td>
+                <td>Helper LaunchAgent registration</td>
+              </tr>
+              <tr>
+                <td>Login Items (daemon)</td>
+                <td><code>SMAppService.daemon</code></td>
+                <td>Root daemon registration</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>If you deny any of these, Vakter continues to work — minus that one
+        capability — without crashing or nagging.</p>
+      </article>
+
+      <!-- § 7 — Trust without open source -->
+      <article class="log-section" aria-labelledby="s7">
+        <div class="log-section-header">
+          <h2 id="s7">7. How we earn your trust without open source</h2>
+          <span class="log-section-num">§ 07 / 10</span>
+        </div>
+
+        <p>Vakter is closed-source. We considered open-sourcing the privileged binaries
+        and decided against it — see §8 for the reasoning. To compensate, we lean harder
+        on every other trust signal available to a closed-source security app on macOS:</p>
+
+        <ol class="prose-list" style="counter-reset: trust-item;">
+          <li><strong>Apple notarization.</strong> Every release is submitted to Apple for
+            automated malware and privilege-abuse scanning, and the resulting ticket is
+            stapled into the DMG. Gatekeeper refuses to launch anything we ship that hasn't
+            passed Apple's scan.</li>
+          <li><strong>Hardened Runtime + Developer ID Application signing</strong> under
+            Team ID <code>9TA5GB5UJH</code>. <code>codesign --display --entitlements -</code>
+            on the installed bundle lets anyone audit exactly what capabilities we asked for.</li>
+          <li><strong>Tiny privileged surface.</strong> The root daemon is ~150 LOC and has
+            one exported XPC method: shell <code>pmset disablesleep</code>. Nothing else runs
+            as root. The helper LaunchAgent runs as your user — same privilege level as your
+            browser. There is no kernel extension, no System Extension, no Network Extension.</li>
+          <li><strong>No outbound network in normal operation.</strong> The only HTTPS request
+            Vakter makes is the daily Sparkle appcast check to <code>vakter.app</code>. No
+            telemetry. No analytics. No "phone home." Verify with Activity Monitor → Network
+            or Little Snitch.</li>
+          <li><strong>All evidence flows to user-owned destinations only.</strong> iMessage to
+            your configured recipient. Email to your configured recipient. Cloud bucket you own
+            and pay for. We never proxy your evidence.</li>
+          <li><strong>Third-party security audit at $50k MRR.</strong> We commit to a paid
+            independent audit (NCC Group, Trail of Bits, or similar) once revenue can sustain
+            the $10–30k cost. The audit report will be published.</li>
+          <li><strong>Real human accountability.</strong> I'm Jonathan Gebru. Photo, location,
+            support email all on vakter.app. If something goes wrong, you can find me.</li>
+        </ol>
+      </article>
+
+      <!-- § 8 — Why closed-source -->
+      <article class="log-section" aria-labelledby="s8">
+        <div class="log-section-header">
+          <h2 id="s8">8. Why we chose closed-source</h2>
+          <span class="log-section-num">§ 08 / 10</span>
+        </div>
+
+        <p>We considered open-sourcing the helper and daemon under GPLv3 and chose not
+        to. The honest reasoning:</p>
+
+        <ul class="prose-list">
+          <li><strong>Vakter is a product, not a project.</strong> The closed-source path
+            lets us iterate on architecture without GPL constraints, ship features that
+            touch the daemon without coordinating with a public-facing community, and avoid
+            the operational tax of maintaining issue triage, PR review, and disclosure
+            intake on a public repo while we're still finding product-market fit.</li>
+          <li><strong>The trust signal trade-off is real but not absolute.</strong> Little
+            Snitch has been closed-source for 20 years and is the gold standard of Mac
+            security tools. Bartender, CleanShot X, 1Password — all closed. Trust on macOS
+            doesn't require auditable source; it requires predictable behavior (which §7
+            enumerates).</li>
+          <li><strong>Source availability does not protect against the failure modes most
+            users care about.</strong> A reproducible-build claim helps the 0.1% of users
+            who'd verify it; the other 99.9% trust based on notarization, reviews, and
+            reputation, which we provide identically whether the source is public or not.</li>
+        </ul>
+
+        <p>If you'd prefer a fully open-source anti-theft tool, <strong>LuLu</strong>
+        (Objective-See) and <strong>Pareto Security</strong> are excellent alternatives.
+        They solve adjacent problems and we recommend them alongside Vakter.</p>
+      </article>
+
+      <!-- § 9 — Reporting -->
+      <article class="log-section" aria-labelledby="s9">
+        <div class="log-section-header">
+          <h2 id="s9">9. Reporting issues</h2>
+          <span class="log-section-num">§ 09 / 10</span>
+        </div>
+
+        <ul class="prose-list">
+          <li><strong>Email:</strong> <a href="mailto:security@vakter.app" style="color: var(--amber);">security@vakter.app</a></li>
+          <li><strong>PGP:</strong> (key publication pending)</li>
+          <li><strong>Disclosure timeline:</strong> 90 days from initial report. We'll
+            acknowledge within 72h, share a fix timeline within 7 days, and credit you in
+            release notes if desired.</li>
+          <li><strong>Out of scope:</strong> denial of service via the user choosing to deny
+            TCC permissions; physical attacks (someone with your password); attacks requiring
+            root on a machine where the attacker already has root.</li>
+        </ul>
+      </article>
+
+      <!-- § 10 — Deliberate omissions -->
+      <article class="log-section" aria-labelledby="s10" style="border-bottom: none;">
+        <div class="log-section-header">
+          <h2 id="s10">10. Things we explicitly chose not to ship</h2>
+          <span class="log-section-num">§ 10 / 10</span>
+        </div>
+
+        <p>Listed here so reviewers know they're deliberate omissions, not oversights:</p>
+
+        <ul class="prose-list">
+          <li><strong>Real-time location streaming during alarm.</strong> Considered,
+            deferred to v1.4 with the iOS companion app — needs the right consent UX.</li>
+          <li><strong>Continuous keylogger / app-launch logger to detect anomalous
+            behaviour.</strong> Ethically tricky, fails App Store review even if we wanted
+            to ship there. We have multi-trigger detection instead.</li>
+          <li><strong>Account system / centralised dashboard.</strong> Doesn't fit "no cloud,
+            no telemetry, no accounts." Multi-Mac coordination in v1.5 uses user-configured
+            B2/S3 buckets (user-owned credentials).</li>
+          <li><strong>Honeypot password swap on theft.</strong> Considered. Too dangerous
+            without FileVault recovery-key escrow, which itself is a UX landmine. Deferred
+            to v1.6+ with deep onboarding redesign.</li>
+          <li><strong>Hidden / stealth tracking after a wipe.</strong> Apple's macOS security
+            model deliberately prevents this (Find My is the sanctioned path). Every legacy
+            "hidden tracker" Mac app died trying. We didn't try.</li>
+        </ul>
+      </article>
+
+    </div><!-- .container -->
+  </div><!-- .prose -->
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h5>Product</h5>
+      <ul>
+        <li><a href="/#what-it-does">Features</a></li>
+        <li><a href="/#modes">Modes</a></li>
+        <li><a href="/#architecture">Architecture</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Trust</h5>
+      <ul>
+        <li><a href="/security/" aria-current="page">Security</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="mailto:security@vakter.app">Disclosure</a></li>
+        <li><a href="/press/">Press kit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contact</h5>
+      <ul>
+        <li><a href="mailto:support@vakter.app">support@</a></li>
+        <li><a href="mailto:security@vakter.app">security@</a></li>
+        <li><a href="mailto:hi@vakter.app">hi@</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span class="footer-meta-mark">
+      <span class="brand-mark" aria-hidden="true" style="width: 18px; height: 18px; display: inline-block; border-radius: 4px; background-image: url(../assets/screenshots/AppIcon.png); background-size: cover; vertical-align: middle;"></span>
+      Vakter · vakter.app · © 2026
+    </span>
+    <span>Built on a Mac. Signed by Apple. Hosted on your disk.</span>
+  </div>
+</footer>
+
+</body>
+</html>
