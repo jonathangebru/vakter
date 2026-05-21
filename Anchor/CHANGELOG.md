@@ -4,6 +4,74 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 ---
 
+## v1.4.4 — 2026-05-21
+
+**Notarization submission ID:** 27fc4e6a-721b-4054-b32f-a67fc8b2688f
+**CFBundleVersion:** 4
+**Merged PRs:** #48 (ticket #23)
+**Version bump rationale:** Patch bump (1.4.3 → 1.4.4). Settings tab consolidation is a pure UI restructuring; all backing stores unchanged, no API-level breaks, no schema migration.
+
+### Feature A.4 — Settings tab consolidation 11→6 (ticket #23, PR #48)
+
+`SettingsRoot.swift`, `AutoArmAndCloudTab.swift`, `SettingsTabs_Notifications_Privacy.swift`, `MenuBarController.swift`, `LocalAlarmPreview.swift`.
+
+Collapses the Settings window from 11 tabs to 6 composite tabs following the System Settings design language. Each new tab owns a page header + embedded section views; all backing data stores are unchanged.
+
+New Section enum (SettingsRoot.swift:51-58):
+
+| Old tabs absorbed | New tab |
+|---|---|
+| Shortcut + Sound + Grace + MenubarAppearance + StealthOverlay + LaunchAtLogin | General |
+| Modes (unchanged) | Modes |
+| Bluetooth (unchanged) | Trusted Devices |
+| Defenses (unchanged) | Defenses |
+| Notifications + Privacy/Diagnostics + AutoArm + Cloud | Alerts & Cloud |
+| Event Log (unchanged) | Event Log |
+| About | REMOVED — opens as NSPanel from "About Vakter" menu item (unchanged) |
+
+Implementation notes:
+- `GeneralTab` at SettingsRoot.swift:462 embeds ShortcutSection, SoundSection, GraceSection, MenubarAppearanceSection, StealthOverlayContactCard, LaunchAtLoginSection.
+- `AlertsAndCloudTab` at SettingsRoot.swift:1890 embeds NotificationsSection, AutoArmAndCloudTab (composite section), DiagnosticsSection.
+- `AutoArmAndCloudTab.swift` retained as a named type for blame-history continuity; rendered as a section rather than a top-level tab.
+- `MenuBarController.swift`: stale breadcrumb "Settings → About → Send diagnostics" updated to "Settings → Alerts & Cloud → Send diagnostics" (commit 4765e31).
+- `LocalAlarmPreview.swift`: doc-comment "Settings → Sound" updated to "Settings → General → Sound" (commit 4765e31).
+- No hardcoded tab indices (selectedTab =, tabIndex ==, selection =) anywhere in Sources/.
+- `AboutWindowController` path unchanged: MenuBarController.swift:309 wires "About Vakter" menu item to openAboutWindow() at :418.
+
+### Adversarial gate checks (all green)
+
+1. Section enum: exactly 6 cases, zero stale references to removed cases (shortcut, sound, notifications, privacy, autoArmAndCloud, about).
+2. Hardcoded tab indices: none found.
+3. About window wiring: MenuBarController.swift:309 → openAboutWindow() at :418 → AboutWindowController (AboutWindow.swift:16).
+4. Persistence: GraceSettingsStore, AlarmSoundStore, AutoArmRuleStore, CloudEvidenceConfig all save/load through new tab structure. Spot-checked GraceSection (SettingsRoot.swift:497,532,540) and AlertsAndCloudTab (AutoArmAndCloudTab.swift:225,245,253,266).
+5. StealthOverlayContactCard: reachable at GeneralTab body (SettingsRoot.swift:471). From-#24 feature accessible.
+6. Onboarding stale refs: Onboarding.swift clean; 4765e31 breadcrumb commits confirmed; grep for "Settings → About" and "Settings → Sound" returns 0 lines.
+7. Café-fix baseline: Signal.swift:52 — `.bluetoothTrustLost` in the false bucket of triggersGrace. Signal.swift not touched by this PR.
+
+### Signal.swift café-fix baseline
+
+Verified: `.bluetoothTrustLost` remains in the `false` bucket of `triggersGrace` (Signal.swift:52). Signal.swift not modified by PR #48.
+
+### Ship verification (merged trunk)
+
+- `swift test` (branch before merge): 141/141
+- `swift build --configuration release --arch arm64` (branch): clean (pre-existing AppDelegate-Sendable warnings only)
+- `./Scripts/build-app.sh release`: bundle assembled, 3 binaries in MacOS/, `embedded.provisionprofile` present
+- `./Scripts/sign.sh`: signed as `Developer ID Application: Jonathan Gebru (9TA5GB5UJH)`, daemon → helper → app signed inside-out, bundle valid on disk
+- Entitlements post-signing: all 4 iCloud keys confirmed (`icloud-container-environment`, `icloud-container-identifiers`, `icloud-services`, `ubiquity-container-identifiers`)
+- `./Scripts/notarize.sh`: `status: Accepted`, submission ID `27fc4e6a-721b-4054-b32f-a67fc8b2688f`, stapled successfully
+- `spctl --assess`: `source=Notarized Developer ID`
+- `xcrun stapler validate /Applications/Vakter.app`: passed
+- Post-swap pgrep: `Vakter` (pid 97764), `VakterPrivilegedDaemon` (pid 13161) alive; VakterHelper not yet spawned (on-demand LaunchAgent, normal at cold launch)
+
+**Smoke gap (warden-flagged):** The new 6-tab Settings window was not opened on the running app to visually confirm correct tab order, correct section rendering, correct StealthOverlayContactCard positioning, or correct AlarmSound picker behavior. All of these are verified by code reading and test coverage, but live visual smoke test was not performed from the gate context (no UI access). Risk: a layout regression visible only at runtime could be present.
+
+### PR #47 (ticket #20) — REJECTED this cycle
+
+"README + website honesty pass" branch `vkt-20-readme-website-honesty` at HEAD 080970d still contains "in beta" at 4 locations (README.md:33, Website/index.html:1994, Website/index.html:2160, Website/changelog/index.html:551) and "provisioning and TestFlight in progress" at STRATEGY.md:87. Both greps required to return 0 lines by acceptance criteria. Returned to brand-keeper / engineer for fix. Comment posted on PR #47.
+
+---
+
 ## v1.4.3 — 2026-05-21
 
 **Notarization submission ID:** a8ba670e-6757-4226-a904-7f2bede13d01
