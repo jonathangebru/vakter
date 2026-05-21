@@ -1686,12 +1686,12 @@ section { position: relative; }
             <!-- speaker waves -->
             <svg viewBox="0 0 24 24"><path d="M4.5 9h3l4.5-4v14l-4.5-4h-3z"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7"/><path d="M18.5 6a8 8 0 0 1 0 12"/></svg>
           </div>
-          <h3>100 dB siren, 7 voices</h3>
+          <h3>100 dB siren, 10 voices</h3>
           <p>
             Sample-quality sirens, not synthetic beeps. The Mac says
-            "this MacBook is being tracked" in English, Norwegian,
-            German, French, Spanish, Italian, or Japanese — at max
-            volume, with mute overridden.
+            "this MacBook is being tracked" in English, Dutch, Norwegian,
+            German, French, Spanish, Italian, Japanese, Korean, or
+            Mandarin — at max volume, with mute overridden.
           </p>
           <span class="feature-counter">iv</span>
         </article>
@@ -1980,13 +1980,19 @@ section { position: relative; }
           <ul class="pricing-features">
             <li><span class="tick">✓</span><span>One-hotkey arm + lock</span></li>
             <li><span class="tick">✓</span><span>Five modes (Normal, Travel, Library, Loaner, Café)</span></li>
-            <li><span class="tick">✓</span><span>Photo burst + 10 s ambient audio</span></li>
-            <li><span class="tick">✓</span><span>100 dB siren in 7 voices</span></li>
-            <li><span class="tick">✓</span><span>iMessage to your phone with Maps URL</span></li>
-            <li><span class="tick">✓</span><span>Tamper-evident SHA-256 event chain</span></li>
-            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Police-ready PDF export — coming in v1.3</span></li>
-            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Cloud-bucket evidence backup — coming in v1.4</span></li>
-            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Auto-arm rules (geofence, Wi-Fi, idle) — coming in v1.5</span></li>
+            <li><span class="tick">✓</span><span>Photo burst + 10 s ambient audio capture</span></li>
+            <li><span class="tick">✓</span><span>9 alarm sounds · voice cue in 10 locales</span></li>
+            <li><span class="tick">✓</span><span>iMessage + email to your phone with Maps URL</span></li>
+            <li><span class="tick">✓</span><span>Tamper-evident Merkle hash chain (SHA-256)</span></li>
+            <li><span class="tick">✓</span><span>Police-ready PDF export</span></li>
+            <li><span class="tick">✓</span><span>User-owned cloud evidence backup (B2 / pre-signed URL)</span></li>
+            <li><span class="tick">✓</span><span>Auto-arm engine (geofence, Wi-Fi, idle, daily)</span></li>
+            <li><span class="tick">✓</span><span>20 defenses checks across 5 categories</span></li>
+            <li><span class="tick">✓</span><span>Find My + Apple ID change watchers (high-confidence signals)</span></li>
+            <li><span class="tick">✓</span><span>Stealth lock-screen takeover overlay (v1.4.3)</span></li>
+            <li><span class="tick">✓</span><span>macOS Shortcuts integration</span></li>
+            <li><span class="tick">✓</span><span>iOS + Apple Watch companion (in beta)</span></li>
+            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Sparkle 2 auto-update — rolling out with v1.5</span></li>
           </ul>
 
           <p class="pricing-note">
@@ -2073,9 +2079,10 @@ section { position: relative; }
               evidence may be at risk.
             </p>
             <p>
-              Cloud-bucket upload (streaming evidence off-device during
-              the alarm) is planned for v1.4. When shipped, it will
-              make Vakter's evidence survive a wipe.
+              Cloud-bucket upload streams evidence off-device during the
+              alarm — to your own Backblaze B2 bucket or any pre-signed
+              URL — so it survives a wipe. Configure it once in Settings
+              → Auto-arm &amp; Cloud.
             </p>
           </div>
         </details>
@@ -2150,7 +2157,8 @@ section { position: relative; }
             </p>
             <p>
               You can also disarm from the menu bar or the Settings panel.
-              An iPhone companion app is on the roadmap for v1.4.
+              The iOS and Apple Watch companions are in beta — they let
+              you see alarm state and event history from your phone.
             </p>
           </div>
         </details>
@@ -2164,7 +2172,7 @@ section { position: relative; }
             <p>
               macOS Sonoma (14.0) or later. Apple Silicon (M1 or later) only.
               Internal camera, microphone, and speakers. Bluetooth
-              optional for proximity disarm. Notarised DMG, direct
+              optional (trusted-device awareness). Notarised DMG, direct
               download — no Mac App Store dance.
             </p>
           </div>
