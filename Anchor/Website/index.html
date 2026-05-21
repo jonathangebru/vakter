@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Vakter — The night-watch for your Mac</title>
-<meta name="description" content="Calm in normal use. Fierce the moment someone walks off with your Mac. Local alarm, photo burst, ambient audio, iMessage to your phone. Notarized. No cloud, no telemetry, no accounts. $29 one-time.">
+<meta name="description" content="Calm in normal use. Fierce the moment someone walks off with your Mac. Local alarm, photo burst, ambient audio, iMessage to your phone. Notarised. No cloud, no telemetry, no accounts. $29 one-time.">
 <meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
 
@@ -1556,8 +1556,7 @@ section { position: relative; }
           <p>
             Photo burst. Ten seconds of ambient audio. A tamper-evident
             log entry sealed into a SHA-256 chain. An iMessage to your
-            phone with the photos and a Maps pin. A police-ready PDF on
-            demand. All from the menu bar.
+            phone with the photos and a Maps pin. All from the menu bar.
           </p>
         </div>
       </div>
@@ -1611,7 +1610,7 @@ section { position: relative; }
             <li><span class="glyph" aria-hidden="true"></span><span>100 dB siren the second the lid closes or the cable pulls</span></li>
             <li><span class="glyph" aria-hidden="true"></span><span>Photo burst and 10 s of ambient audio, locally</span></li>
             <li><span class="glyph" aria-hidden="true"></span><span>iMessage to your phone with a Maps pin</span></li>
-            <li><span class="glyph" aria-hidden="true"></span><span>Tamper-evident chain &amp; police-ready PDF on demand</span></li>
+            <li><span class="glyph" aria-hidden="true"></span><span>Tamper-evident SHA-256 chain on every event</span></li>
           </ul>
         </article>
       </div>
@@ -1765,7 +1764,7 @@ section { position: relative; }
           <span class="mode-spec">Loaner</span>
           <h3 class="mode-name">Forgiving</h3>
           <p class="mode-desc">
-            30-second grace. For when you hand the Mac to a friend or
+            8-second grace. For when you hand the Mac to a friend or
             family member for a few minutes.
           </p>
         </article>
@@ -1789,7 +1788,7 @@ section { position: relative; }
           <span class="mode-spec">Normal</span>
           <h3 class="mode-name">Everyday</h3>
           <p class="mode-desc">
-            6-second grace, loud. The default. The mode you'll run
+            8-second grace, loud. The default. The mode you'll run
             ninety-five percent of the time.
           </p>
         </article>
@@ -1813,7 +1812,7 @@ section { position: relative; }
           <span class="mode-spec">Travel</span>
           <h3 class="mode-name">Paranoid</h3>
           <p class="mode-desc">
-            3-second grace. Tighter Bluetooth trust radius. Use it in
+            5-second grace. Tighter Bluetooth trust radius. Use it in
             airports, hotel lobbies, train stations.
           </p>
         </article>
@@ -1882,7 +1881,7 @@ section { position: relative; }
         The privileged daemon has <strong style="color: var(--ink);">exactly one job</strong>:
         toggle <code>pmset disablesleep</code> while you're armed, so
         the lid-close doesn't put your Mac to sleep before the alarm
-        fires. Roughly 150 lines of C, signed by Apple's Developer ID,
+        fires. Roughly 150 lines of Swift, signed by Apple's Developer ID,
         audited by macOS at every launch. Verify the entitlements
         yourself with <code>codesign --display --entitlements -</code>.
       </p>
@@ -1984,9 +1983,10 @@ section { position: relative; }
             <li><span class="tick">✓</span><span>Photo burst + 10 s ambient audio</span></li>
             <li><span class="tick">✓</span><span>100 dB siren in 7 voices</span></li>
             <li><span class="tick">✓</span><span>iMessage to your phone with Maps URL</span></li>
-            <li><span class="tick">✓</span><span>Police-ready PDF + tamper-evident chain</span></li>
-            <li><span class="tick">✓</span><span>Auto-arm on geofence, Wi-Fi loss, or idle</span></li>
-            <li><span class="tick">✓</span><span>Optional cloud-bucket evidence backup</span></li>
+            <li><span class="tick">✓</span><span>Tamper-evident SHA-256 event chain</span></li>
+            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Police-ready PDF export — coming in v1.3</span></li>
+            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Cloud-bucket evidence backup — coming in v1.4</span></li>
+            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Auto-arm rules (geofence, Wi-Fi, idle) — coming in v1.5</span></li>
           </ul>
 
           <p class="pricing-note">
@@ -2066,16 +2066,16 @@ section { position: relative; }
           </summary>
           <div class="faq-answer">
             <p>
-              With cloud-bucket upload enabled — yes. Your evidence is
-              streamed to your bucket while the alarm is firing, before
-              the thief gets past authentication. The Mac can be wiped
-              clean and your photos, audio, and location pings are
-              already off-device.
+              The local evidence — photos, audio, event log — survives
+              on disk through authentication. If the thief can't
+              unlock the Mac, the evidence is there when you recover
+              it. If they do get past authentication, the on-device
+              evidence may be at risk.
             </p>
             <p>
-              Cloud upload is optional. Plenty of users run Vakter
-              purely local — the on-device evidence is recoverable if
-              you get the Mac back.
+              Cloud-bucket upload (streaming evidence off-device during
+              the alarm) is planned for v1.4. When shipped, it will
+              make Vakter's evidence survive a wipe.
             </p>
           </div>
         </details>
@@ -2089,9 +2089,9 @@ section { position: relative; }
             <p>
               The local alarm fires regardless. Siren, photos, audio —
               all written to disk before the network leaves. If Wi-Fi
-              comes back later (and it usually does), the iMessage and
-              cloud upload retry. If not, the local evidence is still
-              there for the moment you recover the Mac.
+              comes back later (and it usually does), the iMessage
+              retries. The local evidence is there for the moment you
+              recover the Mac.
             </p>
           </div>
         </details>
@@ -2103,7 +2103,7 @@ section { position: relative; }
           </summary>
           <div class="faq-answer">
             <p>
-              That's exactly what Café mode is for. 30-second grace,
+              That's exactly what Café mode is for. 12-second grace,
               30-second alarm cap. The Bluetooth trust radius is
               configurable — your phone in your pocket, your AirPods in
               your ears, your watch on your wrist all count as <em>you're
@@ -2123,7 +2123,7 @@ section { position: relative; }
               One process. <code>VakterPrivilegedDaemon</code>. Its only
               job is to call <code>pmset disablesleep</code> so the Mac
               doesn't fall asleep before the alarm fires when the lid
-              closes. Roughly 150 lines of C, signed by Apple's
+              closes. Roughly 150 lines of Swift, signed by Apple's
               Developer ID. Read its <code>Info.plist</code> with
               <code>codesign --display --entitlements -</code> whenever
               you want.
@@ -2149,8 +2149,8 @@ section { position: relative; }
               always do.
             </p>
             <p>
-              You can also disarm from the menu bar, the Settings panel,
-              or your paired iPhone via the optional companion app.
+              You can also disarm from the menu bar or the Settings panel.
+              An iPhone companion app is on the roadmap for v1.4.
             </p>
           </div>
         </details>
@@ -2162,7 +2162,7 @@ section { position: relative; }
           </summary>
           <div class="faq-answer">
             <p>
-              macOS Sonoma (14.0) or later. Apple Silicon or Intel.
+              macOS Sonoma (14.0) or later. Apple Silicon (M1 or later) only.
               Internal camera, microphone, and speakers. Bluetooth
               optional for proximity disarm. Notarised DMG, direct
               download — no Mac App Store dance.
