@@ -32,53 +32,56 @@ struct VisualEffectBlur: NSViewRepresentable {
 /// feel composed and quiet, not panel-y.
 struct SettingsRoot: View {
 
+    /// Top-level Settings sections. v1.4.3 consolidation (Issue #23):
+    /// the sidebar went from 11 entries to 6. Power-utility apps the
+    /// user mentally benchmarks Vakter against (Bartender, Tot, CleanShot)
+    /// all stay ≤ 7 tabs; 11 read as "this app grew organically without
+    /// curation," which is a trust problem for a security product.
+    ///
+    /// What absorbed what:
+    ///   • General        ← General + Shortcut + Sound + Menubar appearance
+    ///   • Modes          ← unchanged
+    ///   • Trusted Devices← unchanged
+    ///   • Defenses       ← unchanged
+    ///   • Alerts & Cloud ← Notifications + Privacy (diagnostics) + Auto-arm + Cloud
+    ///   • Event Log      ← unchanged
+    ///   • About          ← REMOVED here — opens as its own NSPanel from
+    ///                      the menubar's "About Vakter" item. See
+    ///                      `MenuBarController.openAboutWindow`.
     enum Section: String, CaseIterable, Identifiable {
-        case general       = "General"
-        case shortcut      = "Shortcut"
-        case modes         = "Modes"
-        case sound         = "Sound"
-        case bluetooth     = "Trusted Devices"
-        case defenses      = "Defenses"
-        case autoArm       = "Auto-arm & Cloud"
-        case notifications = "Notifications"
-        case privacy       = "Privacy"
-        case eventLog      = "Event Log"
-        case about         = "About"
+        case general         = "General"
+        case modes           = "Modes"
+        case bluetooth       = "Trusted Devices"
+        case defenses        = "Defenses"
+        case alertsAndCloud  = "Alerts & Cloud"
+        case eventLog        = "Event Log"
 
         var id: String { rawValue }
 
         var icon: String {
             switch self {
-            case .general:       return "gearshape.fill"
-            case .shortcut:      return "command.circle.fill"
-            case .modes:         return "square.stack.3d.up.fill"
-            case .sound:         return "speaker.wave.3.fill"
-            case .bluetooth:     return "antenna.radiowaves.left.and.right"
-            case .defenses:      return "checkmark.shield.fill"
-            case .autoArm:       return "location.fill.viewfinder"
-            case .notifications: return "bell.badge.fill"
-            case .privacy:       return "eye.slash.fill"
-            case .eventLog:      return "clock.fill"
-            case .about:         return "info.circle.fill"
+            case .general:        return "gearshape.fill"
+            case .modes:          return "square.stack.3d.up.fill"
+            case .bluetooth:      return "antenna.radiowaves.left.and.right"
+            case .defenses:       return "checkmark.shield.fill"
+            case .alertsAndCloud: return "bell.badge.fill"
+            case .eventLog:       return "clock.fill"
             }
         }
 
         /// Tile tint — each tab gets its own colour, the way System
         /// Settings does (Network blue, Privacy red, General grey…).
-        /// Pulled from the standard macOS sidebar palette.
+        /// Pulled from the standard macOS sidebar palette. The six tints
+        /// were chosen for maximum legibility in the 22 × 22 px sidebar
+        /// tile against the system sidebar material.
         var iconTint: Color {
             switch self {
-            case .general:       return Color(nsColor: .systemGray)
-            case .shortcut:      return Color(nsColor: .systemPurple)
-            case .modes:         return Color(nsColor: .systemTeal)
-            case .sound:         return Color(nsColor: .systemPink)
-            case .bluetooth:     return Color(nsColor: .systemBlue)
-            case .defenses:      return Color(nsColor: .systemGreen)
-            case .autoArm:       return Color(nsColor: .systemYellow)
-            case .notifications: return Color(nsColor: .systemOrange)
-            case .privacy:       return Color(nsColor: .systemIndigo)
-            case .eventLog:      return Color(nsColor: .systemBrown)
-            case .about:         return Color(nsColor: .systemBlue)
+            case .general:        return Color(nsColor: .systemGray)
+            case .modes:          return Color(nsColor: .systemTeal)
+            case .bluetooth:      return Color(nsColor: .systemBlue)
+            case .defenses:       return Color(nsColor: .systemGreen)
+            case .alertsAndCloud: return Color(nsColor: .systemOrange)
+            case .eventLog:       return Color(nsColor: .systemBrown)
             }
         }
 
@@ -240,17 +243,12 @@ struct SettingsRoot: View {
         ScrollView {
             VStack(alignment: .leading, spacing: VakterDesign.spacingL) {
                 switch selected {
-                case .general:       GeneralTab()
-                case .shortcut:      ShortcutTab()
-                case .modes:         ModesTab()
-                case .sound:         SoundTab()
-                case .bluetooth:     BluetoothTab()
-                case .defenses:      DefensesTab()
-                case .autoArm:       AutoArmAndCloudTab()
-                case .notifications: NotificationsTab()
-                case .privacy:       PrivacyTab()
-                case .eventLog:      EventLogView()
-                case .about:         AboutTab()
+                case .general:        GeneralTab()
+                case .modes:          ModesTab()
+                case .bluetooth:      BluetoothTab()
+                case .defenses:       DefensesTab()
+                case .alertsAndCloud: AlertsAndCloudTab()
+                case .eventLog:       EventLogView()
                 }
             }
             .padding(VakterDesign.spacingXL)
@@ -442,15 +440,64 @@ private struct MiniSparkline: View {
     }
 }
 
-// MARK: - General
+// MARK: - General (top-level tab)
+//
+// Composition layer for the consolidated v1.4.3 "General" tab. The
+// previous shape was 3 sibling tabs (General, Shortcut, Sound) plus a
+// chunk of Privacy (menubar appearance). All five now live under one
+// roof here, ordered to match the user's typical first-time-setup flow:
+//
+//   1. Hotkey            — the very first thing a user binds
+//   2. Alarm sound       — what they'll hear when the hotkey fires
+//   3. Grace window      — how long they get to disarm before alarm
+//   4. Menubar appearance— the stealth/visibility trade-off
+//   5. "If found, please contact" — the stolen-Mac takeover copy
+//   6. Launch at login   — the boring system glue (parked at bottom)
+//
+// Each sub-section is its own `View` so we can compose, swap order, or
+// extract one back into a standalone tab later without rewriting the
+// world. None of the sub-section views render a page-level title; the
+// `pageHeader` below is the single visual title for the whole tab.
 
 private struct GeneralTab: View {
+    var body: some View {
+        // The order is documented in the file MARK comment above.
+        VStack(alignment: .leading, spacing: VakterDesign.spacingXL) {
+            pageHeader
+            ShortcutSection()
+            SoundSection()
+            GraceSection()
+            MenubarAppearanceSection()
+            StealthOverlayContactCard()
+            LaunchAtLoginSection()
+        }
+    }
+
+    private var pageHeader: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("General")
+                .font(VakterDesign.titleFont)
+            Text("Hotkey, alarm sound, grace timing, how Vakter shows itself in the menubar, and the stolen-Mac takeover copy.")
+                .font(VakterDesign.bodyFont)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+// MARK: - Grace section
+//
+// The "Grace window" card — single slider + preset chips. Lives in
+// the consolidated General tab. Save handler writes through to the
+// same `GraceSettingsStore.save()` the pre-consolidation card used,
+// so the persisted JSON file (`grace.json`) is unchanged and existing
+// user values survive the migration.
+
+private struct GraceSection: View {
     @State private var graceSeconds: Double = GraceSettingsStore.load().seconds
 
     var body: some View {
-        Text("General")
-            .font(VakterDesign.titleFont)
-
+        VStack(alignment: .leading, spacing: VakterDesign.spacingL) {
         VakterCard(
             title: "Grace window",
             subtitle: "How long Vakter waits after a trigger before the alarm fires. Short for fast deterrence, longer if you sometimes need a moment to come back and disarm."
@@ -512,12 +559,19 @@ private struct GeneralTab: View {
                 }
             }
         }
+        }  // close GraceSection's outer VStack
+    }
+}
 
-        // Stealth lock-screen overlay — the "STOLEN MAC + call X"
-        // takeover that fires on .alarm. Lives in its own subview so
-        // GeneralTab stays scannable. See StealthOverlayContactCard.
-        StealthOverlayContactCard()
+// MARK: - Launch at login section
+//
+// Single card that deep-links the user to System Settings → Login
+// Items. Both the LaunchAgent helper and the privileged daemon are
+// managed via macOS Login Items, so there's nothing for Vakter to
+// toggle from this card — we just open the system pane.
 
+private struct LaunchAtLoginSection: View {
+    var body: some View {
         VakterCard(
             title: "Launch at login",
             subtitle: "Vakter's background helper and privileged daemon are managed via macOS Login Items. Open the system pane to review them."
@@ -538,10 +592,13 @@ private struct GeneralTab: View {
 // MARK: - Stealth overlay contact card
 //
 // User-configurable text for the fullscreen "STOLEN MAC" takeover.
-// Lives here (Settings → General) rather than its own tab because
-// the rest of the alarm cosmetics (sound, voice cue) are owned by
-// the dedicated `Sound` tab and the user has nowhere else "this is
-// the alarm" to live. Keeps the navigation flat.
+// Lives in Settings → General → "If found, please contact". Post-v1.4.3
+// consolidation (Issue #23) the alarm cosmetics (sound) live in the same
+// tab, so the user reads the whole "what happens when the alarm fires"
+// story (hotkey → siren → grace → stealth message) without changing
+// tabs. The pre-v1.4.3 build kept this card alongside Grace in the old
+// General tab; this comment was updated when Shortcut + Sound were
+// folded into General.
 
 private struct StealthOverlayContactCard: View {
 
@@ -722,19 +779,24 @@ private struct StealthOverlayContactCard: View {
     }
 }
 
-// MARK: - Shortcut
+// MARK: - Shortcut section
+//
+// Renders inside the consolidated General tab. The pre-v1.4.3 build
+// gave Shortcut its own top-level sidebar entry; that's overkill for
+// one card. The contents (KeyRecorder + restore-default button + saved
+// pill) are unchanged — only the page-level title was dropped because
+// the parent GeneralTab already labels the tab. The `helperClient.
+// reloadHotkey()` plumbing is intact: every binding change still
+// reaches the helper via XPC.
 
-private struct ShortcutTab: View {
+private struct ShortcutSection: View {
     @EnvironmentObject var helperClient: HelperClient
     @State private var binding: HotkeyBinding = HotkeyStore.load()
 
     var body: some View {
-        Text("Arming Shortcut")
-            .font(VakterDesign.titleFont)
-
         VakterCard(
-            title: "Press this combo anywhere",
-            subtitle: "When you press the shortcut, Vakter locks your Mac and arms the alarm in one motion. Pick something with at least one modifier (⌘, ⌃, ⌥, ⇧) so it doesn't fire while typing."
+            title: "Arming shortcut",
+            subtitle: "When you press this combo, Vakter locks your Mac and arms the alarm in one motion. Pick something with at least one modifier (⌘, ⌃, ⌥, ⇧) so it doesn't fire while typing."
         ) {
             KeyRecorder(binding: $binding, onChange: { newBinding in
                 HotkeyStore.save(newBinding)
@@ -946,14 +1008,19 @@ private struct ModesTab: View {
     }
 }
 
-// MARK: - Sound — v1.2 Apple-style redesign
+// MARK: - Sound section — v1.2 Apple-style design
 //
-// Two sections (Recorded / Synthesized), single-select inline rows
+// Two sub-cards (Recorded / Synthesized), single-select inline rows
 // with system-tinted icons, Preview button next to each row so the
 // user can audition without leaving the row. Mirrors System Settings →
 // Sound → Sound Effects layout almost exactly.
+//
+// Embedded in the consolidated General tab post-v1.4.3 (Issue #23).
+// The previous build gave Sound its own sidebar entry; the cards are
+// unchanged, only the page-level "Sound" title was dropped because
+// the parent GeneralTab already names the surface.
 
-private struct SoundTab: View {
+private struct SoundSection: View {
 
     @EnvironmentObject var helperClient: HelperClient
     @State private var selected: AlarmSound = AlarmSoundStore.load()
@@ -968,18 +1035,7 @@ private struct SoundTab: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: VakterDesign.spacingXL) {
-
-            // Page title — System Settings style: title at top of content
-            // area, no decorative card around it.
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Sound")
-                    .font(VakterDesign.titleFont)
-                Text("Pick the sound Vakter plays when the alarm fires. All options run at maximum volume on the built-in speakers — only the character changes.")
-                    .font(VakterDesign.bodyFont)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: VakterDesign.spacingL) {
 
             // Recorded — sample-backed Sonniss alarms.
             VakterCard(
@@ -1813,38 +1869,53 @@ private struct Sparkline: View {
     }
 }
 
-// MARK: - About
+// MARK: - Alerts & Cloud (top-level tab)
+//
+// Composition layer for the consolidated v1.4.3 "Alerts & Cloud" tab.
+// The previous shape was 3 sibling tabs (Notifications, Privacy, Auto-
+// arm & Cloud). They're now grouped under one roof here, ordered to
+// match the "what happens when the alarm fires" mental model:
+//
+//   1. Notifications        — who the iMessage goes to
+//   2. Auto-arm & Cloud     — when Vakter arms itself + where evidence
+//                             is uploaded
+//   3. Diagnostics export   — last-resort "give me everything zipped"
+//                             for support / police
+//
+// Crash-report / Privacy toggle preferences live within
+// `DiagnosticsSection` (the only data-export surface). Each sub-section
+// is its own View so the helperClient wiring, save handlers, and
+// stores are unchanged from the pre-consolidation tabs.
 
-private struct AboutTab: View {
+private struct AlertsAndCloudTab: View {
     var body: some View {
-        VStack(spacing: VakterDesign.spacingL) {
-            // Hero lighthouse mark — same emblem as the app icon and
-            // onboarding welcome. Ties the About page to the brand.
-            LighthouseHeroMark(cycleSeconds: 5.0, size: 160)
-                .padding(.top, VakterDesign.spacingS)
-
-            VStack(spacing: VakterDesign.spacingXS) {
-                Text("Vakter")
-                    .font(VakterDesign.wordmark)
-                Text("Your laptop's night-watchman.")
-                    .font(VakterDesign.bodyFont)
-                    .foregroundStyle(.secondary)
-            }
-
-            Text("Norwegian: \u{201C}the night-watchmen on a sailing ship.\u{201D} The crew who stay awake at anchor so the rest of the ship can sleep. That's what Vakter does for your Mac.")
-                .font(VakterDesign.captionFont)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .lineSpacing(3)
-                .frame(maxWidth: 380)
-
-            HStack(spacing: VakterDesign.spacingM) {
-                VakterStatusPill("v0.1.0", tone: .neutral)
-                VakterStatusPill("Apple Silicon", tone: .neutral, icon: "cpu")
-                VakterStatusPill("Notarised", tone: .healthy, icon: "checkmark.seal.fill")
-            }
+        VStack(alignment: .leading, spacing: VakterDesign.spacingXL) {
+            pageHeader
+            NotificationsSection()
+            AutoArmAndCloudTab()  // still named …Tab for blame-history; renders as a section here
+            DiagnosticsSection()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, VakterDesign.spacingL)
+    }
+
+    private var pageHeader: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Alerts & Cloud")
+                .font(VakterDesign.titleFont)
+            Text("Where alarm evidence goes when Vakter fires — your phone, your cloud bucket, or a redacted zip on your Desktop.")
+                .font(VakterDesign.bodyFont)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
+
+// MARK: - About (removed from Settings in v1.4.3 / Issue #23)
+//
+// The About surface is no longer a Settings tab — it opens as a
+// dedicated NSPanel from the menubar's "About Vakter" item (see
+// `MenuBarController.openAboutWindow` and `AboutWindowController` in
+// AboutWindow.swift). That window has its own hero glyph, version
+// string, and link row. Removing the duplicate Settings entry was
+// part of the 11 → 6 tab consolidation. Do NOT re-add an AboutTab
+// struct here; route any About-related work through AboutWindow.swift
+// instead so the menubar and (formerly Settings) UIs don't drift.

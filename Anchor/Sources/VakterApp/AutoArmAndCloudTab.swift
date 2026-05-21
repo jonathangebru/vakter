@@ -2,9 +2,9 @@ import SwiftUI
 import CoreLocation
 import VakterShared
 
-/// Settings → Auto-arm & Cloud.
+/// Settings → Alerts & Cloud → "Auto-arm & Cloud" section.
 ///
-/// Two cards on one tab:
+/// Two cards rendered inside the consolidated Alerts & Cloud tab:
 ///   1. **Auto-arm rules** — list of rules + quick-add presets
 ///      (geofence, Wi-Fi-loss, idle, daily). Tapping "Add" creates a
 ///      sensible default the user can refine.
@@ -12,6 +12,12 @@ import VakterShared
 ///      pre-signed URL template. Survives a wipe; explainer copy
 ///      points out that this is what makes the evidence
 ///      thief-proof.
+///
+/// Pre-v1.4.3 (Issue #23) this was its own top-level tab titled
+/// "Auto-arm & Cloud". Post-consolidation it lives as a section
+/// inside Alerts & Cloud — the rendered header was downgraded from
+/// a page title to a sub-section eyebrow + headline so the visual
+/// hierarchy reads cleanly under the parent tab title.
 struct AutoArmAndCloudTab: View {
 
     @State private var rules: [AutoArmRule] = []
@@ -20,12 +26,10 @@ struct AutoArmAndCloudTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: VakterDesign.spacingL) {
-            header
+            sectionHeader
             autoArmCard
             cloudCard
-            Spacer(minLength: 0)
         }
-        .padding(.bottom, VakterDesign.spacingL)
         .onAppear {
             rules = AutoArmRuleStore.load()
             cloudConfig.reload()
@@ -34,10 +38,15 @@ struct AutoArmAndCloudTab: View {
 
     // MARK: Header
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Auto-arm & Cloud")
-                .font(.system(size: 22, weight: .semibold))
+    private var sectionHeader: some View {
+        // Sub-section header inside Alerts & Cloud. Eyebrow + headline
+        // rather than `font(size: 22)` because the parent tab already
+        // owns the page title — using the same big type here would
+        // produce two stacked titles.
+        VStack(alignment: .leading, spacing: 4) {
+            VakterEyebrow("Auto-arm & off-Mac backup")
+            Text("Rules and bucket")
+                .font(.system(size: 18, weight: .semibold))
             Text("Make Vakter arm itself when you forget, and back up evidence to a bucket you control so it survives even if your Mac is wiped.")
                 .font(VakterDesign.bodyFont)
                 .foregroundStyle(.secondary)

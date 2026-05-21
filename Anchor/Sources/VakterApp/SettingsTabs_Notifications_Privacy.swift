@@ -1,13 +1,32 @@
 import SwiftUI
 import VakterShared
 
-// MARK: - Notifications tab
+// Post-v1.4.3 consolidation (Issue #23): the Notifications and Privacy
+// surfaces are no longer top-level Settings tabs. They live as sub-
+// sections inside the consolidated tabs:
+//
+//   • `NotificationsSection`        → Settings → Alerts & Cloud
+//   • `MenubarAppearanceSection`    → Settings → General
+//   • `DiagnosticsSection`          → Settings → Alerts & Cloud
+//
+// We deliberately keep this file separate from SettingsRoot.swift even
+// though both views are referenced from there — the file is small,
+// self-contained, and history reads cleanly. Merging it back into
+// SettingsRoot would just bloat that file.
 
-/// Where the user configures the iMessage recipient that gets the
-/// photo burst + Maps URL when an alarm fires. v0.9's headline UX
-/// addition — without this Vakter only "screams locally," with this
-/// the user's iPhone gets the evidence within ~10 s.
-struct NotificationsTab: View {
+// MARK: - Notifications section
+//
+// Where the user configures the iMessage recipient that gets the
+// photo burst + Maps URL when an alarm fires. v0.9's headline UX
+// addition — without this Vakter only "screams locally," with this
+// the user's iPhone gets the evidence within ~10 s.
+//
+// Pre-v1.4.3 this was a standalone tab titled "When an alarm fires".
+// Post-consolidation it lives inside Alerts & Cloud as the first
+// section. The page-level title was dropped because the parent
+// AlertsAndCloudTab labels the surface; the rest of the cards
+// (recipient, test, disclosure) are unchanged.
+struct NotificationsSection: View {
 
     @State private var handle: String = ""
     @State private var saveStatus: String? = nil
@@ -17,13 +36,19 @@ struct NotificationsTab: View {
     var body: some View {
         VStack(alignment: .leading, spacing: VakterDesign.spacingL) {
 
-            VakterEyebrow("Off-Mac evidence delivery")
-            Text("When an alarm fires")
-                .font(VakterDesign.displayLarge)
-            Text("Vakter sends the first photos and the Mac's location to your iMessage so you have evidence on your phone — even if you can't get back to the Mac.")
-                .font(VakterDesign.bodyFont)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            // Sub-section header — sits inside the larger Alerts & Cloud
+            // page. Uses the eyebrow + headline pattern from other cards
+            // rather than a page title so the visual hierarchy stays:
+            //   page title > section header > card title > card body.
+            VStack(alignment: .leading, spacing: 4) {
+                VakterEyebrow("Off-Mac evidence delivery")
+                Text("iMessage recipient")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Vakter sends the first photos and the Mac's location to your iMessage so you have evidence on your phone — even if you can't get back to the Mac.")
+                    .font(VakterDesign.bodyFont)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             recipientCard
             testCard
@@ -134,29 +159,34 @@ struct NotificationsTab: View {
     }
 }
 
-// MARK: - Privacy tab
-
-/// Stealth-menubar picker + future privacy toggles.
-struct PrivacyTab: View {
+// MARK: - Menubar appearance section
+//
+// Pre-v1.4.3 this lived in the "Privacy" tab, which was misleading —
+// the menubar appearance picker is more about *visibility* than
+// data privacy. Post-consolidation it lives inside the General tab
+// (where the user already configures the hotkey + alarm sound +
+// stealth-overlay copy — all the "what does Vakter look/sound like"
+// cosmetics in one place).
+struct MenubarAppearanceSection: View {
 
     @State private var appearance: MenubarAppearance = .lighthouse
     @State private var saveStatus: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: VakterDesign.spacingL) {
-            VakterEyebrow("Stealth")
-            Text("Menubar appearance")
-                .font(VakterDesign.displayLarge)
-            Text("Pick how Vakter shows itself in the menubar. Hidden mode requires a working hotkey — set one up under Shortcut first.")
-                .font(VakterDesign.bodyFont)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 4) {
+                VakterEyebrow("Stealth")
+                Text("Menubar appearance")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Pick how Vakter shows itself in the menubar. Hidden mode requires a working hotkey — set one up above first.")
+                    .font(VakterDesign.bodyFont)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             ForEach(MenubarAppearance.allCases, id: \.self) { option in
                 appearanceCard(option)
             }
-
-            diagnosticsCard
 
             if let s = saveStatus {
                 Text(s).font(.caption).foregroundStyle(.secondary)
@@ -186,13 +216,39 @@ struct PrivacyTab: View {
         .buttonStyle(.plain)
     }
 
-    private var diagnosticsCard: some View {
+    private func select(_ option: MenubarAppearance) {
+        appearance = option
+        MenubarAppearanceStore.save(option)
+        NotificationCenter.default.post(
+            name: .vakterMenubarAppearanceChanged,
+            object: nil
+        )
+        saveStatus = "Saved."
+    }
+}
+
+// MARK: - Diagnostics section
+//
+// Build a redacted zip of the last 7 days of events for support /
+// legal / police. Pre-v1.4.3 this card sat at the bottom of the
+// Privacy tab; post-consolidation it lives in Alerts & Cloud
+// alongside the other evidence-delivery and cloud-backup surfaces
+// (it's the same shape of feature — "package up the evidence").
+struct DiagnosticsSection: View {
+
+    @State private var saveStatus: String? = nil
+
+    var body: some View {
         VStack(alignment: .leading, spacing: VakterDesign.spacingS) {
-            Text("Diagnostics export").font(.headline)
-            Text("Build a redacted zip on your Desktop with the last 7 days of events, current defenses, and your Vakter config. No iMessage handle, no Apple-ID hash, no photos — safe to email to support, your lawyer, or police.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 4) {
+                VakterEyebrow("Support")
+                Text("Diagnostics export")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Build a redacted zip on your Desktop with the last 7 days of events, current defenses, and your Vakter config. No iMessage handle, no Apple-ID hash, no photos — safe to email to support, your lawyer, or police.")
+                    .font(VakterDesign.bodyFont)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             HStack {
                 Button("Export to Desktop") {
                     exportDiagnostics()
@@ -205,16 +261,6 @@ struct PrivacyTab: View {
         .padding(VakterDesign.spacingL)
         .background(Color(nsColor: .controlBackgroundColor))
         .cornerRadius(VakterDesign.radiusL)
-    }
-
-    private func select(_ option: MenubarAppearance) {
-        appearance = option
-        MenubarAppearanceStore.save(option)
-        NotificationCenter.default.post(
-            name: .vakterMenubarAppearanceChanged,
-            object: nil
-        )
-        saveStatus = "Saved."
     }
 
     private func exportDiagnostics() {
