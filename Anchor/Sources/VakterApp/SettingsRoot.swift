@@ -513,6 +513,11 @@ private struct GeneralTab: View {
             }
         }
 
+        // Stealth lock-screen overlay — the "STOLEN MAC + call X"
+        // takeover that fires on .alarm. Lives in its own subview so
+        // GeneralTab stays scannable. See StealthOverlayContactCard.
+        StealthOverlayContactCard()
+
         VakterCard(
             title: "Launch at login",
             subtitle: "Vakter's background helper and privileged daemon are managed via macOS Login Items. Open the system pane to review them."
@@ -526,6 +531,193 @@ private struct GeneralTab: View {
                 .buttonStyle(.bordered)
                 Spacer()
             }
+        }
+    }
+}
+
+// MARK: - Stealth overlay contact card
+//
+// User-configurable text for the fullscreen "STOLEN MAC" takeover.
+// Lives here (Settings → General) rather than its own tab because
+// the rest of the alarm cosmetics (sound, voice cue) are owned by
+// the dedicated `Sound` tab and the user has nowhere else "this is
+// the alarm" to live. Keeps the navigation flat.
+
+private struct StealthOverlayContactCard: View {
+
+    /// Currently-saved config. Loaded on view appear; saved on every
+    /// commit (TextField submit or focus loss). We don't auto-save on
+    /// every keystroke — that would write the JSON file dozens of
+    /// times during a typical edit and is wasted I/O.
+    @State private var config: StealthOverlayConfig = StealthOverlayConfigStore.load()
+
+    /// Local mutable copies of the message + callback so SwiftUI's
+    /// TextField bindings can drive the UI without touching disk on
+    /// every character. Persisted to disk in `save()`.
+    @State private var messageText: String = ""
+    @State private var callbackText: String = ""
+
+    /// Held for the lifetime of the Settings tab so the "Preview"
+    /// button's auto-dismiss timer has somewhere to live. Independent
+    /// of the AppDelegate's controller (preview must not interfere
+    /// with a real concurrent alarm, in the extreme corner case).
+    @State private var previewController = StealthOverlayWindowController()
+
+    /// True while the 8 s preview is in flight. Disables the button
+    /// so the user can't stack previews.
+    @State private var isPreviewing: Bool = false
+
+    var body: some View {
+        VakterCard(
+            title: "If found, please contact",
+            subtitle: "Shown fullscreen on every connected display the moment the alarm fires. Above the lock screen, in big high-contrast letters. The thief sees a dead end; a Good Samaritan sees how to return your Mac."
+        ) {
+            VStack(alignment: .leading, spacing: VakterDesign.spacingM) {
+
+                // ── Owner name / return info ──
+                VStack(alignment: .leading, spacing: VakterDesign.spacingXS) {
+                    Text("Owner name + return info")
+                        .font(VakterDesign.captionFont)
+                        .foregroundStyle(.secondary)
+
+                    TextEditor(text: $messageText)
+                        .font(.system(size: 13))
+                        .frame(minHeight: 64, maxHeight: 96)
+                        .padding(6)
+                        .background(
+                            RoundedRectangle(cornerRadius: VakterDesign.radiusS, style: .continuous)
+                                .fill(Color.primary.opacity(0.04))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: VakterDesign.radiusS, style: .continuous)
+                                .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+                        )
+                        .onChange(of: messageText) { _, new in
+                            // Soft-cap at the storage limit. We don't
+                            // reject paste — the model clips on init,
+                            // and clipping the visible field here
+                            // matches the user's expectation.
+                            if new.count > StealthOverlayConfig.maxMessageLength {
+                                messageText = String(
+                                    new.prefix(StealthOverlayConfig.maxMessageLength)
+                                )
+                            }
+                            save()
+                        }
+
+                    Text("\(messageText.count) / \(StealthOverlayConfig.maxMessageLength)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(.tertiary)
+                }
+
+                // ── Callback number ──
+                VStack(alignment: .leading, spacing: VakterDesign.spacingXS) {
+                    Text("Callback number")
+                        .font(VakterDesign.captionFont)
+                        .foregroundStyle(.secondary)
+
+                    TextField("e.g. +1 555 123 4567", text: $callbackText)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 13, design: .monospaced))
+                        .onChange(of: callbackText) { _, new in
+                            if new.count > StealthOverlayConfig.maxCallbackLength {
+                                callbackText = String(
+                                    new.prefix(StealthOverlayConfig.maxCallbackLength)
+                                )
+                            }
+                            save()
+                        }
+
+                    // Tap-affordance hint. Phone-shaped strings get a
+                    // tappable tel: link on the overlay; anything
+                    // else (email, Telegram handle) renders as plain
+                    // text. Helps the user understand why their
+                    // "Email: jane@x.com" callback won't open dial.
+                    if !callbackText.isEmpty {
+                        if config.looksLikePhoneNumber {
+                            Label("Renders as a tappable phone link",
+                                  systemImage: "phone.fill.connection")
+                                .font(.system(size: 10))
+                                .foregroundStyle(VakterDesign.healthy)
+                        } else {
+                            Label("Renders as plain text (not phone-shaped)",
+                                  systemImage: "text.cursor")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+
+                Divider().opacity(0.4)
+
+                // ── Preview row ──
+                HStack(spacing: VakterDesign.spacingS) {
+                    Button {
+                        runPreview()
+                    } label: {
+                        Label(
+                            isPreviewing ? "Showing\u{2026}" : "Preview stealth overlay",
+                            systemImage: "eye.fill"
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isPreviewing)
+                    .help("Shows the fullscreen overlay for 8 seconds so you can verify your message and callback. Will appear on every connected display.")
+
+                    Spacer(minLength: 0)
+
+                    if config.isEmpty {
+                        VakterStatusPill("using default copy", tone: .neutral, icon: "info.circle")
+                    } else {
+                        VakterStatusPill("saved", tone: .healthy, icon: "checkmark.circle.fill")
+                    }
+                }
+            }
+        }
+        .onAppear {
+            // Pull the latest persisted config into the editable
+            // copies. We re-read on each appear (rather than only
+            // at init) so reopening Settings after editing elsewhere
+            // shows the truth.
+            messageText = config.message
+            callbackText = config.callbackNumber
+        }
+    }
+
+    /// Persist the current field values. Called on every onChange so
+    /// we never lose user input — they could close the Settings window
+    /// immediately after typing without an explicit Save click.
+    private func save() {
+        let next = StealthOverlayConfig(
+            message: messageText,
+            callbackNumber: callbackText
+        )
+        config = next
+        StealthOverlayConfigStore.save(next)
+    }
+
+    /// Fire the overlay for 8 s using the in-progress (not necessarily
+    /// saved) field values, then auto-dismiss. Uses a private
+    /// `StealthOverlayWindowController` instance so a real alarm path
+    /// is unaffected if it happens to fire concurrently.
+    private func runPreview() {
+        // Build a config from the current field values directly
+        // rather than re-reading from disk — the user expects the
+        // preview to reflect what they've typed even if save() hasn't
+        // landed (it has, but defensively avoids a race in the
+        // ms-since-keystroke window).
+        let cfg = StealthOverlayConfig(
+            message: messageText,
+            callbackNumber: callbackText
+        )
+        isPreviewing = true
+        previewController.show(config: cfg, autoDismissAfter: 8.0)
+        // We can't observe the controller's `isVisible` from SwiftUI
+        // directly (no @Published), so mirror the auto-dismiss timing
+        // here. 8.2 s gives the controller's timer a moment to fire
+        // before we re-enable the button.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.2) {
+            isPreviewing = false
         }
     }
 }
