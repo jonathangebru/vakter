@@ -152,7 +152,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        defenses.start()
+        // Route the scheduler through the helper's XPC so the menubar
+        // dropdown's Defenses submenu reflects helper-side checks (closes
+        // #27). Falls back to a local probe within 8 s if XPC is
+        // unreachable, so onboarding (pre-helper-approval) still
+        // populates the menubar.
+        defenses.start(helperClient: client)
 
         // Camera permission — request it now, in a calm context, rather
         // than mid-alarm when the user can't actually grant it. macOS

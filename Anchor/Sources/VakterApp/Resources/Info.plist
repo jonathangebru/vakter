@@ -61,6 +61,9 @@
     <key>NSCameraUsageDescription</key>
     <string>Vakter uses the FaceTime camera to capture photos when the alarm fires, so you can see who tried to take your Mac.</string>
 
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Vakter records a 10-second ambient audio clip when the alarm fires, so you can hear who was near your Mac.</string>
+
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>Vakter uses Bluetooth to sense whether your trusted devices (phone, AirPods, watch) are near, so it doesn't fire false alarms when you're present.</string>
 

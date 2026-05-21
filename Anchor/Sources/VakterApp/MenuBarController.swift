@@ -162,6 +162,24 @@ final class MenuBarController {
     }
 
     @objc private func handleClick() {
+        // Kick a background refresh so the *next* menubar open reflects
+        // any changes the user made since the last 5-min scheduler tick.
+        // Fire-and-forget — the current open renders from the cached
+        // `scheduler.checklist`. When the helper replies (typically
+        // 2–6 s later) the scheduler publishes and posts
+        // `.vakterDefensesChecklistUpdated`; if the user opens the menu
+        // again before that ack arrives, they still see the previous
+        // checklist (never an empty submenu). Closes #27 — without this
+        // hook the menubar would only get fresh data on a 5-min cadence,
+        // missing the "I just flipped Firewall off, is Vakter noticing?"
+        // moment a savvy user looks for in the first ~10 s after a
+        // toggle.
+        //
+        // Idempotent against the `isRunning` guard inside `runNow()`:
+        // a double-click in quick succession is a no-op for the second
+        // call, the first one's reply still feeds the next render.
+        defensesScheduler?.runNow()
+
         let menu = NSMenu()
 
         // ── Header ─────────────────────────────────────────────────
