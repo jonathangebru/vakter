@@ -585,9 +585,9 @@ body::before {
           <li>
             <strong>Closed-lid alarm on Apple Silicon.</strong> Vakter's privileged
             root daemon calls <code>pmset disablesleep 1</code> while armed. On Apple
-            Silicon, this keeps the speakers live so the siren routes to internal
-            audio even after the lid closes — the failure mode that defeats every
-            other Mac alarm app on M-series hardware.
+            Silicon, macOS suspends audio routing when the lid closes unless sleep is
+            explicitly disabled at the system level. This keeps the speakers live so
+            the siren routes to internal audio even after the lid closes.
           </li>
         </ul>
 
