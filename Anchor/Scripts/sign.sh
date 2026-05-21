@@ -52,6 +52,62 @@ codesign --force --options runtime \
   --timestamp \
   "${HELPER}"
 
+# -------------------------------------------------------------------
+# Sparkle.framework — sub-bundles + framework itself
+# -------------------------------------------------------------------
+# Sparkle ships pre-signed by the Sparkle project, but Apple's
+# Developer ID notarisation pipeline requires every nested bundle to
+# be re-signed by OUR Developer ID Application identity. The hardened-
+# runtime XPC services + Updater.app + Autoupdate helper each have
+# their own bundle IDs and need their own codesign invocations.
+#
+# Order matters: sub-bundles first, then the framework wrapper. If we
+# sign the framework first, its _CodeSignature seals over the
+# (currently Sparkle-signed) sub-bundles and a subsequent codesign on
+# the XPC services breaks that seal. Inside-out only.
+SPARKLE_FW="${APP}/Contents/Frameworks/Sparkle.framework"
+SPARKLE_VERS_DIR="${SPARKLE_FW}/Versions/B"
+if [[ -d "${SPARKLE_FW}" ]]; then
+  echo "==> Signing Sparkle sub-bundles"
+  # XPC services — hardened-runtime download + install paths.
+  for XPC in "${SPARKLE_VERS_DIR}/XPCServices/"*.xpc; do
+    [[ -e "${XPC}" ]] || continue
+    echo "    + $(basename "${XPC}")"
+    codesign --force --options runtime --timestamp \
+      --sign "${DEVELOPER_ID_APPLICATION}" \
+      "${XPC}"
+  done
+
+  # Updater.app — the small GUI shown while the new build is being
+  # written to /Applications during an update. It's a real .app
+  # bundle so we sign it as one (codesign handles the inner binary
+  # implicitly).
+  if [[ -d "${SPARKLE_VERS_DIR}/Updater.app" ]]; then
+    echo "    + Updater.app"
+    codesign --force --options runtime --timestamp \
+      --sign "${DEVELOPER_ID_APPLICATION}" \
+      "${SPARKLE_VERS_DIR}/Updater.app"
+  fi
+
+  # Autoupdate — the standalone helper binary that does the install
+  # swap. Lives directly under Versions/B (not inside a bundle).
+  if [[ -f "${SPARKLE_VERS_DIR}/Autoupdate" ]]; then
+    echo "    + Autoupdate"
+    codesign --force --options runtime --timestamp \
+      --sign "${DEVELOPER_ID_APPLICATION}" \
+      "${SPARKLE_VERS_DIR}/Autoupdate"
+  fi
+
+  echo "==> Signing Sparkle.framework"
+  # The framework wrapper. After this seal, ANY subsequent codesign on
+  # a nested item would invalidate the framework signature — so do it
+  # last, and never re-run the sub-bundle loop above without re-running
+  # this line too.
+  codesign --force --options runtime --timestamp \
+    --sign "${DEVELOPER_ID_APPLICATION}" \
+    "${SPARKLE_FW}"
+fi
+
 # (App binary is signed implicitly as part of the bundle below, but we
 # could also sign it explicitly — codesign on the .app bundle covers it.)
 

@@ -4,6 +4,67 @@ In-app auto-update for Vakter via [Sparkle 2](https://sparkle-project.org).
 Same library Bartender, CleanShot X, Tot, and most reputable Mac indie
 utilities ship. EdDSA-signed appcast, no central server, no telemetry.
 
+## Successfully wired (vkt-22, May 2026)
+
+Sparkle 2 is wired into the app. What landed:
+
+- **SwiftPM dep**: `Sparkle ~> 2.6.0`, resolves to **2.9.2** at lock-file
+  pin time. Defined in `Package.swift` at the top-level `dependencies:`
+  array; linked into the `VakterApp` target only (the helper + privileged
+  daemon do NOT link Sparkle — keeps their codesign envelopes minimal).
+- **Updater wiring**: `Sources/VakterApp/UpdaterController.swift` owns a
+  `SPUStandardUpdaterController` with `startingUpdater: true`.
+  Instantiated in `AppDelegate.applicationDidFinishLaunching` after the
+  helper handshake. The same instance is injected into the Settings
+  window via `UpdaterControllerBox` (an `ObservableObject` adapter so
+  the SwiftUI Toggle / Button bind cleanly).
+- **Settings UI**: Settings → General → "Software updates" card.
+  Contains a "Automatically check for updates" toggle, a "Check now…"
+  button, the current version + build, the last-checked relative time,
+  and the live feed URL.
+- **Info.plist keys**: `SUFeedURL`, `SUPublicEDKey`, `SUEnableAutomatic-
+  Checks`, `SUScheduledCheckInterval` (86400s = 24h), `SUEnableDownload-
+  edReleaseNotes`, `SUEnableAutomaticUpdates` (NO — user must click).
+- **Codesign**: `Scripts/sign.sh` now signs the Sparkle XPC sub-bundles
+  (`Downloader.xpc`, `Installer.xpc`), `Updater.app`, and `Autoupdate`,
+  then the framework wrapper, then the outer .app — strictly inside-
+  out per Apple's nested-bundle rules.
+- **Bundle copy**: `Scripts/build-app.sh` copies `Sparkle.framework`
+  from SwiftPM's build output into `Vakter.app/Contents/Frameworks/`
+  and adds `@executable_path/../Frameworks` to the binary's LC_RPATH.
+- **Appcast**: `Website/appcast.xml` exists with a seed entry for
+  v1.4.2. The seed entry has a `PLACEHOLDER_…` `sparkle:edSignature`
+  so Sparkle rejects it until the human signs the first real release
+  (see "Release workflow" below).
+
+### One human-only step still required: generate the EdDSA key pair
+
+The `Info.plist` key `SUPublicEDKey` currently holds the literal string
+`PLACEHOLDER_PUBLIC_KEY_RUN_GENERATE_KEYS_FIRST`. The first developer to
+prep a real release must:
+
+```bash
+# Resolve the dep if you haven't already.
+swift package resolve
+
+# Run Sparkle's keygen tool. This writes the PRIVATE key to your
+# login keychain under sparkle-project.org / ed25519 and PRINTS the
+# PUBLIC key (base64). The private key never leaves the keychain.
+.build/artifacts/sparkle/Sparkle/bin/generate_keys
+
+# Sample output (yours will differ):
+#   Public key (base64): aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcdefghij=
+#   (Stored in keychain under "https://sparkle-project.org" / ed25519.)
+```
+
+Then paste the printed public key into
+`Sources/VakterApp/Resources/Info.plist`, replacing the placeholder
+string. Commit + ship.
+
+**Do this exactly once.** Rotating the key invalidates every previously-
+signed release and forces every existing user to do a manual reinstall.
+Treat the keychain entry like a code-signing certificate.
+
 ## Why this needs a separate setup step
 
 The Sparkle SwiftPM dependency requires a one-time external fetch from
@@ -120,14 +181,21 @@ Add to `Sources/VakterApp/Resources/Info.plist`:
 
 ## 5. Host the appcast.xml
 
-When you publish a release, you'll generate a signed `appcast.xml` from
-the DMG and host it at the SUFeedURL above. The signing step:
+The appcast file lives at `Website/appcast.xml` so it ships with the
+static site through the same Cloudflare Pages deploy as the marketing
+pages — no separate hosting step.
+
+When you publish a release, you'll generate a signed appcast entry from
+the DMG. The signing step (Sparkle 2.9.x):
 
 ```bash
-# After building + signing + notarising vakter-1.3.0.dmg:
-.build/checkouts/Sparkle/bin/sign_update \
-    build/Vakter-1.3.0.dmg \
-    > build/sparkle-signature.txt
+# After building + signing + notarising Vakter-X.Y.Z.dmg:
+.build/artifacts/sparkle/Sparkle/bin/sign_update \
+    build/Vakter-X.Y.Z.dmg
+# Output is a single line:
+#   sparkle:edSignature="AbCd…" length="4823104"
+# Paste both attributes verbatim into the new <enclosure …/> in
+# Website/appcast.xml.
 ```
 
 The signature goes into the `<sparkle:edSignature>` attribute of the
@@ -163,23 +231,46 @@ appcast entry. Minimal appcast:
 </rss>
 ```
 
-Upload this XML to `vakter.app/appcast.xml` on every release.
+Commit + push `Website/appcast.xml`; Cloudflare Pages auto-deploys it
+to `https://vakter.app/appcast.xml`.
 
 ## Release workflow (post-Sparkle)
 
 ```bash
-# 1. Bump CFBundleShortVersionString + CFBundleVersion in Info.plist
-# 2. Build, sign, notarise:
+# 1. Bump CFBundleShortVersionString + CFBundleVersion in
+#    Sources/VakterApp/Resources/Info.plist
+# 2. Build, sign, notarise, package:
 ./Scripts/build-app.sh release
 ./Scripts/sign.sh
 ./Scripts/notarize.sh
 ./Scripts/make-dmg.sh
-# 3. Sign the update:
-.build/checkouts/Sparkle/bin/sign_update build/Vakter-1.3.0.dmg
-# 4. Append a new <item> block to appcast.xml with the signature
-# 5. Upload Vakter-1.3.0.dmg + appcast.xml to vakter.app
-# 6. Existing v1.2 users get the update prompt within 24h
+# 3. Sign the update with Sparkle's EdDSA tool:
+.build/artifacts/sparkle/Sparkle/bin/sign_update build/Vakter-X.Y.Z.dmg
+# 4. PREPEND a new <item> block to Website/appcast.xml — newest first.
+#    Sparkle reads in document order; the top entry is what users see.
+#    Update `url=`, `sparkle:shortVersionString=`, `sparkle:version=`
+#    (monotonic build counter), `sparkle:edSignature=`, `length=`,
+#    and the human <description>.
+# 5. Commit + push. Cloudflare Pages redeploys.
+# 6. Existing users get the update prompt on their next Sparkle
+#    check — within 24h, or immediately if they hit "Check now"
+#    in Settings → General → Software updates.
 ```
+
+### How to verify a signature locally
+
+After running `sign_update`, you can re-verify the output against the
+public key by passing the signature back through Sparkle's verifier:
+
+```bash
+.build/artifacts/sparkle/Sparkle/bin/sign_update --verify \
+    build/Vakter-X.Y.Z.dmg "AbCd…the_signature…=="
+# exits 0 if valid, non-zero otherwise.
+```
+
+This is the same check Sparkle performs on the user's machine before
+unpacking — running it locally catches mistakes (wrong file path,
+truncated signature, wrong key in keychain) before they ship.
 
 ## What we didn't do
 

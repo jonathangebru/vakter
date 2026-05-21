@@ -446,6 +446,9 @@ private struct MiniSparkline: View {
 
 private struct GeneralTab: View {
     @State private var graceSeconds: Double = GraceSettingsStore.load().seconds
+    /// Injected by AppDelegate via `showSettingsWindow()`. Holds the
+    /// live Sparkle controller (or nil in previews / tests).
+    @EnvironmentObject private var updaterBox: UpdaterControllerBox
 
     var body: some View {
         Text("General")
@@ -527,6 +530,119 @@ private struct GeneralTab: View {
                 Spacer()
             }
         }
+
+        SoftwareUpdatesCard()
+            .environmentObject(updaterBox)
+    }
+}
+
+// MARK: - Software updates card
+
+/// "Software updates" card inside Settings → General. Reads its state
+/// from the injected `UpdaterControllerBox` so changes survive the
+/// Settings window being closed and reopened. Three controls:
+///
+///   1. Toggle — "Automatically check for updates." Bound to
+///      `SPUUpdater.automaticallyChecksForUpdates`.
+///   2. Button — "Check now…". Fires Sparkle's foreground update flow,
+///      which always shows a sheet (either "Vakter X is available" or
+///      "You're up to date."). The button is disabled if the updater
+///      controller is nil (preview / test path).
+///   3. Footer — current version + build, last-checked relative time,
+///      feed URL. Reviewers and security-conscious buyers will look at
+///      this and want to verify the channel is HTTPS + EdDSA-signed.
+private struct SoftwareUpdatesCard: View {
+
+    @EnvironmentObject private var updaterBox: UpdaterControllerBox
+
+    var body: some View {
+        VakterCard(
+            title: "Software updates",
+            subtitle: "Vakter checks for updates over HTTPS and verifies every download with an ed25519 signature embedded in the app. No telemetry, no account, no server-side tracking — Sparkle 2 fetches a static appcast, nothing more."
+        ) {
+            VStack(alignment: .leading, spacing: VakterDesign.spacingM) {
+
+                // Automatic-checks toggle.
+                Toggle(isOn: Binding(
+                    get: { updaterBox.automaticChecksEnabled },
+                    set: { updaterBox.setAutomaticChecks($0) }
+                )) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Automatically check for updates")
+                            .font(VakterDesign.bodyFont)
+                        Text("Checks once a day in the background. You decide whether to install — updates never apply automatically.")
+                            .font(VakterDesign.captionFont)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .toggleStyle(.switch)
+                .tint(VakterDesign.anchor)
+                .disabled(updaterBox.controller == nil)
+
+                Divider().opacity(0.5)
+
+                // "Check now" button + version + last-checked time.
+                HStack(alignment: .center, spacing: VakterDesign.spacingM) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(versionLine)
+                            .font(.system(size: 13, weight: .medium))
+                        Text(lastCheckedLine)
+                            .font(VakterDesign.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        updaterBox.checkNow()
+                    } label: {
+                        Label("Check now…", systemImage: "arrow.down.circle")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(VakterDesign.anchor)
+                    .disabled(updaterBox.controller == nil)
+                }
+
+                // Feed URL line. Renders a small monospaced line so a
+                // security-conscious user can verify the binary is
+                // talking to the URL they expect (vs. some sneaky
+                // mirror). Not interactive — purely informational.
+                if let feed = SparkleConfig.fromMainBundle().feedURL {
+                    HStack(spacing: 6) {
+                        Image(systemName: "lock.shield")
+                            .foregroundStyle(VakterDesign.anchor)
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(feed.absoluteString)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
+                    }
+                    .padding(.top, 2)
+                }
+            }
+        }
+        .onAppear { updaterBox.refresh() }
+    }
+
+    /// "Current version: 1.4.2 (build 2)". Pulled from
+    /// `CFBundleShortVersionString` + `CFBundleVersion` so we don't
+    /// hard-code values that drift over time.
+    private var versionLine: String {
+        let dict = Bundle.main.infoDictionary ?? [:]
+        let short = (dict["CFBundleShortVersionString"] as? String) ?? "?"
+        let build = (dict["CFBundleVersion"] as? String) ?? "?"
+        return "Current version: \(short) (build \(build))"
+    }
+
+    /// "Last checked: 2 hours ago" / "Last checked: never".
+    private var lastCheckedLine: String {
+        guard let date = updaterBox.lastCheckDate else {
+            return "Last checked: never"
+        }
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .full
+        return "Last checked: \(f.localizedString(for: date, relativeTo: Date()))"
     }
 }
 

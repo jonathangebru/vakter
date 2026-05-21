@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vakter — Sparkle 2 appcast feed.
+
+  Hosted at https://vakter.app/appcast.xml. Read by every shipping
+  Vakter.app on startup (SUFeedURL in Info.plist) and again every 24h
+  in the background. Sparkle 2 verifies every downloaded DMG against
+  the ed25519 public key embedded in the app binary (SUPublicEDKey)
+  before unpacking — a compromised mirror or MITM cannot push us a
+  malicious update without first stealing the developer's private
+  key from the local keychain.
+
+  Update workflow (per release):
+    1. Build, sign, notarise: Scripts/build-app.sh && Scripts/sign.sh && Scripts/notarize.sh && Scripts/make-dmg.sh
+    2. Sign the DMG with Sparkle's sign_update:
+         .build/artifacts/sparkle/Sparkle/bin/sign_update build/Vakter-X.Y.Z.dmg
+       Output is a single line:  sparkle:edSignature="…" length="…"
+       Paste both into the new <enclosure …/> below.
+    3. Prepend (not append) a new <item> for the new version at the top
+       of <channel>. Sparkle reads items in document order; the newest
+       must be first.
+    4. Commit + push. Cloudflare Pages re-deploys the static site,
+       which serves this file at /appcast.xml.
+    5. Existing users get the update prompt on their next Sparkle
+       check (within 24h, or immediately if they hit "Check now" in
+       Settings → General → Software updates).
+-->
+<rss version="2.0"
+     xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Vakter</title>
+    <link>https://vakter.app/appcast.xml</link>
+    <description>Auto-update feed for Vakter — the night-watch for your Mac.</description>
+    <language>en</language>
+
+    <item>
+      <title>Vakter 1.4.2</title>
+      <pubDate>Wed, 21 May 2026 18:42:09 +0000</pubDate>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[
+        <h2>Vakter 1.4.2</h2>
+        <p>The "pre-launch reality check" release. Two big fixes:</p>
+        <ul>
+          <li><strong>Defenses checklist grew from 12 to 20 checks</strong> — adds AirDrop scope, AirPlay receiver, file/media/printer sharing, Remote Login (SSH), Apple Remote Desktop, and Boot Security Policy. The "what macOS lets you turn on, but most people forget" coverage is now near-complete for consumer Macs.</li>
+          <li><strong>ArmVakterIntent + SetVakterModeIntent now actually arm Vakter</strong> via XPC to the helper. Earlier builds logged a NSLog stub. Shortcuts users + the iPhone companion now have a working trigger path.</li>
+        </ul>
+        <p>No vulnerabilities patched in this release. Future security fixes will be called out explicitly here.</p>
+      ]]></description>
+
+      <!--
+        The enclosure URL + signature are filled in by the human on
+        release day. See the comment block at the top of this file
+        for the runbook. Until the first signed release lands, the
+        URL points at the latest GitHub release and the signature is
+        marked PLACEHOLDER so Sparkle refuses to install it — better
+        a clean "no updates available" than a half-signed binary.
+      -->
+      <enclosure
+        url="https://github.com/jonathangebru/vakter/releases/download/v1.4.2/Vakter-1.4.2.dmg"
+        sparkle:version="2"
+        sparkle:shortVersionString="1.4.2"
+        sparkle:edSignature="PLACEHOLDER_RUN_SIGN_UPDATE_ON_RELEASE_DAY"
+        length="0"
+        type="application/octet-stream"/>
+    </item>
+
+  </channel>
+</rss>
