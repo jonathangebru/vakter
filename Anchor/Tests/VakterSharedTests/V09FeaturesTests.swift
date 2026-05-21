@@ -219,6 +219,54 @@ final class V09FeaturesTests: XCTestCase {
         }
     }
 
+    // MARK: AlarmSoundStore — persistence guarantees the onboarding
+    //                        "Hear the alarm" step relies on (#26).
+
+    /// When the user hasn't picked a sound yet, `.load()` must return
+    /// `.classicSiren`. The onboarding step displays this back to the user
+    /// as the "Selected sound" — if the default ever silently drifted to
+    /// something else, the preview wouldn't match the user's expectation
+    /// of "I haven't changed anything, so it should be the default."
+    func test_alarmSoundStore_defaultsToClassicSiren() {
+        // Wipe any persisted selection so we exercise the no-file path.
+        let url = VakterConstants.supportDirectoryURL
+            .appendingPathComponent("alarm-sound.json")
+        try? FileManager.default.removeItem(at: url)
+        XCTAssertEqual(AlarmSoundStore.load(), .classicSiren,
+                       "no-file load should default to classicSiren")
+    }
+
+    /// After Settings → Sound saves a non-default selection, the same
+    /// process (and any other process sharing the support directory,
+    /// like the helper at alarm time) reads back the same value. This is
+    /// the contract that lets the onboarding `hearAlarm` step honour the
+    /// user's choice — both the helper-side `AudioController.startSiren`
+    /// and the in-app `LocalAlarmPreview.play` resolve the user's
+    /// selection via `AlarmSoundStore.load()`.
+    func test_alarmSoundStore_persistsUserSelection() {
+        let original = AlarmSoundStore.load()
+        defer { AlarmSoundStore.save(original) }  // restore so we don't
+                                                  // affect other tests
+
+        for choice in [AlarmSound.sweepKlaxon, .pulseAlarm, .japaneseTwoTone] {
+            AlarmSoundStore.save(choice)
+            XCTAssertEqual(AlarmSoundStore.load(), choice,
+                           "round-trip should return \(choice.rawValue)")
+        }
+    }
+
+    /// If the persisted file is corrupt (manual edit, partial write
+    /// during sudden power loss), `.load()` must still hand back a
+    /// sensible value so the alarm never silently fails to play.
+    func test_alarmSoundStore_corruptFileDefaultsToClassicSiren() {
+        let url = VakterConstants.supportDirectoryURL
+            .appendingPathComponent("alarm-sound.json")
+        try? Data("not json".utf8).write(to: url, options: .atomic)
+        defer { try? FileManager.default.removeItem(at: url) }
+        XCTAssertEqual(AlarmSoundStore.load(), .classicSiren,
+                       "corrupt JSON should default to classicSiren")
+    }
+
     // MARK: Zipper
 
     func test_zipper_noInputsThrows() {

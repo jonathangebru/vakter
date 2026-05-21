@@ -257,7 +257,11 @@ struct OnboardingSheet: View {
         case .authorized:   cameraStatus = "Granted"
         case .denied:       cameraStatus = "Denied — needs fixing"
         case .restricted:   cameraStatus = "Restricted by system policy"
-        case .notDetermined: cameraStatus = "Will be asked on first alarm"
+        // The hearAlarm step now triggers the prompt explicitly when the
+        // user arrives at it — so this status string is the "preview" the
+        // permissions step shows the user before the prompt fires. Keep
+        // it honest about timing so users don't think we forgot to ask.
+        case .notDetermined: cameraStatus = "Will ask in the next step"
         @unknown default:   cameraStatus = "Unknown"
         }
     }
@@ -354,6 +358,57 @@ struct OnboardingSheet: View {
     @State private var playStartedAt: Date?
     private let playDuration: TimeInterval = 3.0
 
+    /// Per-step status of the TCC prompts driven from the hearAlarm step.
+    /// We surface camera and mic here (not in the earlier `.permissions`
+    /// step) because the user needs to *associate the prompts with their
+    /// actual use* — the siren they're about to play.
+    @State private var cameraInlineStatus: PermissionTileStatus = .pending
+    @State private var micInlineStatus: PermissionTileStatus = .pending
+
+    /// One-shot guard so re-entering the hearAlarm step doesn't refire
+    /// the system prompts.
+    @State private var hearAlarmPermissionsRequested = false
+
+    /// Snapshot of which alarm sound was active when the user reached the
+    /// hearAlarm step. Read once on appear; the user can't change their
+    /// selection from inside onboarding.
+    @State private var hearAlarmSound: AlarmSound = .classicSiren
+
+    enum PermissionTileStatus: Equatable {
+        case pending     // notDetermined — prompt is in flight or about to fire
+        case granted
+        case denied
+        case restricted
+
+        static func resolve(_ status: AVAuthorizationStatus) -> PermissionTileStatus {
+            switch status {
+            case .authorized:    return .granted
+            case .denied:        return .denied
+            case .restricted:    return .restricted
+            case .notDetermined: return .pending
+            @unknown default:    return .pending
+            }
+        }
+
+        var pillLabel: String {
+            switch self {
+            case .pending:    return "Will ask in a moment\u{2026}"
+            case .granted:    return "Granted"
+            case .denied:     return "Required — open System Settings"
+            case .restricted: return "Restricted by system policy"
+            }
+        }
+
+        var pillTone: VakterStatusPill.Tone {
+            switch self {
+            case .pending:    return .neutral
+            case .granted:    return .healthy
+            case .denied:     return .attention
+            case .restricted: return .attention
+            }
+        }
+    }
+
     private var hearAlarmStep: some View {
         VStack(spacing: VakterDesign.spacingL) {
             Text("Hear the alarm")
@@ -421,26 +476,209 @@ struct OnboardingSheet: View {
             .tint(VakterDesign.alarm)
             .controlSize(.large)
 
+            // Tell the user *which* sound they're about to hear — answers
+            // the implicit question "is this my picked sound or a generic
+            // default?" before they click Play.
+            Text("Selected sound: \(hearAlarmSound.displayName)")
+                .font(VakterDesign.captionFont)
+                .foregroundStyle(.secondary)
+
             Text("Volume will be temporarily forced to max on internal speakers, then restored.")
                 .font(VakterDesign.captionFont)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.top, VakterDesign.spacingS)
+                .padding(.top, VakterDesign.spacingXS)
+
+            // Permission tiles. Both fire macOS's system prompt on first
+            // arrival to this step (per #26). The grant lands on the .app
+            // bundle so the helper inherits TCC access for the real
+            // photo + audio capture during a future alarm — without this
+            // step the user only learns the prompts exist *during* a
+            // real theft event, by which point evidence is silently lost.
+            VStack(spacing: VakterDesign.spacingS) {
+                hearAlarmPermissionTile(
+                    icon: "camera.fill",
+                    title: "Camera",
+                    why: "For the photo burst when the alarm fires.",
+                    status: cameraInlineStatus
+                )
+                hearAlarmPermissionTile(
+                    icon: "mic.fill",
+                    title: "Microphone",
+                    why: "For the 10-second ambient audio clip during the alarm.",
+                    status: micInlineStatus
+                )
+            }
+            .padding(.top, VakterDesign.spacingM)
+        }
+        .onAppear {
+            // Snapshot selection at appear-time so the displayed label
+            // and the played sound stay coherent. The helper /
+            // LocalAlarmPreview still call `AlarmSoundStore.load()` at
+            // play time — and that's the exact value we mirror here.
+            hearAlarmSound = AlarmSoundStore.load()
+            requestHearAlarmPermissionsIfNeeded()
+        }
+    }
+
+    /// Permission tile inside the hearAlarm step. Inline, no "Grant"
+    /// button — the system prompt is fired automatically on step arrival.
+    /// If the user denied at the prompt, the tile becomes a tappable row
+    /// that bounces them to the right System Settings pane.
+    private func hearAlarmPermissionTile(
+        icon: String,
+        title: String,
+        why: String,
+        status: PermissionTileStatus
+    ) -> some View {
+        let isActionable = (status == .denied || status == .restricted)
+        return HStack(spacing: VakterDesign.spacingS) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(VakterDesign.anchor)
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(VakterDesign.anchor.opacity(0.10)))
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 12.5, weight: .semibold))
+                Text(why)
+                    .font(VakterDesign.captionFont)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            VakterStatusPill(status.pillLabel, tone: status.pillTone)
+        }
+        .padding(.horizontal, VakterDesign.spacingM)
+        .padding(.vertical, VakterDesign.spacingS + 2)
+        .background(
+            RoundedRectangle(cornerRadius: VakterDesign.radiusS, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: VakterDesign.radiusS, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard isActionable else { return }
+            if title == "Camera" {
+                openCameraPrivacy()
+            } else if title == "Microphone" {
+                openMicrophonePrivacy()
+            }
+        }
+        .help(isActionable
+              ? "Click to open System Settings → Privacy & Security"
+              : "")
+    }
+
+    /// Reads the current authorization status for both .video and .audio,
+    /// fires `requestAccess` for any that are still `.notDetermined`, and
+    /// updates the inline tile state on the main actor when callbacks
+    /// land.
+    ///
+    /// **Why fire from the hearAlarm step:** macOS associates the TCC
+    /// grant with the binary that *makes the requestAccess call*. We
+    /// want the grant attributed to the .app (not the helper) so the
+    /// user sees the calm onboarding context rather than a background
+    /// daemon's prompt. Firing this on `hearAlarm` keeps the wording
+    /// aligned with what the user is about to hear and gives them the
+    /// most concrete "why" possible.
+    ///
+    /// **Idempotency:** macOS makes `requestAccess` a no-op when the
+    /// status is no longer `.notDetermined`, so calling this multiple
+    /// times (Back → Continue → Back → Continue) is harmless. We still
+    /// guard with `hearAlarmPermissionsRequested` so the log doesn't
+    /// spam each round trip.
+    private func requestHearAlarmPermissionsIfNeeded() {
+        // Always refresh — the user may have been to System Settings and
+        // back during onboarding, and the tile should reflect reality.
+        cameraInlineStatus = PermissionTileStatus.resolve(
+            AVCaptureDevice.authorizationStatus(for: .video))
+        micInlineStatus = PermissionTileStatus.resolve(
+            AVCaptureDevice.authorizationStatus(for: .audio))
+        // Mirror into the permissions step's status string so the user
+        // sees consistent state if they navigate back to step 2.
+        cameraStatus = cameraInlineStatus.pillLabel
+
+        guard !hearAlarmPermissionsRequested else { return }
+        hearAlarmPermissionsRequested = true
+
+        // Camera — fire only if not yet determined. requestAccess
+        // delivers the callback on an arbitrary background queue; hop
+        // to the main actor before mutating SwiftUI state.
+        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+            NSLog("[Onboarding] requesting camera access (hearAlarm)")
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                Task { @MainActor in
+                    NSLog("[Onboarding] camera permission %@",
+                          granted ? "GRANTED" : "DENIED")
+                    let resolved = PermissionTileStatus.resolve(
+                        AVCaptureDevice.authorizationStatus(for: .video))
+                    cameraInlineStatus = resolved
+                    cameraStatus = resolved.pillLabel
+                }
+            }
+        }
+
+        // Microphone — same pattern. This is the prompt that used to be
+        // silently deferred until the first alarm's ambient-capture
+        // call inside the helper. Surfacing it here means the user
+        // accepts/denies in a calm context, not while looking at a
+        // panicking siren they can't unhear.
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            NSLog("[Onboarding] requesting microphone access (hearAlarm)")
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                Task { @MainActor in
+                    NSLog("[Onboarding] microphone permission %@",
+                          granted ? "GRANTED" : "DENIED")
+                    let resolved = PermissionTileStatus.resolve(
+                        AVCaptureDevice.authorizationStatus(for: .audio))
+                    micInlineStatus = resolved
+                }
+            }
+        }
+    }
+
+    /// Open the Privacy & Security → Microphone pane. Mirrors the
+    /// existing `openCameraPrivacy()` helper.
+    private func openMicrophonePrivacy() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+            NSWorkspace.shared.open(url)
         }
     }
 
     /// Starts a real testAlarm, drives the visual playing-state, and
     /// flips back to idle after `playDuration`.
+    ///
+    /// The helper-side `testAlarm` calls `AudioController.playTestAlarm`,
+    /// which routes through the *real* alarm subsystem — `startAlarm`
+    /// reads `AlarmSoundStore.load()` for the siren, fires the voice
+    /// cue loop in the user's locale, and forces audio routing to
+    /// internal speakers at max volume. The user's "Hear the alarm" is
+    /// therefore a faithful preview of what a real theft event sounds
+    /// like, not a placeholder beep.
+    ///
+    /// If the helper is unreachable, `HelperClient.testAlarm` races a
+    /// 1-second fallback to `LocalAlarmPreview.shared.play` which
+    /// *also* reads `AlarmSoundStore.load()` — so the audible character
+    /// matches in either path. (LocalAlarmPreview omits the voice cue
+    /// and the system-volume override, but it never plays a wrong sound.)
     private func triggerPreview() {
         guard !isPlaying else { return }
         hasHeardAlarm = true
         isPlaying = true
         playStartedAt = Date()
         if let client = helperClient {
-            NSLog("[Onboarding] sending testAlarm via injected HelperClient")
+            NSLog("[Onboarding] sending testAlarm (sound=%@, voice=on) via injected HelperClient",
+                  hearAlarmSound.rawValue)
             client.testAlarm(seconds: playDuration)
         } else {
-            NSLog("[Onboarding] helperClient not injected — visual-only preview")
+            NSLog("[Onboarding] helperClient not injected — visual-only preview (sound=%@)",
+                  hearAlarmSound.rawValue)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + playDuration + 0.2) {
             self.isPlaying = false
