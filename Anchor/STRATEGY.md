@@ -84,7 +84,7 @@ and code-level verification against VakterShared, VakterApp, VakterHelper.*
 - Source at `iOS/VakterCompanion/` and `WatchOS/VakterWatch/`
 - CloudKit-backed (user's private DB, E2E encrypted in transit)
 - Remote arm/disarm via CloudKit records
-- Status: provisioning and TestFlight in progress (companions in beta)
+- Status: source complete; provisioning in progress
 
 **Distribution + integrity**
 - Notarised .dmg with Hardened Runtime and Developer ID (Team 9TA5GB5UJH)
