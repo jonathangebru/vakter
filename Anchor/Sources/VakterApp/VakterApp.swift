@@ -32,6 +32,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// "Access Security › Firewall & Sharing › …" submenus.
     private(set) var defensesScheduler: DefensesScheduler?
 
+    /// Sparkle 2 auto-update controller. Owned here so it outlives every
+    /// update check it kicks off (releasing it mid-download silently
+    /// orphans Sparkle's InstallerLauncher XPC service). The Settings →
+    /// General → "Check for updates" panel reads + writes against this
+    /// instance via `@EnvironmentObject` injection in
+    /// `showSettingsWindow()`. Always non-nil on a real app launch;
+    /// only nil in unit tests that skip applicationDidFinishLaunching.
+    private(set) var updaterController: UpdaterController?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[Vakter] launched")
 
@@ -100,6 +109,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         defenses.start()
 
+        // Sparkle 2 auto-update controller. Initialised AFTER the helper
+        // + daemon are already registered so its first feed check (which
+        // happens a couple of minutes after launch) doesn't compete with
+        // the boot-time XPC handshake. `SPUStandardUpdaterController.init(
+        // startingUpdater: true, …)` schedules the first background
+        // check itself — no further wiring needed here. The Settings
+        // window reads `automaticChecksEnabled` and fires
+        // `checkForUpdatesNow(_:)` against this instance.
+        //
+        // Feed URL + EdDSA public key live in Info.plist
+        // (SUFeedURL, SUPublicEDKey). Sparkle reads them lazily on the
+        // first check, so there is no work to do here besides keeping
+        // the controller alive for the app's lifetime.
+        updaterController = UpdaterController()
+        NSLog("[Vakter] Sparkle updater controller initialised; feed: %@",
+              SparkleConfig.fromMainBundle().feedURL?.absoluteString ?? "(missing SUFeedURL)")
+
         // Camera permission — request it now, in a calm context, rather
         // than mid-alarm when the user can't actually grant it. macOS
         // attributes the grant to the .app bundle, which means the
@@ -143,10 +169,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // nil when the Settings window was hosted via NSHostingController,
         // breaking every Settings → helper call).
         let client = helperClient ?? HelperClient()
+        // Settings → General → "Check for updates" reads + writes against
+        // the same Sparkle controller AppDelegate owns. We inject a
+        // small holder box (rather than the controller itself) so the
+        // GeneralTab can survive being instantiated in previews or
+        // tests where the SwiftUI environment has no updater. The
+        // holder's `controller` property may be nil in those paths and
+        // the UI degrades gracefully (shows the version line, disables
+        // the buttons).
+        let updaterBox = UpdaterControllerBox(controller: updaterController)
         let host = NSHostingController(
             rootView: SettingsRoot()
                 .environmentObject(stateBox)
                 .environmentObject(client)
+                .environmentObject(updaterBox)
         )
         let window = NSWindow(contentViewController: host)
         window.title = "Vakter Settings"
