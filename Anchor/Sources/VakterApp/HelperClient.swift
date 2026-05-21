@@ -217,6 +217,44 @@ final class HelperClient: NSObject, VakterAppProtocol, ObservableObject {
         }
     }
 
+    // MARK: - Defenses checklist
+
+    /// Ask the helper to run the full Pareto-style defenses checklist
+    /// (`DefensesProbe.runAll()`) and call `completion` on the main actor
+    /// with the decoded `DefenseChecklist`.
+    ///
+    /// The probe shells out to ~10 binaries and typically takes 2–6 s.
+    /// The helper runs it off its main queue and replies via the
+    /// XPC `@escaping` callback when it's done — so this method
+    /// returns immediately and the completion fires later.
+    ///
+    /// **Fallback path:** if XPC is unreachable (helper not approved,
+    /// LWCR mismatch, daemon crashed, dev build with no helper running)
+    /// the reply block never fires. Callers should layer a timeout +
+    /// in-process `DefensesProbe.runAll()` fallback on top — see
+    /// `DefensesScheduler.runNow()` for the canonical pattern. Without
+    /// a timeout, a missing helper would leave the menubar's Defenses
+    /// submenu stuck on stale data forever, which is exactly the
+    /// trust-eroding glitch this XPC route is meant to prevent.
+    ///
+    /// `completion` is `nil`-tolerant of decode failure: a malformed
+    /// payload (empty `Data`, encoder/decoder schema drift, etc.) is
+    /// surfaced as `nil` so the caller can decide whether to fall
+    /// back rather than silently render an empty checklist.
+    func runPreflight(completion: @escaping (DefenseChecklist?) -> Void) {
+        guard let proxy = helperProxy() else {
+            // Helper not connected — propagate nil so the caller can
+            // fall back to a local probe rather than hang on a reply
+            // that will never arrive.
+            Task { @MainActor in completion(nil) }
+            return
+        }
+        proxy.runPreflight { data in
+            let checklist = VakterXPC.decode(DefenseChecklist.self, from: data)
+            Task { @MainActor in completion(checklist) }
+        }
+    }
+
     // MARK: - VakterAppProtocol (called by the helper)
 
     nonisolated func snapshotChanged(_ data: Data) {
