@@ -55,7 +55,29 @@ enum DefensesAudit {
             checkScreenLockDelay(),
             checkLoginWindowMessage(),
             checkSoftwareUpdates(),
-            checkVakterAppInLoginItems()
+            checkVakterAppInLoginItems(),
+            // v1.4.2 — 8 new checks added per Feature #21, bringing the
+            // audit total from 12 → 20. Order is load-bearing: existing
+            // 12 keep their array index so `DefensesScoreHistory` (which
+            // is keyed only by total score, not per-check) stays stable
+            // across the upgrade.
+            //
+            // Categorisation (against the Pareto buckets in
+            // `DefenseCategory`): the five "sharing" probes
+            // (AirDrop / AirPlay / File / Media / Printer) and the two
+            // remote-access probes (SSH / ARD) all belong to Firewall &
+            // Sharing; boot security policy belongs to System Integrity.
+            // `DefensesAudit` itself doesn't carry a category tag — the
+            // category modelling lives in `DefenseChecklist.swift` and is
+            // already wired through `DefensesProbe.runAll()`.
+            checkAirDropDiscoverableMode(),
+            checkAirPlayReceiver(),
+            checkFileSharing(),
+            checkMediaSharing(),
+            checkPrinterSharing(),
+            checkRemoteLogin(),
+            checkRemoteManagement(),
+            checkBootSecurityPolicy()
         ]
     }
 
@@ -402,6 +424,325 @@ enum DefensesAudit {
                 : "Vakter's background helper isn't registered. Open Login Items and toggle it on so Vakter watches your Mac on every boot.",
             status: agent ? .healthy : .warning,
             systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
+        )
+    }
+
+    // MARK: - v1.4.2 additions (Feature #21)
+    //
+    // The 8 checks below cover the most common "wait, I left that on"
+    // sharing footguns on a modern Mac plus Apple Silicon boot security.
+    //
+    // They follow the same shape as the original 12:
+    //   • shell-out via `shellOutput()` (timeout-bounded, stderr-silent)
+    //   • map the textual result into one of four `DefenseCheck.Status`
+    //     values: .healthy / .warning / .attention / .unknown
+    //   • surface a deep-link into System Settings where possible
+    //
+    // Heuristics deliberately err toward `.warning`, not `.attention`,
+    // for sharing services because the "fix" is usually a single toggle
+    // the user knowingly enabled (e.g. Printer Sharing at the office).
+    // `.attention` is reserved for posture flips that genuinely undermine
+    // theft response — e.g. Remote Login is ON, or boot security is
+    // reduced from Full Security on Apple Silicon.
+
+    /// AirDrop discoverability scope. Healthy when set to "Off" or
+    /// "Contacts Only". "Everyone" is a warning — at a coffee shop your
+    /// Mac becomes a target for random AirDrop spam / phishing prompts.
+    ///
+    /// Probe: `defaults read com.apple.sharingd DiscoverableMode`. The
+    /// expected values are the three System Settings options surfaced as
+    /// "Off" / "Contacts Only" / "Everyone". The key is only present
+    /// once the user has explicitly opened the AirDrop pane and picked a
+    /// scope — on a fresh install the key is missing, which we treat as
+    /// the default Contacts Only (healthy) per Apple's documented
+    /// default behaviour.
+    private static func checkAirDropDiscoverableMode() -> DefenseCheck {
+        let raw = shellOutput("/usr/bin/defaults read com.apple.sharingd DiscoverableMode 2>/dev/null")
+        let val = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let status: DefenseCheck.Status
+        let detail: String
+        if val.contains("everyone") {
+            status = .warning
+            detail = "AirDrop is set to Everyone — strangers on cafe Wi-Fi can target you with AirDrop prompts. Switch to Contacts Only."
+        } else if val.contains("contacts only") {
+            status = .healthy
+            detail = "Set to Contacts Only — only people in your iCloud contacts can see you."
+        } else if val.contains("off") || val == "" {
+            // Empty = key missing (key isn't written until the user
+            // changes it from the macOS-default Contacts Only).
+            status = .healthy
+            detail = val.isEmpty
+                ? "Using the macOS default (Contacts Only)."
+                : "AirDrop visibility is off."
+        } else {
+            status = .unknown
+            detail = "Couldn't read AirDrop visibility (got: \(val))."
+        }
+
+        return DefenseCheck(
+            id: "airdrop-discoverable",
+            title: "AirDrop discovery scope",
+            detail: detail,
+            status: status,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.AirDrop-Handoff-Settings.extension")
+        )
+    }
+
+    /// AirPlay Receiver — lets other Apple devices send their screen
+    /// to your Mac. Reasonable for a home Mac mini wired to a TV;
+    /// undesirable for a laptop in public.
+    ///
+    /// Probe: `launchctl list | grep com.apple.AirPlayXPCHelper`.
+    /// `AirPlayXPCHelper` is the receiver-side helper that launchd
+    /// only loads when the AirPlay Receiver toggle is on. The
+    /// `AirPlayUIAgent` peer is always present (UI-only) — checking
+    /// for the helper rather than the agent is what avoids the
+    /// false-positive Pareto reported pre-v0.10.1. Same probe shape
+    /// is already used in `DefensesProbe.itemAirPlayReceiver()`.
+    private static func checkAirPlayReceiver() -> DefenseCheck {
+        let out = shellOutput("/bin/launchctl list 2>/dev/null")
+        let on = out.contains("com.apple.AirPlayXPCHelper")
+        return DefenseCheck(
+            id: "airplay-receiver",
+            title: "AirPlay Receiver",
+            detail: on
+                ? "On. Anyone nearby on the same network can send their screen to your Mac. Off is the safe default for laptops."
+                : "Off. Your Mac won't accept incoming AirPlay sessions.",
+            status: on ? .warning : .healthy,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.AirDrop-Handoff-Settings.extension")
+        )
+    }
+
+    /// SMB File Sharing. `smbd` is loaded by launchd only while File
+    /// Sharing is on in System Settings → Sharing. Two SMB-adjacent
+    /// daemons exist:
+    ///   • `com.apple.smbd`        — the SMB server itself
+    ///   • `com.apple.smb.preferences` — a passive helper, ignored
+    ///
+    /// We grep for the server. Healthy = absent (sharing is off).
+    /// Warn (not attention) because users at home often deliberately
+    /// enable it to share their Public folder with a partner's Mac.
+    private static func checkFileSharing() -> DefenseCheck {
+        let out = shellOutput("/bin/launchctl list 2>/dev/null")
+        let on = out.contains("com.apple.smbd")
+        return DefenseCheck(
+            id: "file-sharing",
+            title: "File Sharing (SMB)",
+            detail: on
+                ? "On. Other devices on this network can browse your shared folders. Turn off in cafes / airports."
+                : "Off. No SMB shares are exposed.",
+            status: on ? .warning : .healthy,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+        )
+    }
+
+    /// Media Sharing (Music library + Home Sharing). The launchd label
+    /// is `com.apple.mediasharingd`. Same shape as File Sharing — warn
+    /// when on, healthy when off, because there's a legitimate "share
+    /// my Music library with the family iPad" use case.
+    private static func checkMediaSharing() -> DefenseCheck {
+        let out = shellOutput("/bin/launchctl list 2>/dev/null")
+        let on = out.contains("com.apple.mediasharingd")
+        return DefenseCheck(
+            id: "media-sharing",
+            title: "Media Sharing",
+            detail: on
+                ? "On. Your Music library is reachable over the network. Off is the safe default in public."
+                : "Off. Your Music library isn't exposed.",
+            status: on ? .warning : .healthy,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+        )
+    }
+
+    /// Printer Sharing. `cupsctl` prints "_share_printers=0" or
+    /// "_share_printers=1". The binary lives at `/usr/sbin/cupsctl`
+    /// and is present on every macOS install (CUPS ships with the
+    /// system). On Apple Silicon under macOS 15+ the binary requires
+    /// no privilege escalation for a status read.
+    ///
+    /// We tolerate the binary being missing (would be weird, but on
+    /// some kiosk/SOE builds it's deleted) by falling through to
+    /// `.unknown` rather than asserting OFF.
+    private static func checkPrinterSharing() -> DefenseCheck {
+        let out = shellOutput("/usr/sbin/cupsctl 2>/dev/null")
+        if out.isEmpty {
+            return DefenseCheck(
+                id: "printer-sharing",
+                title: "Printer Sharing",
+                detail: "Couldn't read CUPS status. Check System Settings → General → Sharing → Printer Sharing manually.",
+                status: .unknown,
+                systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+            )
+        }
+        let on = out.contains("_share_printers=1")
+        return DefenseCheck(
+            id: "printer-sharing",
+            title: "Printer Sharing",
+            detail: on
+                ? "On. Other devices on this network can print through your Mac. Off is the safe default for laptops."
+                : "Off. Connected printers stay private to this Mac.",
+            status: on ? .warning : .healthy,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+        )
+    }
+
+    /// Remote Login (SSH). The launchd label for the SSH server is
+    /// `com.openssh.sshd`. `launchctl list <label>` is the cleanest
+    /// probe — it returns a job description plist if the service is
+    /// loaded, or "Could not find service" otherwise. This sidesteps
+    /// `systemsetup -getremotelogin` which requires admin privilege
+    /// (and returns a misleading "You need administrator access"
+    /// string for non-root callers — see DefensesProbe.itemRemoteLogin
+    /// for the multi-fallback story we landed on in v0.10.1).
+    ///
+    /// On a healthy Mac SSH is off — flagged `.attention` (not just
+    /// `.warning`) because an attacker with the user's password (or a
+    /// pwned SSH key) gets full shell access to the Mac, which
+    /// dramatically widens the blast radius of any other compromise.
+    private static func checkRemoteLogin() -> DefenseCheck {
+        let out = shellOutput("/bin/launchctl list com.openssh.sshd 2>/dev/null")
+        let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
+        // launchctl prints a multi-line plist-like blob when the
+        // service is loaded. When absent, it either prints "Could not
+        // find service" or returns no output at all (depending on the
+        // macOS version). Treat empty output as "absent" = healthy.
+        if trimmed.isEmpty || trimmed.localizedCaseInsensitiveContains("could not find") {
+            return DefenseCheck(
+                id: "remote-login",
+                title: "Remote Login (SSH)",
+                detail: "Off. SSH access from other machines is disabled.",
+                status: .healthy,
+                systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+            )
+        }
+        return DefenseCheck(
+            id: "remote-login",
+            title: "Remote Login (SSH)",
+            detail: "On. SSH is accepting connections. Turn off when not actively in use — it's the most-attacked surface on a Mac.",
+            status: .attention,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+        )
+    }
+
+    /// Remote Management (Apple Remote Desktop / ARD). Listens for
+    /// inbound VNC / ARD-protocol sessions. Disabled by default.
+    ///
+    /// Probe: `launchctl list com.apple.RemoteManagement`. Like SSH,
+    /// flagged `.attention` when on because ARD is a full-control
+    /// remote desktop protocol — the historical "Apple Remote Desktop
+    /// Root" advisories made unprotected ARD a notorious foothold for
+    /// post-exploitation.
+    private static func checkRemoteManagement() -> DefenseCheck {
+        let out = shellOutput("/bin/launchctl list com.apple.RemoteManagement 2>/dev/null")
+        let trimmed = out.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed.localizedCaseInsensitiveContains("could not find") {
+            return DefenseCheck(
+                id: "remote-management",
+                title: "Remote Management (ARD)",
+                detail: "Off. Apple Remote Desktop isn't accepting inbound sessions.",
+                status: .healthy,
+                systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+            )
+        }
+        return DefenseCheck(
+            id: "remote-management",
+            title: "Remote Management (ARD)",
+            detail: "On. Apple Remote Desktop is reachable. Turn off unless you actually use ARD — it grants screen-and-control to authenticated callers.",
+            status: .attention,
+            systemSettingsURL: URL(string: "x-apple.systempreferences:com.apple.Sharing-Settings.extension")
+        )
+    }
+
+    /// Boot security policy on Apple Silicon. `bputil -d` dumps the
+    /// current LocalPolicy. Healthy posture is "Full Security" — the
+    /// default and only mode that prevents an attacker with physical
+    /// access from booting an arbitrary OS or extracted kernel.
+    ///
+    /// Two reduced-security flavours exist:
+    ///   • Reduced Security  — allows older macOS versions and kexts
+    ///   • Permissive Security — same, plus disabled signature checks
+    ///
+    /// On Intel Macs `bputil` doesn't exist at all and there's no
+    /// directly-comparable concept (the equivalent — Secure Boot on
+    /// T2 Macs — is read via different tooling we'd need to wire
+    /// separately). We gate this check via
+    /// `sysctl hw.optional.arm64` and emit `.unknown` on Intel rather
+    /// than misreport. The Intel population at v1.4.2 is small but
+    /// nonzero (mostly 2019/2020 Intel MacBook Pros), and pretending
+    /// the check passed would lower the score's signal value.
+    ///
+    /// Note: `bputil -d` requires no privilege escalation on macOS 15+
+    /// when invoked by a regular user (read-only LocalPolicy dump).
+    /// If a future macOS tightens that and returns "Operation not
+    /// permitted", we fall through to `.unknown`.
+    private static func checkBootSecurityPolicy() -> DefenseCheck {
+        // Gate on Apple Silicon. `sysctl -n hw.optional.arm64` prints
+        // "1" on Apple Silicon and "0" (or errors) on Intel.
+        let arch = shellOutput("/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard arch == "1" else {
+            return DefenseCheck(
+                id: "boot-security",
+                title: "Boot security policy",
+                detail: "Not applicable on Intel Macs (the LocalPolicy boot model is Apple Silicon only).",
+                status: .unknown,
+                systemSettingsURL: nil
+            )
+        }
+
+        let out = shellOutput("/usr/bin/bputil -d 2>/dev/null").lowercased()
+        if out.isEmpty {
+            return DefenseCheck(
+                id: "boot-security",
+                title: "Boot security policy",
+                detail: "Couldn't read the LocalPolicy. Open Startup Security Utility in Recovery Mode to verify Full Security.",
+                status: .unknown,
+                systemSettingsURL: nil
+            )
+        }
+
+        // `bputil -d` output keys we care about:
+        //   "OS environment:" → "one true recoveryOS"   (uninteresting)
+        //   "Local policy nonce hash" → opaque hash      (uninteresting)
+        //   "Policy:" / "Security mode:" lines whose value embeds one
+        //                       of "full", "reduced", "permissive".
+        // We do a phrase-level lowercase scan rather than line parsing
+        // so changes in Apple's exact key labels don't silently break
+        // the probe.
+        if out.contains("full security") {
+            return DefenseCheck(
+                id: "boot-security",
+                title: "Boot security policy",
+                detail: "Full Security. Only the OS this Mac shipped with (and Apple-signed updates) can boot.",
+                status: .healthy,
+                systemSettingsURL: nil
+            )
+        }
+        if out.contains("permissive security") {
+            return DefenseCheck(
+                id: "boot-security",
+                title: "Boot security policy",
+                detail: "Permissive Security. Boot signature checks are disabled — only enable if you actively run kernel extensions.",
+                status: .attention,
+                systemSettingsURL: nil
+            )
+        }
+        if out.contains("reduced security") {
+            return DefenseCheck(
+                id: "boot-security",
+                title: "Boot security policy",
+                detail: "Reduced Security. The Mac can boot older macOS / third-party kexts. Return to Full Security via Startup Security Utility if you don't need that flexibility.",
+                status: .warning,
+                systemSettingsURL: nil
+            )
+        }
+        return DefenseCheck(
+            id: "boot-security",
+            title: "Boot security policy",
+            detail: "LocalPolicy didn't include a recognisable security mode. Run `bputil -d` in Terminal for the full dump.",
+            status: .unknown,
+            systemSettingsURL: nil
         )
     }
 
