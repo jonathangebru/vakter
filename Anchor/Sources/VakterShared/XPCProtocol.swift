@@ -14,8 +14,14 @@ import Foundation
     /// Reply data is a JSON-encoded `VakterSnapshot`.
     func currentSnapshot(reply: @escaping (Data) -> Void)
 
-    /// Runs the pre-flight security checklist on demand.
-    /// Reply data is a JSON-encoded `PreflightResult` (defined later).
+    /// Runs the full Pareto-style defenses checklist on demand and replies
+    /// with a JSON-encoded `DefenseChecklist`. Slow (~2–6 s wall-clock —
+    /// many of the 20 probes shell out to `defaults`, `socketfilterfw`,
+    /// `launchctl`, `softwareupdate -l`, `bputil -d`, etc.), so the helper
+    /// runs the probe off-thread before invoking `reply`. The method name
+    /// is the legacy "preflight" identifier from when the audit was scoped
+    /// to a small pre-arm sanity check; it's retained to keep the @objc
+    /// XPC protocol shape stable across versions.
     func runPreflight(reply: @escaping (Data) -> Void)
 
     // MARK: Control
