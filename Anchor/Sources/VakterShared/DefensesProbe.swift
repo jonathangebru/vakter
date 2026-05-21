@@ -93,6 +93,10 @@ public enum DefensesProbe {
             itemMediaSharing(),
             itemPrinterSharing(),
             itemAirPlayReceiver(),
+            // v1.4.2 addition (Feature #21): AirDrop visibility, the
+            // "I'm visible to strangers at the coffee shop" gap not
+            // previously surfaced in the menubar dropdown.
+            itemAirDropDiscoverableMode(),
             // ── macOS Updates ──────────────────────────────────────
             itemMacOSAutoUpdate(),
             // ── Software Updates ───────────────────────────────────
@@ -102,6 +106,10 @@ public enum DefensesProbe {
             itemSIP(),
             itemGatekeeper(),
             itemFindMy(),
+            // v1.4.2 addition (Feature #21): Apple Silicon boot
+            // security policy. Skipped (yields `.unknown`) on Intel
+            // because the LocalPolicy concept is AS-only.
+            itemBootSecurityPolicy(),
         ]
         return DefenseChecklist(runAt: Date(), items: items)
     }
@@ -497,6 +505,64 @@ public enum DefensesProbe {
         )
     }
 
+    /// AirDrop discovery scope (Off / Contacts Only / Everyone). Added
+    /// in v1.4.2 (Feature #21) so the menubar dropdown surfaces the
+    /// "visible to strangers" footgun symmetrically with the Settings
+    /// → Defenses tab.
+    ///
+    /// Probe: `defaults read com.apple.sharingd DiscoverableMode`.
+    /// Missing key on a fresh install — Apple writes it lazily — is
+    /// treated as the macOS-default Contacts Only (= `.pass`). Same
+    /// reasoning as `itemPasswordAfterSleep`: missing != off, and we
+    /// don't want to flag a fresh install as red on a key the user
+    /// hasn't touched. See parallel `checkAirDropDiscoverableMode()` in
+    /// `DefensesAudit.swift` for the long version of this rationale.
+    private static func itemAirDropDiscoverableMode() -> DefenseItem {
+        let raw = runProcess("/usr/bin/defaults",
+                             ["read", "com.apple.sharingd", "DiscoverableMode"])
+        let val = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if val.contains("everyone") {
+            return DefenseItem(
+                id: "firewall.airdropDiscoverable",
+                category: .firewallSharing,
+                title: "AirDrop is set to Everyone",
+                detail: "Anyone nearby on Wi-Fi can target you with AirDrop. Switch to Contacts Only.",
+                status: .warn,
+                remediationURLString: "x-apple.systempreferences:com.apple.AirDrop-Handoff-Settings.extension"
+            )
+        }
+        if val.contains("contacts only") {
+            return DefenseItem(
+                id: "firewall.airdropDiscoverable",
+                category: .firewallSharing,
+                title: "AirDrop is Contacts Only",
+                detail: "Only people in your iCloud contacts can see your Mac in AirDrop.",
+                status: .pass,
+                remediationURLString: "x-apple.systempreferences:com.apple.AirDrop-Handoff-Settings.extension"
+            )
+        }
+        if val.contains("off") {
+            return DefenseItem(
+                id: "firewall.airdropDiscoverable",
+                category: .firewallSharing,
+                title: "AirDrop visibility is off",
+                detail: "Your Mac doesn't appear in nearby AirDrop discovery.",
+                status: .pass,
+                remediationURLString: "x-apple.systempreferences:com.apple.AirDrop-Handoff-Settings.extension"
+            )
+        }
+        // Missing key (fresh install) = macOS default = Contacts Only.
+        return DefenseItem(
+            id: "firewall.airdropDiscoverable",
+            category: .firewallSharing,
+            title: "AirDrop is Contacts Only",
+            detail: "Using the macOS default — only contacts can see you in AirDrop.",
+            status: .pass,
+            remediationURLString: "x-apple.systempreferences:com.apple.AirDrop-Handoff-Settings.extension"
+        )
+    }
+
     private static func itemAirPlayReceiver() -> DefenseItem {
         // The AirPlay-receiver toggle is a system-wide service that
         // launchd manages as `com.apple.AirPlayXPCHelper` / the
@@ -623,6 +689,77 @@ public enum DefensesProbe {
             detail: "Lets you locate or remote-wipe a stolen Mac. Pair with Vakter's alarm for full coverage.",
             status: token ? .pass : .fail,
             remediationURLString: "x-apple.systempreferences:com.apple.preferences.AppleIDPrefPane"
+        )
+    }
+
+    /// Apple Silicon boot security policy (Full / Reduced / Permissive).
+    /// Added in v1.4.2 (Feature #21) so the menubar dropdown reports
+    /// boot posture symmetrically with the Settings → Defenses audit.
+    ///
+    /// Probe: `bputil -d` on Apple Silicon. Intel Macs don't have the
+    /// LocalPolicy concept at all — we gate via
+    /// `sysctl hw.optional.arm64` and emit `.unknown` (not `.pass`) on
+    /// Intel so the menubar's overall posture isn't artificially
+    /// inflated by a check that doesn't actually apply. See parallel
+    /// `checkBootSecurityPolicy()` in `DefensesAudit.swift` for the
+    /// long version of the rationale and the Reduced / Permissive
+    /// threshold thinking.
+    private static func itemBootSecurityPolicy() -> DefenseItem {
+        let arch = runProcess("/usr/sbin/sysctl", ["-n", "hw.optional.arm64"])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard arch == "1" else {
+            return DefenseItem(
+                id: "integrity.bootSecurity",
+                category: .systemIntegrity,
+                title: "Boot security: N/A on Intel",
+                detail: "The LocalPolicy boot-security model is Apple Silicon only.",
+                status: .unknown
+            )
+        }
+
+        let out = runProcess("/usr/bin/bputil", ["-d"]).lowercased()
+        if out.isEmpty {
+            return DefenseItem(
+                id: "integrity.bootSecurity",
+                category: .systemIntegrity,
+                title: "Boot security: unavailable",
+                detail: "Couldn't read the LocalPolicy. Open Startup Security Utility in Recovery Mode.",
+                status: .unknown
+            )
+        }
+        if out.contains("full security") {
+            return DefenseItem(
+                id: "integrity.bootSecurity",
+                category: .systemIntegrity,
+                title: "Boot security is Full",
+                detail: "Only the OS this Mac shipped with (and Apple-signed updates) can boot.",
+                status: .pass
+            )
+        }
+        if out.contains("permissive security") {
+            return DefenseItem(
+                id: "integrity.bootSecurity",
+                category: .systemIntegrity,
+                title: "Boot security is Permissive",
+                detail: "Signature checks are disabled. Only keep this if you actively run third-party kernel extensions.",
+                status: .fail
+            )
+        }
+        if out.contains("reduced security") {
+            return DefenseItem(
+                id: "integrity.bootSecurity",
+                category: .systemIntegrity,
+                title: "Boot security is Reduced",
+                detail: "Older macOS / third-party kexts can boot. Return to Full Security in Startup Security Utility if you don't need that flexibility.",
+                status: .warn
+            )
+        }
+        return DefenseItem(
+            id: "integrity.bootSecurity",
+            category: .systemIntegrity,
+            title: "Boot security: unrecognised mode",
+            detail: "LocalPolicy didn't include a known security mode. Run `bputil -d` in Terminal for the full dump.",
+            status: .unknown
         )
     }
 
