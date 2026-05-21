@@ -22,6 +22,25 @@ let package = Package(
         // pmset disablesleep, so we don't prompt for admin per arm.
         .executable(name: "VakterPrivilegedDaemon", targets: ["VakterPrivilegedDaemon"]),
     ],
+    // External dependencies. Kept deliberately tiny — every package we
+    // pull in is a new third-party code-signing surface to verify on
+    // every release. Sparkle is the only one we accept: it ships every
+    // serious Mac indie's auto-update channel (Bartender, CleanShot,
+    // Tot, Things) and uses EdDSA signatures verified by a public key
+    // we embed in Info.plist (see `SUPublicEDKey`), so a compromised
+    // mirror cannot push us a malicious update.
+    dependencies: [
+        // Sparkle 2 (SwiftPM-native since 2.0). 2.6.x ships the
+        // hardened-runtime-friendly XPC InstallerLauncher + EdDSA-only
+        // signature verification (legacy DSA path is compiled out).
+        // Pinned `from: "2.6.0"` so SemVer-minor updates inside 2.x
+        // are accepted automatically (bug fixes, hardened-runtime
+        // tweaks) but a hypothetical 3.x breaking change is opt-in.
+        .package(
+            url: "https://github.com/sparkle-project/Sparkle.git",
+            from: "2.6.0"
+        ),
+    ],
     targets: [
         // Shared protocol + types used by both the app and the helper.
         .target(
@@ -43,7 +62,17 @@ let package = Package(
 
         .executableTarget(
             name: "VakterApp",
-            dependencies: ["VakterShared"],
+            dependencies: [
+                "VakterShared",
+                // Sparkle 2 — see top-level `dependencies` above for the
+                // pin rationale. Only linked into VakterApp (the user-
+                // facing menubar binary). The helper + privileged daemon
+                // never speak to Sparkle directly; the app is the sole
+                // owner of the updater lifecycle. Keeping Sparkle off the
+                // helper means its codesign envelope stays minimal — no
+                // XPC sub-bundles inside the LaunchAgent.
+                .product(name: "Sparkle", package: "Sparkle"),
+            ],
             path: "Sources/VakterApp",
             // SPM doesn't bundle these — Resources are assembled into the
             // .app bundle by `Scripts/build-app.sh`. Exclude so SPM stops
