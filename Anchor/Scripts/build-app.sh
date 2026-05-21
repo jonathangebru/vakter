@@ -90,6 +90,7 @@ rm -rf "${APP}"
 rm -rf "${ROOT}/build/Anchor.app"
 mkdir -p "${APP}/Contents/MacOS"
 mkdir -p "${APP}/Contents/Resources"
+mkdir -p "${APP}/Contents/Frameworks"
 mkdir -p "${APP}/Contents/Library/LaunchAgents"
 mkdir -p "${APP}/Contents/Library/LaunchDaemons"
 
@@ -112,6 +113,47 @@ cp "${ROOT}/Sources/VakterApp/Resources/Info.plist" "${APP}/Contents/Info.plist"
 # App icon (.icns).
 if [[ -f "${ROOT}/Sources/VakterApp/Resources/AppIcon.icns" ]]; then
   cp "${ROOT}/Sources/VakterApp/Resources/AppIcon.icns" "${APP}/Contents/Resources/AppIcon.icns"
+fi
+
+# -------------------------------------------------------------------
+# Sparkle 2 framework bundling
+# -------------------------------------------------------------------
+# The Sparkle binary xcframework is resolved by SwiftPM into
+#   .build/<triple>/<config>/Sparkle.framework
+# but SPM does NOT relocate it into the .app bundle — that's a Xcode-
+# specific build phase ("Copy Frameworks"). We do it by hand here.
+#
+# Layout we produce (matches every other Mac app that ships Sparkle):
+#
+#   Vakter.app/Contents/Frameworks/Sparkle.framework
+#     ├── Versions/B/Sparkle                         (the dylib)
+#     ├── Versions/B/Updater.app                     (used during install)
+#     ├── Versions/B/Autoupdate                      (legacy installer helper)
+#     ├── Versions/B/XPCServices/Downloader.xpc      (hardened-runtime download)
+#     └── Versions/B/XPCServices/Installer.xpc       (hardened-runtime install)
+#
+# After copying, we also add `@executable_path/../Frameworks` to the
+# Vakter binary's LC_RPATH so it can resolve `@rpath/Sparkle.framework`
+# at launch. SwiftPM only emits `@loader_path` which is empty for the
+# top-level binary at runtime.
+SPM_SPARKLE="${BIN_DIR}/Sparkle.framework"
+if [[ -d "${SPM_SPARKLE}" ]]; then
+  echo "==> Bundling Sparkle.framework into Contents/Frameworks/"
+  # `cp -RH` follows the symlinks at the top level (so Versions/Current
+  # → B resolves) but preserves the framework's internal symlink
+  # structure. Sparkle's framework is the standard versioned-bundle
+  # layout — losing the symlinks breaks dyld.
+  cp -R "${SPM_SPARKLE}" "${APP}/Contents/Frameworks/Sparkle.framework"
+  # Add the rpath so @rpath/Sparkle.framework/... resolves to
+  # Contents/Frameworks/. install_name_tool prints a warning if the
+  # rpath already exists; suppress with `|| true` so re-runs of
+  # build-app.sh stay quiet.
+  install_name_tool -add_rpath "@executable_path/../Frameworks" \
+    "${APP}/Contents/MacOS/Vakter" 2>/dev/null || true
+else
+  echo "==> WARNING: Sparkle.framework not found at ${SPM_SPARKLE}"
+  echo "    Auto-update will be disabled in this build. Run"
+  echo "    'swift package resolve' to fetch Sparkle, then rebuild."
 fi
 
 # Embedded Developer ID provisioning profile.
