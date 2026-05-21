@@ -1,49 +1,108 @@
-# Vakter Strategy — Post-v1.2 Research Synthesis
+# Vakter Strategy — Pre-Launch Research Synthesis
 
-*Compiled May 2026, after the v1.2 design polish + notarized DMG shipped.
-Sources: four parallel research agents covering codebase audit, competitive
-landscape + financials, marketing playbook, and competitor website teardown.
-This document is the action layer on top of that research.*
+*Last updated 21 May 2026 (v1.4.3 ship). Originally compiled after the v1.2
+design polish + notarized DMG shipped. §1 now reflects v1.4.3 production
+state. Sources: feature audit memo `.claude/strategy/2026-05-21-feature-audit-and-roadmap.md`
+and code-level verification against VakterShared, VakterApp, VakterHelper.*
 
 ---
 
-## 1. Where Vakter actually stands (codebase audit)
+## 1. Where Vakter actually stands (v1.4.3)
 
-### Production-ready today (v1.2)
+### Production-ready today
 
-- State machine + 5 modes (Normal, Travel, Library, Loaner, Cafe)
-- 4 trigger sources: lid close, power disconnect, Bluetooth peer departure,
-  power-button brief press
-- 2 escalation watchers: Find My token cleared, Apple ID signed out
-- 6 synthesised + 3 sample-backed sirens, 7-locale neural TTS voice cue
-- iMessage evidence delivery with photo burst + Apple Maps URL
-- Defenses checklist (20 checks across 5 categories)
-- Hotkey customisation, Bluetooth-trusted-peer proximity disarm
-- macOS Sequoia design pass: vibrant sidebar, tinted-icon rows, native
-  attributed menubar header, SF Pro Display arming overlay, VoiceOver labels
-- Notarized DMG (4.8 MB) ready to distribute
+**Arming + state machine**
+- 5 modes: Normal, Travel, Library, Loaner, Café — each with its own grace
+  window, audibility flag, photo cadence, and alarm cap
+- One-shortcut arm via Carbon `RegisterEventHotKey` (user-customisable)
+- Touch ID disarm via screen-unlock signal — no second auth prompt
+- Three-phase lockless arm (dialog can't soft-deadlock the helper)
+- Loaner-mode auto-rearm with 1 h / 2 h / 4 h trust windows
 
-### Code-level TODOs still open (from grep audit)
+**Triggers (observed while armed)**
+- Lid close, power disconnect, power-button brief press, hotkey
+- Bluetooth peer departure — informational signal only; never auto-arms
+- Find My token cleared — skips grace, straight to alarm
+- Apple ID changed — same high-confidence path
+- System wake (belt-and-braces on Apple Silicon clamshell firmware)
 
-| File:line | Gap | User-visible? |
-|---|---|---|
-| `XPCService.swift:127` | Defenses checklist returns empty stub over XPC | **Yes** — only works in-app, not surfaced via helper |
-| `StateMachine.swift:74` | `snapshot.lastEvent` hard-coded to `nil` | Yes — menubar can't show "Last event" |
-| `StateMachine.swift:419` | Captured photos not appended to alarm event | Yes — photos save but don't render in Event Log |
-| `MenuBarController.swift:10` | Grace-state pulse animation TODO | Minor |
-| `PowerObserver.swift:10` | Polling instead of `IOPSNotificationCreateRunLoopSource` | No (works fine) |
-| `XPCService.swift:47` | Peer code-sig verification not implemented | **Yes** — security gap |
+**Alarm output**
+- 9 alarm sounds: 6 synthesised (including japaneseTwoTone, europeanNeeNaw)
+  + 3 sample-backed (Sonniss GDC)
+- Voice cue in 10 locales: en, nl, no, de, fr, es, it, ja, ko, zh
+- Audio routes to internal speakers via CoreAudio override (survives
+  headphones)
+- Per-mode alarm cap (Café tops out at 30 s)
 
-### Pre-launch backlog (BACKLOG.md, condensed)
+**Evidence capture**
+- Photo burst: Normal cadence (3 frames) or Burst (continuous for 60 s then
+  every 30 s)
+- 10 s ambient audio capture (AAC) — logged alongside photos
+- Location via CoreLocation with 10 s timeout and cached fallback
+- Apple Maps URL embedded in iMessage body
 
-- Sparkle integration (in-app auto-update)
-- Crash reporting (PLCrashReporter, anonymous)
-- Settings tab consolidation 10→6
-- High-DPI menubar icon detail
-- Marketing assets + App Preview video
+**Evidence delivery**
+- iMessage via Messages.app + AppleScript
+- Email via Mail.app + AppleScript (multi-channel, fire-and-forget)
 
-**Shipping risk: low.** No bugs gate v1.2. Everything above is either polish
-or pre-launch professional infrastructure.
+**Cloud evidence backup (user-owned)**
+- Backblaze B2 native API or any pre-signed URL (S3/R2/GCS)
+- Credentials in Keychain only; evidence off-device before thief authenticates
+
+**Event log + forensics**
+- Tamper-evident Merkle hash chain (SHA-256, CryptoKit) — every event
+  signed against the previous; deletion breaks chain visibly
+- Police-ready PDF export (serial, photos, audio paths, chain verification)
+- Event Log UI with filter chips, search, inline photo grid, audio player,
+  MapKit pin
+
+**Defenses checklist**
+- 20 checks across 5 categories (added 8 new checks in v1.4.2):
+  FileVault, Find My, Firewall, Stealth mode, Gatekeeper, SIP, Touch ID,
+  Auto-login, Screen-lock delay, Login-window message, Software updates,
+  Login Items, AirDrop, AirPlay receiver, File/Media/Printer sharing,
+  Remote Login, Remote Management, Boot security policy
+- Runs every 4 hours via `DefensesScheduler`; 30-day score sparkline
+- Each check deep-links to System Settings
+- Checklist now surfaced via XPC (menubar reflects helper-side state, v1.4.3)
+
+**Auto-arm engine**
+- 4 trigger types: geofence exit, Wi-Fi SSID disconnect, idle for N seconds,
+  daily at HH:MM
+- Per-rule cooldown
+
+**Stealth lock-screen takeover (v1.4.3)**
+- On alarm, renders a fullscreen "STOLEN — please call …" overlay above the
+  macOS lock screen
+- Configurable contact text + callback number; multi-monitor aware
+
+**macOS Shortcuts integration (v1.4.2)**
+- `ArmVakterIntent` and `SetVakterModeIntent` wired to helper over XPC
+- Users can arm Vakter from any Shortcuts automation
+
+**iOS + Apple Watch companions**
+- Source at `iOS/VakterCompanion/` and `WatchOS/VakterWatch/`
+- CloudKit-backed (user's private DB, E2E encrypted in transit)
+- Remote arm/disarm via CloudKit records
+- Status: provisioning and TestFlight in progress (companions in beta)
+
+**Distribution + integrity**
+- Notarised .dmg with Hardened Runtime and Developer ID (Team 9TA5GB5UJH)
+- XPC peer code-signing requirement pinned to Team ID
+- Three-binary process model: app (UI), helper (user-level), daemon (root)
+- Zero telemetry; zero analytics; zero accounts
+
+### Open items (not blocking ship)
+
+| Item | Status |
+|---|---|
+| Sparkle 2 auto-update | Wired; EdDSA key pending — goes live with v1.5 |
+| iOS + Watch companions | Source complete; provisioning in progress |
+| Settings tab consolidation (11 → 6) | In progress (#23) |
+| Crash reporting (user-initiated export) | Wired (`CrashReportCollector`); export UI deferred |
+
+**Shipping risk: low.** v1.4.3 is the pre-launch candidate. The open items
+above are either rolling out with v1.5 or are non-blocking polish.
 
 ---
 

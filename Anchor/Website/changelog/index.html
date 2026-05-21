@@ -506,6 +506,59 @@ body::before {
   <div class="log-body">
     <div class="container">
 
+      <!-- ── v1.4.3 ── -->
+      <article class="release" id="v1.4.3" aria-labelledby="v143-heading">
+
+        <div class="release-header">
+          <h2 class="release-version" id="v143-heading">v1.4.3</h2>
+          <span class="release-date">21 May 2026</span>
+        </div>
+
+        <div class="release-section-label">What's new</div>
+
+        <ul class="change-list">
+          <li>
+            <strong>Stealth lock-screen takeover.</strong> On alarm, Vakter
+            overlays a fullscreen "STOLEN — please call …" screen above the
+            macOS lock screen. Configurable contact text and callback number.
+            Multi-monitor aware — renders on every connected display.
+          </li>
+          <li>
+            <strong>Defenses checklist over XPC.</strong> The menubar
+            dropdown's Defenses submenu now reflects helper-side checks in
+            real time. Toggle Firewall in System Settings; the menubar updates
+            within 6 seconds.
+          </li>
+          <li>
+            <strong>Onboarding teaches the alarm.</strong> The "Hear the
+            alarm" step now plays your selected siren plus voice cue — not
+            always the default. Camera and microphone permissions are requested
+            during onboarding so the photo burst and ambient audio capture work
+            on the first real alarm.
+          </li>
+        </ul>
+
+        <div class="pending-block" aria-label="What's still pending">
+          <div class="release-section-label">What's still pending</div>
+          <ul class="change-list">
+            <li>
+              <strong>Sparkle 2 auto-update goes live with v1.5.</strong>
+              The appcast channel is wired but uses a placeholder EdDSA key.
+              Until the key is generated and the appcast is signed, download
+              the latest DMG directly from vakter.app.
+            </li>
+            <li>
+              <strong>iOS + Apple Watch companions in beta.</strong> Source
+              compiles and CloudKit sync works. Provisioning profiles and
+              TestFlight submission are in progress. The Mac app is complete
+              and ships today; companions follow.
+            </li>
+          </ul>
+        </div>
+
+      </article>
+      <!-- /v1.4.3 -->
+
       <!-- ── v1.4.1 ── -->
       <article class="release" id="v1.4.1" aria-labelledby="v141-heading">
 
