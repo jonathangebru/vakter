@@ -30,7 +30,7 @@ macOS 14+. Apple Silicon (M1+) only.
 | Auto-arm engine (geofence, Wi-Fi SSID, idle timer, daily schedule) | ✅ | ❌ |
 | Stealth lock-screen takeover ("STOLEN — please call…") on alarm | ✅ v1.4.3 | ❌ |
 | macOS Shortcuts integration (`ArmVakterIntent`, `SetVakterModeIntent`) | ✅ v1.4.2 | ❌ |
-| iOS + Apple Watch companion (CloudKit-backed) | ✅ v1.4.3 (companions in beta) | ❌ |
+| iOS + Apple Watch companion (CloudKit-backed) | ⏳ source complete; provisioning in progress | ❌ |
 | Sparkle 2 auto-update | ⏳ rolling out with v1.5 | varies |
 | Silent one-time approval (no per-arm prompt) | ✅ `SMAppService.daemon` | ❌ |
 | Notarised .dmg that just works | ✅ | ⚠️ several competitors are open-source-only |
