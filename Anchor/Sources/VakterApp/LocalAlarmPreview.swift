@@ -5,8 +5,8 @@ import VakterShared
 /// Last-resort alarm preview that runs *inside the menubar app process*
 /// — no XPC, no helper required.
 ///
-/// **Why this exists.** Both Onboarding and Settings → Sound have a
-/// "Play the alarm" / "Preview" button. Those buttons normally route
+/// **Why this exists.** Both Onboarding and Settings → General → Sound
+/// have a "Play the alarm" / "Preview" button. Those buttons normally route
 /// through the helper (so the user hears the actual production alarm
 /// subsystem with system-volume override). But there are real-world
 /// scenarios where the helper is unreachable:
@@ -46,8 +46,9 @@ final class LocalAlarmPreview: @unchecked Sendable {
     ///   `Bundle.main/Resources/sounds/<rawValue>.m4a` and play it
     ///   directly. Auto-stops itself after `seconds` (the source is
     ///   30 s, so anything ≤ 30 doesn't loop). This is the path the
-    ///   Settings → Sound Preview button uses and the pre-v1.1.0
-    ///   bug was that this branch didn't exist.
+    ///   Settings → General → Sound Preview button uses and the pre-v1.1.0
+    ///   bug was that this branch didn't exist. (Pre-v1.4.3 lived in a
+    ///   standalone "Sound" tab; consolidation #23 folded it into General.)
     ///
     /// • **Synthesised** — render PCM via `instantaneousTone()` for
     ///   exactly `seconds`, wrap in a WAV header, play. Unchanged.

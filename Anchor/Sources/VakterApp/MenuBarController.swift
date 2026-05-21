@@ -380,7 +380,7 @@ final class MenuBarController {
             } else {
                 let alert = NSAlert()
                 alert.messageText = "Couldn't generate the report"
-                alert.informativeText = "Please try again, or report this in Settings → About → Send diagnostics."
+                alert.informativeText = "Please try again, or report this in Settings → Alerts & Cloud → Send diagnostics."
                 alert.runModal()
             }
         }
