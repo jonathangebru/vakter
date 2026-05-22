@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Vakter — The night-watch for your Mac</title>
-<meta name="description" content="Calm in normal use. Fierce the moment someone walks off with your Mac. Local alarm, photo burst, ambient audio, iMessage to your phone. Notarised. No cloud, no telemetry, no accounts. $29 one-time.">
+<meta name="description" content="Calm in normal use. Fierce the moment someone threatens your Mac — in person or on your clipboard. Local alarm, photo burst, ambient audio, iMessage to your phone. Notarised. No cloud, no telemetry, no accounts. €29 one-time.">
 <meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
 
 <!-- Open Graph + Twitter Card -->
 <meta property="og:title" content="Vakter — The night-watch for your Mac">
-<meta property="og:description" content="Calm in normal use. Fierce the moment someone walks off with your Mac. $29 one-time. Apple Silicon. Notarised. No cloud, no telemetry, no accounts.">
+<meta property="og:description" content="Calm in normal use. Fierce the moment someone threatens your Mac — in person or on your clipboard. €29 one-time. Apple Silicon. Notarised. No cloud, no telemetry, no accounts.">
 <meta property="og:image" content="./assets/screenshots/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -19,7 +19,7 @@
 <meta property="og:site_name" content="Vakter">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Vakter — The night-watch for your Mac">
-<meta name="twitter:description" content="Calm in normal use. Fierce the moment someone walks off with your Mac.">
+<meta name="twitter:description" content="Calm in normal use. Fierce the moment someone threatens it — in person or on your clipboard.">
 <meta name="twitter:image" content="./assets/screenshots/og-image.png">
 
 <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicons/favicon-16.png">
@@ -1440,7 +1440,7 @@ section { position: relative; }
     <a class="btn btn-primary btn-price" href="#pricing">
       Download for Mac
       <span aria-hidden="true">·</span>
-      <span>$29</span>
+      <span>€29</span>
     </a>
   </div>
 </header>
@@ -1466,15 +1466,16 @@ section { position: relative; }
           </h1>
 
           <p class="hero-sub lead">
-            Calm in normal use. Fierce the moment someone tries to walk
-            off with it. Lives in your menu bar. Wakes the deck when the
-            lid closes, the cable pulls, or your phone leaves the room.
+            Calm in normal use. Fierce the moment someone threatens it —
+            in person or on your clipboard. Lives in your menu bar. Wakes
+            the deck when the lid closes, the cable pulls, or your phone
+            leaves the room.
           </p>
 
           <div class="hero-cta">
             <a class="btn btn-primary" href="#pricing">
               <span>Download for Mac</span>
-              <span class="btn-price">— $29</span>
+              <span class="btn-price">— €29</span>
               <span class="btn-arrow" aria-hidden="true">→</span>
             </a>
             <a class="btn btn-ghost" href="#demo">
@@ -1598,7 +1599,7 @@ section { position: relative; }
         <div class="versus" aria-hidden="true">+</div>
 
         <article class="compare-card is-vakter reveal delay-1">
-          <span class="compare-role">Vakter, $29</span>
+          <span class="compare-role">Vakter, €29</span>
           <h3>Vakter</h3>
           <p>
             Lives in the menu bar, watching for the trigger signal.
@@ -1631,7 +1632,7 @@ section { position: relative; }
         <div>
           <span class="eyebrow">§ what it does</span>
           <h2 id="features-title" class="display display-md" style="margin-top: 18px;">
-            Six things, all the moment <br> someone grabs it.
+            Six things, all the moment <br> someone threatens it.
           </h2>
         </div>
         <span class="section-num">§ 03 / 09</span>
@@ -1967,7 +1968,7 @@ section { position: relative; }
           <span class="pricing-tag">Lifetime licence</span>
 
           <p class="price">
-            <span class="price-currency">$</span>
+            <span class="price-currency">€</span>
             <span class="price-amount">29</span>
           </p>
           <span class="price-period">one-time payment · 14-day full trial first</span>
@@ -1996,7 +1997,7 @@ section { position: relative; }
           </ul>
 
           <p class="pricing-note">
-            $12 / year optional for major-version updates after year one. <br>
+            €12 / year optional for major-version updates after year one. <br>
             Skip the update and the licence keeps running, indefinitely.
           </p>
         </div>
@@ -2178,6 +2179,31 @@ section { position: relative; }
           </div>
         </details>
 
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <h3 class="faq-q">Vakter is anti-theft — what does "digital threats" mean?</h3>
+            <span class="faq-toggle" aria-hidden="true">+</span>
+          </summary>
+          <div class="faq-answer">
+            <p>
+              The physical threat is someone walking off with your Mac.
+              The digital threat is someone tricking you into doing their
+              work for them — a web page that silently writes a malicious
+              shell command to your clipboard, then walks you through
+              opening Terminal and pasting it. In 2025, this technique
+              (known as ClickFix) was the second-largest malware loader
+              vector on macOS. Apple added a binary paste warning in
+              macOS 26.1; it blocks without explaining. Vakter v1.6 will
+              intercept clipboard writes from browsers and, before you
+              paste into Terminal, tell you in one sentence what the
+              command actually does.
+            </p>
+            <p>
+              The watch is the same. The scope expanded.
+            </p>
+          </div>
+        </details>
+
       </div>
     </div>
   </section>
@@ -2198,9 +2224,10 @@ section { position: relative; }
           <h4>One developer. One Mac. One night-watch.</h4>
           <p>
             Vakter is built by Jonathan Gebru, solo, in plain Swift on a
-            Mac. Email reaches a human within a day. There is no support
-            queue, no chatbot, no out-of-office triage. If you find
-            something broken, write — I read every message.
+            Mac. The watch covers every threat to your Mac — someone
+            grabbing it, someone tricking you into pasting malicious
+            commands, a suspicious LaunchAgent that appears while you
+            weren't looking. Email reaches a human within a day.
           </p>
         </div>
 

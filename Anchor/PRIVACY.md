@@ -1,15 +1,19 @@
 # Vakter Privacy Policy
 
-**Last updated: 14 May 2026**
+**Last updated: 22 May 2026**
 
-Vakter is an anti-theft alarm for Mac. This document explains what data
-the app accesses, what it does with it, and what it does NOT do.
+Vakter guards your Mac against physical and digital threats. This document
+explains what data the app accesses, what it does with it, and what it does
+NOT do. The scope is expanding in v1.6 (clipboard analysis) — the privacy
+promise does not change.
 
 The short version:
 
 > Vakter runs **entirely on your Mac**. It does not have servers. It
 > does not send your data anywhere unless you specifically configure it
-> to. There are no accounts, no telemetry, no analytics.
+> to. There are no accounts, no telemetry, no analytics. The v1.6
+> clipboard shield analyzes commands on-device using Apple's Foundation
+> Models framework — clipboard text never leaves your Mac.
 
 ---
 
