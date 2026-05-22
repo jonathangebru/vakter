@@ -2,8 +2,7 @@
 
 This document is the audit guide for security-conscious users, researchers,
 and reviewers. Vakter guards your Mac against physical threats (theft,
-hands-on access) and, starting in v1.6, digital threats (ClickFix clipboard
-attacks, hostile LaunchAgents, malicious configuration profiles). It runs two
+hands-on access) and, starting in v1.6, digital threats (ClickFix clipboard attacks). It runs two
 background processes — one in your user session, one as root — to deliver
 lid-close-while-asleep alarms, evidence capture, and on-device clipboard
 analysis. Putting that kind of trust in an indie app deserves a clear answer

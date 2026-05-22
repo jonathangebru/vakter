@@ -171,7 +171,7 @@ above are either rolling out with v1.5 or are non-blocking polish.
 
 **The wedge no one owns:** *your Mac's bodyguard — calm when nearby, fierce against any threat.*
 
-v1.4 owned the physical-threat wedge (theft, grab, hands-on access). v1.6 expands the watch to digital threats: ClickFix clipboard hijacks, hostile LaunchAgents, malicious MDM profiles. The night-watchmen etymology extends naturally — a watch covers every threat that approaches the ship, not just the theft of the cargo.
+v1.4 owned the physical-threat wedge (theft, grab, hands-on access). v1.6 expands the watch to digital threats: ClickFix clipboard hijacks. v1.7+ extends to hostile LaunchAgents and malicious MDM profiles. The night-watchmen etymology extends naturally — a watch covers every threat that approaches the ship, not just the theft of the cargo.
 
 Counter-positioning hooks:
 
