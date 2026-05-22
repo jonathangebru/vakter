@@ -150,7 +150,7 @@ above are either rolling out with v1.5 or are non-blocking polish.
 - ~97% of stolen laptops never recovered
 - Endpoint security TAM: $16–27B in 2025, but consumer slice is single-digit
   billions and dominated by AV (Norton, McAfee, Bitdefender)
-- **0.05% of consumer Macs at $29 = ~$1.4M ARR ceiling**
+- **0.05% of consumer Macs at €29 = ~€1.4M ARR ceiling**
 
 ### What this means for positioning
 
@@ -169,37 +169,29 @@ above are either rolling out with v1.5 or are non-blocking polish.
 
 ## 3. Vision — what to commit to
 
-**The wedge no one owns:** *calm-when-nearby, fierce-when-stolen.*
+**The wedge no one owns:** *your Mac's bodyguard — calm when nearby, fierce against any threat.*
 
-The brand language already in the code supports this — night-watch, *vakter*,
-lighthouse, calm in normal use, fierce on alarm. Don't drift. The marketing
-copy should mirror what's already inline:
-
-> The night-watch for your Mac — calm when you're nearby, fierce the moment
-> someone tries to walk off with it.
+v1.4 owned the physical-threat wedge (theft, grab, hands-on access). v1.6 expands the watch to digital threats: ClickFix clipboard hijacks, hostile LaunchAgents, malicious MDM profiles. The night-watchmen etymology extends naturally — a watch covers every threat that approaches the ship, not just the theft of the cargo.
 
 Counter-positioning hooks:
 
-- **"Not AI, just a watchful tool."** The market is saturated with "AI-
-  powered X"; you're an old-fashioned utility that does one thing well.
-- **"No cloud. No telemetry. No accounts."** Three-line contrarian framing
-  on the homepage. Converts security-skeptical users at ~3× the rate of
-  a feature list.
+- **"The watch against physical and digital threats."** The market's security tools pick one lane: anti-theft (Prey) or network firewall (Little Snitch) or defenses audit (Pareto). Vakter watches the full attack surface a solo user faces.
+- **"Apple tells you no. Vakter tells you why."** On ClickFix: macOS 26.1 ships a binary paste warning with no explanation. Vakter ships the explanatory version.
+- **"No cloud. No telemetry. No accounts."** Three-line contrarian framing on the homepage. The digital-threat features (clipboard shield, profile tripwire) run entirely on-device — the privacy promise survives the scope expansion.
 - **"Apple Silicon, macOS Sequoia day-one."** Mac-only is a feature.
-- **"The deterrent layer Apple deliberately doesn't ship."** Frames Find My
-  as complementary, not competitive.
+- **"The deterrent layer Apple deliberately doesn't ship."** Frames Find My as complementary, not competitive. Frames Apple's paste warning as the floor Vakter builds above.
 
 ---
 
 ## 4. Pricing — opinionated call
 
-**$29 one-time, 14-day full trial, optional $12/yr for updates after year one.**
+**€29 one-time, 14-day full trial, optional €12/yr for updates after year one.**
 
 This is the **CleanShot X model**, the most-copied Mac utility pricing of 2025
 because it works. Comparable price points:
 
 - Bartender 6 = $20
-- CleanShot X = $29
+- CleanShot X = $29 (≈ €27)
 - Pareto Security = free OSS + ~$30 paid tier
 - Unplug Alarm = $19.99 lifetime (anchor below us — we're a clear step up
   in feature surface)
@@ -230,8 +222,11 @@ priority order:
    kernel extension, no System Extension, no Network Extension. The
    landing page + SECURITY.md make this surface area legible at a
    glance. Smallness *is* the audit.
-2. **200-word privacy policy, not 4,000.** Lead: "Vakter does not
-   transmit photos, audio, or telemetry off your device. Period."
+2. **200-word privacy policy, not 4,000.** Lead: "Vakter does not transmit
+   photos, audio, clipboard contents, or telemetry off your device. Period."
+   This is especially load-bearing for the v1.6 clipboard shield — users
+   will ask "does Vakter read my clipboard?" The answer is on-device only,
+   no text leaves the Mac, and the privacy page says so plainly.
 3. **"How it works" page with architecture diagram.** Show daemons,
    XPC boundaries, what's stored where, how iMessage is sent (your
    Apple ID, no server). Make the *behavior* legible since the source
@@ -273,7 +268,7 @@ priority order:
    cloud / no telemetry / no accounts" framing. Closed-source means
    we win trust through *behavioral legibility*, not auditability.
    (See §5.)
-3. **Price at $29 one-time, 14-day trial, $12/yr optional updates.**
+3. **Price at €29 one-time, 14-day trial, €12/yr optional updates.**
 4. **Email Quinn Nelson (Snazzy Labs) with a free licence + pre-cut 60s
    B-roll.** Same day: identical pitch to Tyler Stalman, Created Tech,
    MaxTech, 5 niche reviewers. One Snazzy hit = 30k–100k views → 100–400
@@ -318,7 +313,7 @@ What every successful Mac-app site does:
 
 What anti-theft incumbents do badly (Vakter's counter-position):
 
-- Hidden pricing → show `$29` on the hero
+- Hidden pricing → show `€29` on the hero
 - B2B IT voice → talk to the emotional buyer ("someone grabbed my Mac")
 - Illustrated SaaS mascots → real product screenshots, alternating blocks
 - Multi-OS dilutes credibility → brag Apple Silicon + macOS Sequoia day-one
@@ -339,7 +334,7 @@ What anti-theft incumbents do badly (Vakter's counter-position):
 > become your watch crew. The moment someone tries to walk off with
 > your Mac, Vakter screams, captures photos, and pings your phone.
 >
-> [ Download for Mac — $29 ]
+> [ Download for Mac — €29 ]
 >
 > *14-day full trial · Apple Silicon · Notarised · No cloud, no
 > telemetry, no accounts*
@@ -520,7 +515,7 @@ anti-theft tool is forgetting to arm it. Solve that and you win retention.
 | Activation lock | (Apple) | — | ✓ | — | — |
 | Brand polish + macOS-native UI | ✓ | — | ✓ | — | — |
 | Notarized + Hardened Runtime | ✓ | — | (Apple) | ✓ | partial |
-| Pricing | $29 one-time | $1.23–2.99/slot/mo | free | $9.99/yr | $1.67–5.99/mo |
+| Pricing | €29 one-time | $1.23–2.99/slot/mo | free | $9.99/yr | $1.67–5.99/mo |
 
 After v1.5, Vakter beats Prey on local-response richness, beats Find My on
 deterrence, and is the only player offering forensics-grade evidence at
@@ -530,8 +525,9 @@ indie-app pricing.
 
 ## 11. The one-sentence strategic summary
 
-**Vakter is the deterrent layer Apple deliberately doesn't ship: calm in
-daily use, fierce the moment your Mac is grabbed. Price it $29 one-time,
-publish a security architecture page that earns trust through behavioral
-legibility (since the source is closed), lead with a 10-second grab-and-
-scream demo video, and chase one Snazzy Labs feature — that's the plan.**
+**Vakter is your Mac's bodyguard: calm in daily use, fierce the moment someone
+threatens it — physically or digitally. Price it €29 one-time, publish a
+security architecture page that earns trust through behavioral legibility
+(since the source is closed), lead with a 10-second grab-and-scream demo
+video, chase one Snazzy Labs feature, and land v1.6's clipboard shield as
+the second act — that's the plan.**

@@ -2,7 +2,7 @@
 
 > _Norwegian for "the night-watchmen on a sailing ship" — the crew who stand guard at anchor so the rest of the ship can sleep._
 
-Calm anti-theft for Apple Silicon Macs. One shortcut to arm; the lid, power adapter, and trusted Bluetooth devices become your watch crew; Touch ID disarms in one tap. No subscription, no cloud account, no bloat.
+Your Mac's bodyguard against physical and digital threats. One shortcut arms the watch; the lid, power adapter, and trusted Bluetooth devices become your crew. On alarm: siren, photo burst, iMessage with a Maps pin. Starting v1.6: clipboard shield against ClickFix paste attacks. No subscription, no cloud account, no telemetry.
 
 macOS 14+. Apple Silicon (M1+) only.
 
@@ -34,7 +34,7 @@ macOS 14+. Apple Silicon (M1+) only.
 | Sparkle 2 auto-update | ⏳ rolling out with v1.5 | varies |
 | Silent one-time approval (no per-arm prompt) | ✅ `SMAppService.daemon` | ❌ |
 | Notarised .dmg that just works | ✅ | ⚠️ several competitors are open-source-only |
-| Price | **$29 one-time** | $11.99/yr or worse |
+| Price | **€29 one-time** | $11.99/yr or worse |
 
 ## Repository layout
 
