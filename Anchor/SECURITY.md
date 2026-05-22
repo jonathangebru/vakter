@@ -1,10 +1,13 @@
 # Vakter Security Architecture
 
 This document is the audit guide for security-conscious users, researchers,
-and reviewers. Vakter runs two background processes — one in your user
-session, one as root — to deliver lid-close-while-asleep alarms and
-evidence capture. Putting that kind of trust in an indie app deserves a
-clear answer to *"what does it actually do with that privilege?"*
+and reviewers. Vakter guards your Mac against physical threats (theft,
+hands-on access) and, starting in v1.6, digital threats (ClickFix clipboard
+attacks, hostile LaunchAgents, malicious configuration profiles). It runs two
+background processes — one in your user session, one as root — to deliver
+lid-close-while-asleep alarms, evidence capture, and on-device clipboard
+analysis. Putting that kind of trust in an indie app deserves a clear answer
+to *"what does it actually do with that privilege?"*
 
 If you find something concerning, email **security@vakter.app**. 90-day
 coordinated disclosure. No bounty at v1.x, but you will be credited in
