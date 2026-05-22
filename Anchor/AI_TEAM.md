@@ -1,6 +1,6 @@
 # Vakter — the AI team
 
-> _The cast of agents that builds, ships, and watches over this product. Calm in normal use, fierce on theft — same posture as Vakter itself._
+> _The cast of agents that builds, ships, and watches over this product. Calm in normal use, fierce against any threat — same posture as Vakter itself._
 
 This file exists so a fresh reader (a future contributor, an auditor, or future-you in six weeks) can understand how Vakter is operated by an AI team in roughly five minutes. It's the playbook. The agents are the cast.
 
@@ -139,6 +139,6 @@ The right escalation is almost always: pause the dispatcher, investigate manuall
 
 ## Why this exists
 
-Jonathan is solo. The product is Vakter. The goal is 10,000 units sold by end Q3 2026 and a reputation worth carrying into the next thing. An AI team can't replace human judgment on price, voice, or trust — but it can absorb every other moving part. That's what the cast above does.
+Jonathan is solo. The product is Vakter — your Mac's bodyguard against physical and digital threats. The goal is 10,000 units sold by end Q3 2026, a v1.6 clipboard shield that earns Vakter a second category of coverage (ClickFix paste attacks), and a reputation worth carrying into the next thing. An AI team can't replace human judgment on price, voice, or trust — but it can absorb every other moving part. That's what the cast above does.
 
 The proof of concept is that you, reading this for the first time, can run `/start-day-vakter` tomorrow morning and watch the team do real work.
