@@ -119,7 +119,7 @@
          that commit is the one that ships in the binary. See
          SPARKLE_SETUP.md §2 for the runbook. -->
     <key>SUPublicEDKey</key>
-    <string>PLACEHOLDER_PUBLIC_KEY_RUN_GENERATE_KEYS_FIRST</string>
+    <string>0Qbg/miZ469mO7dYNAfF28rVXxSXhZiEj8akKaO/sL8=</string>
 
     <!-- Background checks every 24h. Default-on; the user can flip it
          off via Settings → General → "Automatically check for updates". -->
