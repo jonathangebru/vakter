@@ -98,12 +98,75 @@ entitlement in `project.yml`. For production builds change to
 
 ## 6. App Store provisioning
 
-- Apple Developer Portal → Identifiers → Add `app.vakter.companion` and
-  `app.vakter.companion.watchkitapp` if not already.
-- Provisioning Profile: automatic signing handles dev. For TestFlight,
-  create App Store profile for the iOS app.
-- App Store Connect: create the iOS app record with bundle id
-  `app.vakter.companion`. Add the Watch app as a paired target.
+Status as of v1.4.4 (issue #28 wire-up):
+
+- Apple Developer Portal: App IDs `app.vakter.companion` (iCloud + Push
+  Notifications + App Groups) and `app.vakter.companion.watchkitapp`
+  are **registered**.
+- CloudKit container `iCloud.app.vakter.shared` is **attached** to the
+  iOS App ID (pre-existing from Mac-side v1.4.2 work).
+- App Store Connect record is **created**.
+- TestFlight internal-tester group `Vakter Core Testers` is **set up**.
+- Provisioning Profile: `CODE_SIGN_STYLE = Automatic` in `project.yml`.
+  Xcode pulls a matching profile on archive — no manual download needed
+  for first-party Apple-ID flows. Release-warden handles archive +
+  upload from a machine with the keychain identity.
+
+## 7. Generating + building the Xcode project (Mac engineer)
+
+```bash
+brew install xcodegen   # one-time
+cd iOS
+xcodegen generate       # rebuilds .xcodeproj from project.yml
+xcodebuild \
+    -project VakterCompanion.xcodeproj \
+    -scheme VakterCompanion \
+    -configuration Debug \
+    -destination 'generic/platform=iOS' \
+    -skipMacroValidation \
+    CODE_SIGNING_ALLOWED=NO \
+    build
+```
+
+**Why `generic/platform=iOS` and not the Simulator destination?** The
+embedded Watch app forces xcodebuild to pair iOS + watchOS destinations;
+building for `iOS Simulator` fails unless the watchOS Simulator runtime
+is also installed (~3 GB download). The `generic/platform=iOS` device
+destination uses the watchOS SDK directly, which is included in stock
+Xcode without a separate runtime install. This is the same path
+`xcodebuild archive` takes — verifying the build here gives confidence
+the archive will succeed on release-warden's machine.
+
+**Generated files** (`Info.plist`, `*.entitlements`, `.xcodeproj/`) are
+git-ignored. `project.yml` is the single source of truth; xcodegen
+materialises the rest on every `xcodegen generate`.
+
+## 8. Archive + TestFlight upload (Release warden)
+
+This step happens on release-warden's machine where the Apple ID and
+app-specific password are in the login keychain.
+
+```bash
+xcodebuild archive \
+    -project iOS/VakterCompanion.xcodeproj \
+    -scheme VakterCompanion \
+    -archivePath build/VakterCompanion.xcarchive \
+    -destination 'generic/platform=iOS'
+xcodebuild -exportArchive \
+    -archivePath build/VakterCompanion.xcarchive \
+    -exportPath build/VakterCompanion-ipa \
+    -exportOptionsPlist Scripts/ios-exportoptions.plist
+xcrun altool --upload-app \
+    --type ios \
+    --file build/VakterCompanion-ipa/VakterCompanion.ipa \
+    --username "$APPLE_ID" \
+    --password "@keychain:AC_PASSWORD"
+```
+
+Release-warden will create the `ios-exportoptions.plist` once they have
+the actual archive in hand — it specifies `app-store-connect` as method,
+the team ID (`9TA5GB5UJH`), and `automatic` signing style. The file
+holds no secrets and is safe to commit when it lands.
 
 ## Troubleshooting
 

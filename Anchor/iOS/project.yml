@@ -45,7 +45,11 @@ targets:
         CFBundleDisplayName: Vakter
         UILaunchScreen:
           UIColorName: ""
-        UIRequiredDeviceCapabilities: [armv7]
+        # iOS 17+ targets only ship for arm64. The previous `armv7` value
+        # was nonsense — armv7 was a 32-bit slice that hasn't been built
+        # since iOS 11. App Store Connect rejects archives that declare
+        # armv7 capability on a 64-bit-only build.
+        UIRequiredDeviceCapabilities: [arm64]
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSAppTransportSecurity:
@@ -53,19 +57,32 @@ targets:
     entitlements:
       path: VakterCompanion/VakterCompanion.entitlements
       properties:
+        # CloudKit container — must match `CloudKitConstants.containerID`
+        # in Sources/VakterShared/CloudKitEventRecord.swift exactly. The
+        # Mac app publishes snapshots into this same container so the
+        # iPhone reads what the Mac writes.
         com.apple.developer.icloud-container-identifiers:
           - iCloud.app.vakter.shared
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.ubiquity-kvstore-identifier: "$(TeamIdentifierPrefix)app.vakter.shared"
+        # Silent push for CloudKit subscription wake-ups. Switch this to
+        # `production` when promoting from TestFlight → App Store; the
+        # APS environment must match the entitlement on the signed build.
         aps-environment: development
+        # App Group is registered on the iOS App ID but not yet used in
+        # code — held for a future shared-defaults bridge between the app
+        # and a notification-service extension (if/when we add one). The
+        # `group.` prefix is required on iOS (cf. the Mac side which uses
+        # `app.vakter.mac.shared`).
+        com.apple.security.application-groups:
+          - group.app.vakter.shared
     dependencies:
       - target: VakterWatch
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.vakter.companion
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Used to show your Mac's location on the map when an alarm fires."
-        INFOPLIST_KEY_NSUserNotificationUsageDescription: "Used to alert you when your Mac arms, disarms, or fires an alarm."
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
 
   VakterWatch:
