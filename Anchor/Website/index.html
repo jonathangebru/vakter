@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Vakter — The night-watch for your Mac</title>
-<meta name="description" content="Calm in normal use. Fierce the moment someone threatens your Mac — in person or on your clipboard. Local alarm, photo burst, ambient audio, iMessage to your phone. Notarised. No cloud, no telemetry, no accounts. €29 one-time.">
+<meta name="description" content="When the lid closes, Vakter keeps the alarm live. Every other Mac anti-theft tool goes quiet with the lid. Photo burst, ambient audio, iMessage to your phone — before it's gone. Notarised. No cloud, no telemetry, no accounts. €29 one-time.">
 <meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
 
 <!-- Open Graph + Twitter Card -->
 <meta property="og:title" content="Vakter — The night-watch for your Mac">
-<meta property="og:description" content="Calm in normal use. Fierce the moment someone threatens your Mac — in person or on your clipboard. €29 one-time. Apple Silicon. Notarised. No cloud, no telemetry, no accounts.">
+<meta property="og:description" content="When the lid closes, Vakter keeps the alarm live. Every other Mac anti-theft tool goes quiet with the lid. €29 one-time. Apple Silicon. Notarised. No cloud, no telemetry, no accounts.">
 <meta property="og:image" content="./assets/screenshots/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -1466,10 +1466,12 @@ section { position: relative; }
           </h1>
 
           <p class="hero-sub lead">
-            Calm in normal use. Fierce the moment someone threatens it —
-            in person or on your clipboard. Lives in your menu bar. Wakes
-            the deck when the lid closes, the cable pulls, or your phone
-            leaves the room.
+            When the lid closes, Vakter keeps the speakers live and fires
+            the alarm anyway. Every other Mac anti-theft tool goes quiet
+            with the lid. This one doesn't — a daemon-level audio override
+            that no competitor has solved. In v1.5, the watch expands:
+            Mail, Messages, and the Mac itself. Same on-device promise,
+            wider scope.
           </p>
 
           <div class="hero-cta">
@@ -1487,7 +1489,9 @@ section { position: relative; }
           <p class="hero-meta">
             <span>14-day full trial</span>
             <span class="hero-meta-dot" aria-hidden="true"></span>
-            <span>Apple Silicon</span>
+            <span>macOS 14+ · AI features require 15.1+</span>
+            <span class="hero-meta-dot" aria-hidden="true"></span>
+            <span>Apple Silicon (M1+)</span>
             <span class="hero-meta-dot" aria-hidden="true"></span>
             <span>Notarised by Apple</span>
             <span class="hero-meta-dot" aria-hidden="true"></span>
@@ -1632,7 +1636,7 @@ section { position: relative; }
         <div>
           <span class="eyebrow">§ what it does</span>
           <h2 id="features-title" class="display display-md" style="margin-top: 18px;">
-            Six things, all the moment <br> someone threatens it.
+            Six things, the moment <br> someone grabs it.
           </h2>
         </div>
         <span class="section-num">§ 03 / 09</span>
@@ -1727,6 +1731,19 @@ section { position: relative; }
         </article>
 
       </div>
+
+      <div style="margin-top: clamp(40px, 5vw, 64px); padding: clamp(24px, 3vw, 40px); border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--bg-card);" class="reveal">
+        <p style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: 16px;">Coming in v1.5 — early 2026</p>
+        <p style="font-size: 15px; color: var(--ink-soft); line-height: 1.6; max-width: 760px;">
+          The watch is expanding. <strong style="color: var(--ink);">Mail Watch</strong> — drag an email into Vakter, get a scam verdict in two seconds.
+          <strong style="color: var(--ink);">Messages Watch</strong> — on-device detection of SMS and iMessage phishing patterns.
+          <strong style="color: var(--ink);">Web Watch</strong> — a Safari extension that catches fake popups and clipboard injection before you paste.
+          <strong style="color: var(--ink);">Mac Watch</strong> — process scanning, LaunchAgent audit, code-signature analysis.
+          All on-device, using Apple Foundation Models. macOS 15.1+ required for AI features.
+          Verifiable in airplane mode. Your €29 licence covers every v1.x release.
+        </p>
+      </div>
+
     </div>
   </section>
 
@@ -1994,11 +2011,11 @@ section { position: relative; }
             <li><span class="tick">✓</span><span>macOS Shortcuts integration</span></li>
             <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">iOS + Apple Watch companion — source complete; provisioning in progress</span></li>
             <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Sparkle 2 auto-update — rolling out with v1.5</span></li>
+            <li><span class="tick" style="opacity:0.45;">○</span><span style="opacity:0.6;">Mail Watch · Messages Watch · Web Watch · Mac Watch — v1.5+, macOS 15.1+</span></li>
           </ul>
 
           <p class="pricing-note">
-            €12 / year optional for major-version updates after year one. <br>
-            Skip the update and the licence keeps running, indefinitely.
+            One licence. Every v1.x release included. No subscription.
           </p>
         </div>
       </div>
@@ -2171,10 +2188,16 @@ section { position: relative; }
           </summary>
           <div class="faq-answer">
             <p>
-              macOS Sonoma (14.0) or later. Apple Silicon (M1 or later) only.
-              Internal camera, microphone, and speakers. Bluetooth
-              optional (trusted-device awareness). Notarised DMG, direct
-              download — no Mac App Store dance.
+              macOS Sonoma (14.0) or later, Apple Silicon (M1 or later) only —
+              for the core anti-theft features. Internal camera, microphone,
+              and speakers. Bluetooth optional (trusted-device proximity disarm).
+              Notarised DMG, direct download — no Mac App Store.
+            </p>
+            <p>
+              The v1.5 AI features (Mail Watch, Mac Watch, on-device LLM analysis)
+              require macOS Sequoia 15.1 or later, where Apple Foundation Models
+              are available. If you're on 14.x, the anti-theft features run
+              exactly as they do today.
             </p>
           </div>
         </details>
@@ -2224,10 +2247,10 @@ section { position: relative; }
           <h4>One developer. One Mac. One night-watch.</h4>
           <p>
             Vakter is built by Jonathan Gebru, solo, in plain Swift on a
-            Mac. The watch covers every threat to your Mac — someone
-            grabbing it, someone tricking you into pasting malicious
-            commands, a suspicious LaunchAgent that appears while you
-            weren't looking. Email reaches a human within a day.
+            Mac. Today: the alarm that fires even when the lid is shut,
+            the evidence trail, the iMessage to your phone. In v1.5:
+            Mail Watch, Messages Watch, Mac Watch — on-device, no cloud
+            LLM. Email reaches a human within a day.
           </p>
         </div>
 
