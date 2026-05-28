@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>A bigger watch — Vakter's next chapter</title>
+<meta name="description" content="Anti-theft stays free, forever. What's new: an on-device security companion for Mail, Messages, the web, and your Mac itself. No cloud. No subscription. €29 once.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<link rel="icon" type="image/png" sizes="16x16" href="../../assets/favicons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../../assets/favicons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../../assets/favicons/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="../../assets/favicons/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../../assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter — Blog post page
+ * Shell matches vakter.app: navy + amber, system fonts,
+ * ship's-log numbered sections, zero external dependencies.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  --radius-sm:  6px;
+  --radius:     12px;
+
+  --maxw:       720px;
+  --gutter:     clamp(20px, 4vw, 56px);
+
+  --t-fast:    160ms;
+  --t-base:    320ms;
+  --easing:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote, table { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17.5px);
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.05), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.5), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-image: url(../../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.back-link:hover { color: var(--amber); }
+.back-arrow {
+  display: inline-block;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+
+/* ─── Layout ─── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ─── Page header ─── */
+.page-header {
+  padding: clamp(56px, 7vw, 96px) 0 clamp(40px, 5vw, 64px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.post-meta-sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--amber);
+  opacity: 0.5;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(32px, 4.5vw, 52px);
+  letter-spacing: -0.03em;
+  line-height: 1.06;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+
+.page-lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(16px, 1.2vw + 10px, 20px);
+  line-height: 1.52;
+  color: var(--ink-soft);
+  letter-spacing: -0.01em;
+}
+
+/* ─── Rule dot (ship's-log accent divider) ─── */
+.rule-dot {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(245, 177, 79, 0.5);
+}
+.rule-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 0 0 4px var(--bg);
+}
+
+/* ─── Prose body ─── */
+.prose {
+  padding: clamp(48px, 6vw, 80px) 0 clamp(64px, 8vw, 120px);
+}
+
+.prose-body h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(20px, 2.2vw, 27px);
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+  color: var(--ink);
+  margin: clamp(40px, 5vw, 64px) 0 16px;
+}
+.prose-body h2:first-child { margin-top: 0; }
+
+.prose-body p {
+  color: var(--ink-soft);
+  line-height: 1.72;
+  margin-bottom: 18px;
+  font-size: clamp(15.5px, 0.9vw + 11px, 17.5px);
+}
+.prose-body p:last-child { margin-bottom: 0; }
+
+.prose-body strong { color: var(--ink); font-weight: 600; }
+
+.prose-body em { font-style: italic; }
+
+.prose-body a {
+  color: var(--amber);
+  text-decoration: underline;
+  text-decoration-color: rgba(245, 177, 79, 0.4);
+  text-underline-offset: 2px;
+  transition: text-decoration-color var(--t-fast) var(--easing);
+}
+.prose-body a:hover { text-decoration-color: var(--amber); }
+
+/* ─── Lists ─── */
+.prose-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 20px;
+  display: grid;
+  gap: 8px;
+}
+.prose-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.prose-list li::before {
+  content: "–";
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* ─── Callout box ─── */
+.callout {
+  background: rgba(245, 177, 79, 0.06);
+  border: 1px solid rgba(245, 177, 79, 0.2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 28px 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.68;
+}
+.callout strong { color: var(--amber); }
+.callout p { margin-bottom: 10px; color: inherit; font-size: inherit; line-height: inherit; }
+.callout p:last-child { margin-bottom: 0; }
+
+/* ─── Tier table ─── */
+.tier-table-wrap {
+  overflow-x: auto;
+  margin: 24px 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline-bold);
+}
+.tier-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.tier-table thead tr {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--hairline-bold);
+}
+.tier-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-family: var(--font-mono);
+}
+.tier-table td {
+  padding: 12px 16px;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--hairline);
+  line-height: 1.5;
+  vertical-align: top;
+  font-size: 14px;
+}
+.tier-table tbody tr:last-child td { border-bottom: none; }
+.tier-table td strong { color: var(--ink); font-weight: 600; }
+.tier-table td .tag-free {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  background: rgba(245, 177, 79, 0.12);
+  color: var(--amber);
+  border: 1px solid rgba(245, 177, 79, 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.tier-table td .tag-paid {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  background: rgba(233, 236, 243, 0.06);
+  color: var(--ink-soft);
+  border: 1px solid var(--hairline-bold);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+/* ─── Footer ─── */
+.footer {
+  border-top: 1px solid var(--hairline);
+  padding: 48px 0 40px;
+  background: var(--bg);
+}
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-col h5 {
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.footer-col ul { display: grid; gap: 9px; list-style: none; padding: 0; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.footer-col a:hover { color: var(--amber); }
+
+.footer-meta {
+  max-width: 1240px;
+  margin: 32px auto 0;
+  padding: 24px var(--gutter) 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--hairline);
+}
+.footer-meta-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--amber);
+  color: var(--navy-deep);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+    </a>
+    <a class="back-link" href="/blog/">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      Notes
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-header">
+    <div class="container">
+      <div class="eyebrow">§ notes from the watch</div>
+      <div class="post-meta">
+        <span>28 May 2026</span>
+        <span class="post-meta-sep" aria-hidden="true"></span>
+        <span>Jonathan Gebru</span>
+        <span class="post-meta-sep" aria-hidden="true"></span>
+        <span>~900 words</span>
+      </div>
+      <h1 class="page-title">A bigger watch — Vakter's next chapter</h1>
+      <p class="page-lead">
+        Anti-theft stays free, forever. What's changing: Vakter is expanding
+        from one kind of threat to all of them. Here's what that means for
+        people who already own it.
+      </p>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot" style="margin: 0;"></div></div>
+
+  <div class="prose">
+    <div class="container">
+      <div class="prose-body">
+
+        <h2>What's changing</h2>
+
+        <p>
+          Vakter v1.4.4 — the version you bought — is an anti-theft alarm for
+          your Mac. One shortcut to arm it. A 100&nbsp;dB siren, a photo burst,
+          ambient audio, and an iMessage to your phone the instant someone tries
+          to walk off with it. That product is not going away. It will stay free,
+          it will keep working, and every existing licence covers it.
+        </p>
+
+        <p>
+          What's changing is the scope of the watch.
+        </p>
+
+        <p>
+          Starting with v1.5 — due in the next few weeks — Vakter is becoming
+          something wider: an on-device security companion that watches your Mac
+          against the full range of threats most Mac owners actually encounter
+          day-to-day. Mail scams. Suspicious iMessages. Malicious web pages that
+          drop shell commands into your clipboard. Processes you don't recognise.
+          Persistence implants that shouldn't be there.
+        </p>
+
+        <div class="tier-table-wrap">
+          <table class="tier-table" aria-label="Vakter tier comparison">
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th>What's included</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Free</strong></td>
+                <td>Anti-theft alarm · Defenses checklist · on-device LLM explainer for Defenses</td>
+                <td><span class="tag-free">free, always</span></td>
+              </tr>
+              <tr>
+                <td><strong>Essential</strong></td>
+                <td>Everything in Free, plus: Mail Watch (v1.6) · Messages Watch (v1.7) · Web Watch (v1.8) · Mac Watch (v1.8) · LLM chat panel · daily briefing</td>
+                <td><span class="tag-paid">€29 one-time</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          No subscription. No renewal. No trial that converts automatically.
+          €29 buys the Essential tier for the lifetime of the product — the
+          same model as Bartender, CleanShot, or Hazel.
+        </p>
+
+        <h2>Why we're doing this</h2>
+
+        <p>
+          If you think about a Mac owner's actual list of security worries in
+          ranked order, physical theft sits near the bottom — somewhere around
+          seventh place. The top of the list is daily and mundane: phishing
+          emails, fake tech-support popups, suspicious app installs, shell
+          commands that appear in a clipboard after visiting a sketchy website,
+          and the ambient unease of not knowing what's running on your own machine.
+        </p>
+
+        <p>
+          Vakter v1.4.4 answers concern number seven. The pivot answers the
+          whole list — with the same architecture, the same privacy properties,
+          and no cloud.
+        </p>
+
+        <p>
+          There's also a more honest admission embedded here. Most days, anti-theft
+          software does nothing for you. A Mac stolen at a coffee shop is a
+          real event, but not a daily one. The pivot changes Vakter from something
+          that pays off once (if ever) to something that runs a quiet check every
+          single day.
+        </p>
+
+        <h2>The brand contract — read this once, then trust it</h2>
+
+        <div class="callout">
+          <p>
+            <strong>Vakter never uses a cloud LLM.</strong> Every analysis —
+            the Mail verdict, the Messages scan, the clipboard explanation,
+            the process audit — runs on-device using Apple Foundation Models
+            (macOS 15.1+). There is no server that receives your data, because
+            there is no server.
+          </p>
+          <p>
+            Verify it yourself: disconnect from the internet. Analysis features
+            still work. That's the test. That's the contract.
+          </p>
+        </div>
+
+        <p>
+          This is not a marketing claim about "privacy-first design." It's a
+          technical architecture decision, and it's permanent. The watch stays
+          on-device or it doesn't ship.
+        </p>
+
+        <p>
+          The reason is straightforward: the moment any of your Mail content,
+          clipboard text, or process list touches a vendor's server — even in
+          anonymised form — the trust model collapses. Norton, McAfee, and their
+          successors all took that path. Vakter will not.
+        </p>
+
+        <h2>Pricing</h2>
+
+        <p>
+          If you own Vakter today, your licence covers the Free tier permanently.
+          Anti-theft, the Defenses checklist, the on-device LLM explainer for
+          those checks — all yours, no action required, no expiry.
+        </p>
+
+        <p>
+          The Essential tier — Mail Watch, Messages Watch, Web Watch, Mac Watch,
+          and the chat panel — is a one-time €29 upgrade. There's a 7-day trial
+          built in so you can verify it works before spending anything.
+        </p>
+
+        <p>
+          The upgrade flow will appear in the menubar when v1.5 ships. No
+          pressure before that.
+        </p>
+
+        <h2>What's shipping when</h2>
+
+        <ul class="prose-list">
+          <li><strong>v1.5 (next few weeks):</strong> Foundation Models integration, on-device Defenses explainer, LLM chat panel, pricing migration, 7-day Essential trial.</li>
+          <li><strong>v1.6 (Q2–Q3 2026):</strong> Mail Watch — drag an email in, get a scam verdict in under two seconds. Sender-reputation baseline. URL safety checks. Public launch.</li>
+          <li><strong>v1.7 (Q3 2026):</strong> Messages Watch — iMessage and SMS forwarded from iPhone, scam-pattern detection, inline "block + report."</li>
+          <li><strong>v1.8 (Q3–Q4 2026):</strong> Web Watch (Safari extension) and Mac Watch — process audit, LaunchAgent review, code-signature analysis, persistence detection.</li>
+        </ul>
+
+        <p>
+          The full roadmap, with more detail on each release, is at
+          <a href="/roadmap/">vakter.app/roadmap</a>.
+        </p>
+
+        <h2>What isn't changing</h2>
+
+        <p>
+          The anti-theft alarm. The siren. The photo burst. The ambient audio.
+          The iMessage to your phone. The tamper-evident SHA-256 event chain.
+          The Defenses checklist. The navy and amber. The lighthouse. The
+          single shortcut: <kbd style="font-family: var(--font-mono); font-size: 0.88em; background: var(--bg-card); border: 1px solid var(--hairline-bold); border-radius: 4px; padding: 1px 6px;">⌃⌥⌘L</kbd>. The no-cloud architecture. The no-telemetry
+          stance. The no-accounts model. The €29 one-time pricing.
+        </p>
+
+        <p>
+          Vakter v1.4.4 is the watch it always was. v1.5 makes the watch wider.
+          The night-watchman doesn't retire — the dock just gets longer.
+        </p>
+
+        <h2>A note to existing owners</h2>
+
+        <p>
+          If you bought Vakter as an anti-theft alarm and have no interest in
+          the expanded scope, that's a reasonable position. The app you have
+          will keep working exactly as it does today. Updates to the alarm
+          itself, bug fixes, and macOS compatibility will remain free.
+        </p>
+
+        <p>
+          If you're curious about the Essential tier, the 7-day trial is there
+          precisely so you can make the call with the actual software in front
+          of you, not a description of it.
+        </p>
+
+        <p>
+          Questions go to
+          <a href="mailto:hi@vakter.app">hi@vakter.app</a>.
+          It reaches a human.
+        </p>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h5>Product</h5>
+      <ul>
+        <li><a href="/#what-it-does">Features</a></li>
+        <li><a href="/#modes">Modes</a></li>
+        <li><a href="/#architecture">Architecture</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/roadmap/">Roadmap</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Trust</h5>
+      <ul>
+        <li><a href="/security/">Security</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="/changelog/">Changelog</a></li>
+        <li><a href="mailto:security@vakter.app">Disclosure</a></li>
+        <li><a href="/press/">Press kit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Notes</h5>
+      <ul>
+        <li><a href="/blog/" aria-current="page">All posts</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contact</h5>
+      <ul>
+        <li><a href="mailto:support@vakter.app">support@</a></li>
+        <li><a href="mailto:security@vakter.app">security@</a></li>
+        <li><a href="mailto:hi@vakter.app">hi@</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span class="footer-meta-mark">
+      <span class="brand-mark" aria-hidden="true" style="width: 18px; height: 18px; display: inline-block; border-radius: 4px; background-image: url(../../assets/screenshots/AppIcon.png); background-size: cover; vertical-align: middle;"></span>
+      Vakter · vakter.app · © 2026
+    </span>
+    <span>Built on a Mac. Signed by Apple. Hosted on your disk.</span>
+  </div>
+</footer>
+
+</body>
+</html>
