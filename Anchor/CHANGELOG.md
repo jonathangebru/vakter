@@ -4,6 +4,69 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 ---
 
+## Unreleased (v1.5-dev) — in flight as of 2026-05-28
+
+These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
+
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57)
+**Remaining before v1.5:** #55 (security/changelog page), #56 (Stripe webhook — needs-human), #58 (blog post)
+
+### Website hero now leads with the lid-close audio-override moat (#53, PR #81)
+
+`Anchor/Website/index.html` only. Net diff: 1 file. Squash of commits b730614 + c08670f (revert of stray contamination).
+
+- Hero body paragraph (`.hero-sub`) now opens: "When the lid closes, Vakter keeps the speakers live and fires the alarm anyway. Every other Mac anti-theft tool goes quiet with the lid. This one doesn't — a daemon-level audio override that no competitor has solved."
+- The lid-close moat is sentence 1 of the hero body, sentence 1 of the meta description, and sentence 1 of the OG description. Not buried.
+- v1.5 features framed as forward-looking throughout: "In v1.5, the watch expands", "Coming in v1.5 — early 2026" callout block. No false-shipping claims.
+- Pricing: "€29 one-time" in meta and CTA. Old "€12/year" subscription language removed. "One licence. Every v1.x release included. No subscription." added to pricing note.
+- "macOS 14+ · AI features require 15.1+" added to hero-meta row (requirements disclosure, not a false claim).
+- Banned words: 0.
+
+### Roadmap page added at vakter.app/roadmap/ (#54, PR #82)
+
+`Anchor/Website/roadmap/index.html` (new, 863 lines) + `Anchor/Website/index.html` (footer link). Net diff: 2 files.
+
+- 8 sections: §01 Today (v1.4.4), §02 v1.5, §03 v1.6 Mail Watch, §04 v1.7 Messages Watch, §05 v1.8 Web Watch + Mac Watch, §06 v2.0 Behavioral Baselining + B2B, §07 The contract that never changes, §08 Roadmap honesty.
+- Matches openspec/changes/vakter-watch-pivot/tasks.md milestone ordering.
+- 8 "never ship" bullets: No cloud LLM, No telemetry, No accounts, No remote wipe, No hidden post-wipe tracking, No background screen recording, No user-submitted threat reports, No subscription on existing features.
+- All v1.6+ sections carry explicit future-dated labels (Q3/Q4 2026). No false-shipping claims.
+- Pricing throughout: "€29 lifetime purchase", "No subscription added later", "€29/Mac one-time" for B2B bulk.
+- Footer link `<a href="./roadmap/">Roadmap</a>` added to Trust column of Website/index.html.
+- Banned words: 0.
+
+### LicenseManager scaffolding added; activation flow inert until #56 Stripe wires the webhook (#57, PR #83)
+
+`Anchor/Sources/VakterShared/LicenseManager.swift` (new), `Anchor/Sources/VakterApp/MenuBarController.swift`, `Anchor/Sources/VakterApp/SettingsRoot.swift`, `Anchor/Tests/VakterSharedTests/LicenseManagerTests.swift` (new, 23 cases).
+
+**Security properties verified by gate:**
+- Storage: Keychain only (`app.vakter.mac.license` / `kSecClassGenericPassword`). No UserDefaults, no plist, no disk file.
+- Accessibility: `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` — launch-at-login compatible, never iCloud-synced.
+- No network calls: `URLSession`, `NSURLConnection`, `dataTask`, `URLRequest` — all 0 matches in LicenseManager.swift.
+- No key logging: `NSLog` at activate writes only `tier.rawValue`, never the key. Write-failure log contains no key material.
+- No clipboard exposure: no `NSPasteboard` writes anywhere in the license path.
+- Dev keys `VAKTER-DEV-FREE` / `-ESSENTIAL` / `-BUSINESS` are intentionally hardcoded with `VAKTER-DEV-` prefix so `strings` audits find them immediately. Not secrets; documented debug affordances.
+- Production key format `VKT-XXXX-XXXX-XXXX-XXXX` accepted as structurally valid (Essential tier) at v1.5. Cryptographic signature check deferred to #56.
+
+**Upgrade menubar item:**
+- `if !LicenseManager.isPaid()` gate at MenuBarController.swift:325 — item is built only for free-tier users, never shown to paid users.
+- Clicking opens `https://vakter.app/upgrade` in the default browser via `NSWorkspace.shared.open(url)`. No payment UI inside the app.
+
+**Activate panel (Settings → General):**
+- `ActivateVakterSection` embedded at bottom of `GeneralTab`.
+- Free-tier layout: TextField + Activate button (disabled when input empty). Button clears the field on success so the key doesn't linger in `@State`.
+- Paid-tier layout: confirmation pill only (`checkmark.seal.fill` + tier label + "active" status pill). No editable field — key cannot be copied or viewed.
+- `resultRow(_:)` shows green checkmark + tier name on `.activated`, red X on `.rejectedUnrecognised` or `.rejectedMalformed`.
+
+**Minor documentation inaccuracy (non-blocking):** Comment at SettingsRoot.swift:796 says "The field even uses `.textSelection(.disabled)` for the success state" but the paid layout has no text field at all — the comment is inaccurate but the security behavior is correct (no field to select from). Flagged for engineer cleanup in a follow-up commit; does not warrant rejection.
+
+**Café-fix baseline verified:** `Signal.swift:triggersGrace` — `.bluetoothTrustLost` remains in the `false` bucket. PR #83 does not touch Signal.swift.
+
+**Test results:**
+- `swift test` (PR #83 branch, pre-merge): 164/164 pass (includes 23 new LicenseManagerTests, pre-existing 29 DefenseChecklistTests)
+- `swift build --configuration release --arch arm64`: clean (pre-existing AppDelegate-Sendable warnings only)
+
+---
+
 ## v1.4.4 — 2026-05-21
 
 **Notarization submission ID:** 27fc4e6a-721b-4054-b32f-a67fc8b2688f
