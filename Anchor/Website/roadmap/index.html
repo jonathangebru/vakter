@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Roadmap — Vakter</title>
+<meta name="description" content="Where Vakter is heading over the next six months. v1.5 through v2.0, milestone by milestone. Honest timelines, no aspirational present tense.">
+<meta name="theme-color" content="#0b1530" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4eee1" media="(prefers-color-scheme: light)">
+
+<link rel="icon" type="image/png" sizes="16x16" href="../assets/favicons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="../assets/favicons/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/favicons/favicon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicons/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../assets/favicons/apple-touch-icon.png">
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+ * Vakter — Roadmap page
+ * Shell matches vakter.app exactly: navy + amber, system fonts,
+ * ship's-log numbered sections, zero external dependencies.
+ * ───────────────────────────────────────────────────────────────── */
+
+:root {
+  --navy-deep:   #0b1530;
+  --navy:        #1c2a4f;
+  --navy-soft:   #2a3a64;
+  --navy-mist:   #3d4d75;
+  --amber:       #f5b14f;
+  --amber-warm:  #f8c882;
+  --amber-deep:  #d99431;
+
+  --bg:          var(--navy-deep);
+  --bg-elev:     #11203f;
+  --bg-card:     rgba(255, 255, 255, 0.025);
+  --ink:         #e9ecf3;
+  --ink-soft:    rgba(233, 236, 243, 0.72);
+  --ink-faint:   rgba(233, 236, 243, 0.48);
+  --hairline:    rgba(255, 255, 255, 0.08);
+  --hairline-bold: rgba(255, 255, 255, 0.14);
+
+  --radius-sm:  6px;
+  --radius:     12px;
+
+  --maxw:       860px;
+  --gutter:     clamp(20px, 4vw, 56px);
+
+  --t-fast:    160ms;
+  --t-base:    320ms;
+  --t-slow:    640ms;
+  --easing:    cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --font-text:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Inter, system-ui, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif:   ui-serif, Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #f4eee1;
+    --bg-elev:     #ece4d2;
+    --bg-card:     rgba(28, 42, 79, 0.025);
+    --ink:         #15213b;
+    --ink-soft:    rgba(21, 33, 59, 0.7);
+    --ink-faint:   rgba(21, 33, 59, 0.45);
+    --hairline:    rgba(21, 33, 59, 0.1);
+    --hairline-bold: rgba(21, 33, 59, 0.18);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, p, ul, ol, figure, blockquote, table { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, video, svg { display: block; max-width: 100%; height: auto; }
+button { font: inherit; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: clamp(15.5px, 0.92vw + 11px, 17.5px);
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11", "kern", "calt";
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--navy-deep);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.05), transparent 60%),
+    radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.5), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: light) {
+  body::before {
+    background:
+      radial-gradient(ellipse 1200px 800px at 15% -10%, rgba(245, 177, 79, 0.08), transparent 60%),
+      radial-gradient(ellipse 1000px 700px at 110% 60%, rgba(28, 42, 79, 0.04), transparent 70%);
+  }
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-bottom: 1px solid var(--hairline);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background-image: url(../assets/screenshots/AppIcon.png);
+  background-size: cover;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.back-link:hover { color: var(--amber); }
+.back-arrow {
+  display: inline-block;
+  transition: transform var(--t-base) var(--easing-out);
+}
+.back-link:hover .back-arrow { transform: translateX(-3px); }
+
+/* ─── Layout ─── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* ─── Page header ─── */
+.page-header {
+  padding: clamp(56px, 7vw, 96px) 0 clamp(40px, 5vw, 64px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 20px;
+}
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(245, 177, 79, 0.7);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(34px, 5vw, 58px);
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  color: var(--ink);
+  text-wrap: balance;
+  margin-bottom: 20px;
+}
+
+.page-lead {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(16px, 1.2vw + 10px, 20px);
+  line-height: 1.52;
+  color: var(--ink-soft);
+  letter-spacing: -0.01em;
+  max-width: 640px;
+}
+
+/* ─── Prose body ─── */
+.prose {
+  padding: clamp(48px, 6vw, 80px) 0 clamp(64px, 8vw, 120px);
+}
+
+/* Section ship's-log dividers */
+.log-section {
+  padding: clamp(36px, 4vw, 56px) 0;
+  border-bottom: 1px solid var(--hairline);
+  position: relative;
+}
+.log-section:first-child { padding-top: 0; }
+
+.log-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.log-section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.log-section h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(22px, 2.4vw, 30px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 0;
+}
+
+.log-section h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(16px, 1.4vw, 20px);
+  letter-spacing: -0.012em;
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 28px 0 12px;
+}
+.log-section h3:first-child { margin-top: 0; }
+
+.log-section p {
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.log-section p:last-child { margin-bottom: 0; }
+
+.log-section strong { color: var(--ink); font-weight: 600; }
+
+.log-section em { font-style: italic; }
+
+/* ─── Lists ─── */
+.prose-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+}
+.prose-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.prose-list li::before {
+  content: "–";
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* ─── Milestone tag (version + timing badge) ─── */
+.milestone-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.milestone-tag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  background: rgba(245, 177, 79, 0.1);
+  border: 1px solid rgba(245, 177, 79, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.milestone-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border: 1px solid var(--hairline-bold);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  background: var(--bg-card);
+  white-space: nowrap;
+}
+.milestone-status-shipped {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6fcf97;
+  background: rgba(111, 207, 151, 0.08);
+  border: 1px solid rgba(111, 207, 151, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+/* ─── Feature row inside a milestone ─── */
+.feature-row {
+  margin: 20px 0;
+}
+.feature-row + .feature-row {
+  padding-top: 20px;
+  border-top: 1px solid var(--hairline);
+}
+.feature-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15.5px;
+  letter-spacing: -0.008em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.feature-desc {
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0;
+}
+.feature-tier {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 1px solid var(--hairline-bold);
+  border-radius: 4px;
+  padding: 2px 7px;
+  margin-left: 8px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.feature-tier-paid {
+  color: var(--amber-warm);
+  border-color: rgba(245, 177, 79, 0.3);
+  background: rgba(245, 177, 79, 0.06);
+}
+
+/* ─── "Never ship" list ─── */
+.never-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  display: grid;
+  gap: 8px;
+}
+.never-list li {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink-soft);
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.never-list li::before {
+  content: "✗";
+  color: rgba(233, 236, 243, 0.3);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ─── Callout box ─── */
+.callout {
+  background: rgba(245, 177, 79, 0.06);
+  border: 1px solid rgba(245, 177, 79, 0.2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin: 24px 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.callout strong { color: var(--amber); }
+
+/* ─── Rule dot (ship's-log accent divider) ─── */
+.rule-dot {
+  width: 100%;
+  height: 1px;
+  background: var(--hairline);
+  position: relative;
+  margin: 0;
+}
+.rule-dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+  z-index: 1;
+  box-shadow: 0 0 12px rgba(245, 177, 79, 0.5);
+}
+.rule-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 0 0 4px var(--bg);
+}
+
+/* ─── Footer ─── */
+.footer {
+  border-top: 1px solid var(--hairline);
+  padding: 48px 0 40px;
+  background: var(--bg);
+}
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.footer-col h5 {
+  font-family: var(--font-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+.footer-col ul { display: grid; gap: 9px; list-style: none; padding: 0; }
+.footer-col a {
+  font-size: 14px;
+  color: var(--ink-soft);
+  transition: color var(--t-fast) var(--easing);
+}
+.footer-col a:hover { color: var(--amber); }
+
+.footer-meta {
+  max-width: 1240px;
+  margin: 32px auto 0;
+  padding: 24px var(--gutter) 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--hairline);
+}
+.footer-meta-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── Skip link ─── */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--amber);
+  color: var(--navy-deep);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.skip-link:focus { left: 16px; top: 16px; z-index: 100; }
+</style>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav" role="banner">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="Vakter — home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Vakter</span>
+    </a>
+    <a class="back-link" href="/">
+      <span class="back-arrow" aria-hidden="true">←</span>
+      Back to vakter.app
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="page-header">
+    <div class="container">
+      <div class="eyebrow">§ roadmap</div>
+      <h1 class="page-title">Vakter — Roadmap</h1>
+      <p class="page-lead">
+        Where the night-watch is heading over the next six months.
+      </p>
+    </div>
+  </section>
+
+  <div class="container"><div class="rule-dot" style="margin: 0;"></div></div>
+
+  <div class="prose">
+    <div class="container">
+
+      <!-- §01 — Today (v1.4.4) -->
+      <article class="log-section" aria-labelledby="s1">
+        <div class="log-section-header">
+          <h2 id="s1">Today — v1.4.4</h2>
+          <span class="log-section-num">§ 01 / 08</span>
+        </div>
+
+        <div class="milestone-meta">
+          <span class="milestone-tag">v1.4.4</span>
+          <span class="milestone-status-shipped">Shipping now</span>
+        </div>
+
+        <p>The Mac anti-theft foundation. Arm with one shortcut — <kbd style="font-family: var(--font-mono); font-size: 0.86em; background: var(--bg-card); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 2px 7px;">⌃⌥⌘L</kbd> — and Vakter watches your laptop while you step away. The moment someone moves it, the alarm fires: local siren, photo burst from the camera, ambient audio capture, and an iMessage with your GPS coordinates to the number you configured.</p>
+
+        <div class="feature-row">
+          <p class="feature-label">Anti-theft alarm loop</p>
+          <p class="feature-desc">Lid-state, power, and Bluetooth proximity monitoring. On any trigger: 110 dB siren, 5-shot photo burst, 10s audio clip, iMessage evidence packet with current location. Apple Silicon lid-close audio override via a root daemon — the siren audible even after the lid shuts.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">20-point Defenses checklist</p>
+          <p class="feature-desc">FileVault, Find My, Gatekeeper, SIP, Touch ID enrollment, screen-lock delay, SSH passphrase, login window message, and twelve more. Each failed check links directly to the relevant System Settings pane. Read-only: Vakter never silently changes a system setting.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Five operating modes</p>
+          <p class="feature-desc">Normal, Travel, Library, Loaner, and Café. Café disables Bluetooth proximity detection for when your AirPods are nearby but you still want the alarm live.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">iOS + Apple Watch source complete</p>
+          <p class="feature-desc">CloudKit-backed companion apps compile and sync correctly. Provisioning profiles and TestFlight submission are in progress. The Mac app ships today; the companions follow.</p>
+        </div>
+
+        <div class="callout">
+          <strong>One-time purchase.</strong> Every feature on this page — everything from v1.5 through v2.0 — is included in the €29 lifetime purchase. No subscription added later. No paid major version until v3.0 (Bartender model, estimated year 2–3).
+        </div>
+      </article>
+
+      <!-- §02 — v1.5 -->
+      <article class="log-section" aria-labelledby="s2">
+        <div class="log-section-header">
+          <h2 id="s2">v1.5 — The on-device analyst arrives</h2>
+          <span class="log-section-num">§ 02 / 08</span>
+        </div>
+
+        <div class="milestone-meta">
+          <span class="milestone-tag">v1.5</span>
+          <span class="milestone-date">Q3 2026</span>
+        </div>
+
+        <p>The first release where Vakter does more than watch for thieves. Apple Foundation Models lands in macOS 15.1, and Vakter uses it to explain security in plain English — on-device, no internet required. The analysis never leaves your Mac. Verify by turning off Wi-Fi.</p>
+
+        <div class="feature-row">
+          <p class="feature-label">LLM Defenses explainer <span class="feature-tier">Free</span></p>
+          <p class="feature-desc">Each item in the 20-point Defenses checklist gets a "Why does this matter?" button. The answer is generated locally using Apple Foundation Models: plain-English, specific to your current macOS version, no fluff. Requires macOS 15.1 and Apple Silicon.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">LLM chat panel <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Ask Vakter anything about your Mac's security posture: "What's that process in my menubar?", "Why is my firewall off?", "Is this app safe?" Routes through the on-device model with context about your current system state. Nothing typed here leaves your Mac.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Threat feed</p>
+          <p class="feature-desc">Vakter downloads a signed threat-feed bundle daily from <code style="font-family: var(--font-mono); font-size: 0.86em; background: var(--bg-card); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--hairline);">vakter.app/feed/</code>. The bundle aggregates known phishing domains, scam phone numbers, and malicious URLs from PhishTank, URLhaus, and abuse.ch. The server never sees what you query against it — the full bundle downloads to your Mac and all lookups run locally.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Per-domain opt-in toggles</p>
+          <p class="feature-desc">Mail Watch, Messages Watch, Web Watch, and Mac Watch each default to off. You choose which surfaces Vakter can read, per surface, at any time.</p>
+        </div>
+      </article>
+
+      <!-- §03 — v1.6 -->
+      <article class="log-section" aria-labelledby="s3">
+        <div class="log-section-header">
+          <h2 id="s3">v1.6 — Mail Watch</h2>
+          <span class="log-section-num">§ 03 / 08</span>
+        </div>
+
+        <div class="milestone-meta">
+          <span class="milestone-tag">v1.6</span>
+          <span class="milestone-date">Q3 2026 (late)</span>
+        </div>
+
+        <p>Drag an email into Vakter. Two seconds later: a plain-English verdict on whether it's a scam, with reasoning. Mail Watch also runs automatically on incoming Mail.app messages — quietly, on-device — and flags anything that looks like a phishing attempt before you open it.</p>
+
+        <div class="feature-row">
+          <p class="feature-label">Drag-an-email verdict <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Drop any <code style="font-family: var(--font-mono); font-size: 0.86em; background: var(--bg-card); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--hairline);">.eml</code> or Mail.app message onto the Vakter window. The verdict panel shows: safe / suspicious / likely phishing, the reasoning behind the call, sender history ("first time this address has written you"), and per-link safety scores after checking each URL against the threat feed. Two seconds, on-device.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Automatic Mail.app watcher <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Vakter watches <code style="font-family: var(--font-mono); font-size: 0.86em; background: var(--bg-card); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--hairline);">~/Library/Mail/</code> for new incoming messages. Suspicious mail gets a menubar badge before you read it. Mail.app users only at launch; third-party mail clients are out of scope for v1.6.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Sender baseline</p>
+          <p class="feature-desc">Vakter maintains a local record of senders who've written you before — first contact date and message count. New senders claiming to be your bank are flagged as first-contact.</p>
+        </div>
+      </article>
+
+      <!-- §04 — v1.7 -->
+      <article class="log-section" aria-labelledby="s4">
+        <div class="log-section-header">
+          <h2 id="s4">v1.7 — Messages Watch</h2>
+          <span class="log-section-num">§ 04 / 08</span>
+        </div>
+
+        <div class="milestone-meta">
+          <span class="milestone-tag">v1.7</span>
+          <span class="milestone-date">Q4 2026</span>
+        </div>
+
+        <p>The same on-device scam detection, extended to iMessage and SMS. Messages Watch reads your Mac's local Messages database — read-only, never uploading it — and surfaces a quiet warning when something arriving looks like a delivery scam, Apple ID suspension notice, tech-support call, or romance scam pattern.</p>
+
+        <div class="feature-row">
+          <p class="feature-label">iMessage + SMS scam detection <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Vakter reads <code style="font-family: var(--font-mono); font-size: 0.86em; background: var(--bg-card); padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid var(--hairline);">~/Library/Messages/chat.db</code> (read-only, Full Disk Access required). Scam patterns: "Your Apple ID has been suspended," USPS impersonation, tech-support callbacks, romance scripts. Sender phone numbers cross-checked against the threat feed.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Block + report action</p>
+          <p class="feature-desc">One click from the verdict panel blocks the sender in Messages and flags them in your local threat list. Nothing is reported to any server.</p>
+        </div>
+      </article>
+
+      <!-- §05 — v1.8 -->
+      <article class="log-section" aria-labelledby="s5">
+        <div class="log-section-header">
+          <h2 id="s5">v1.8 — Web Watch and Mac Watch</h2>
+          <span class="log-section-num">§ 05 / 08</span>
+        </div>
+
+        <div class="milestone-meta">
+          <span class="milestone-tag">v1.8</span>
+          <span class="milestone-date">Q4 2026</span>
+        </div>
+
+        <p>Two new surfaces in one release. Web Watch is a Safari extension bundled inside Vakter — no separate install — that intercepts scam pages and fake popups before you interact with them. Mac Watch runs a continuous background audit of processes, LaunchAgents, and code signatures, surfacing anything that wasn't there yesterday.</p>
+
+        <div class="feature-row">
+          <p class="feature-label">Web Watch — Safari extension <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Real-time scam-page detection and fake-popup blocking. When a page matches a known threat-feed domain or passes an LLM verdict threshold for "this is not what it claims," the Safari toolbar badge turns amber and Vakter overlays a brief warning. Fake "Your Mac is infected" browser overlays are dismissed automatically.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Form-fill warning</p>
+          <p class="feature-desc">If the domain you're about to submit a password to was never in your Safari history before today — and is in the threat feed — Vakter pauses and asks. No automatic blocking.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Mac Watch — process and persistence audit <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Vakter polls running processes every 30 seconds, checks code signatures, and diffs LaunchAgent folders against your established baseline. New unsigned processes, new LaunchAgents that weren't there yesterday, and processes phoning home to threat-feed IPs each generate a menubar "1 thing to look at" notification.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Cross-channel correlation</p>
+          <p class="feature-desc">The first release where Vakter connects dots across surfaces: a phone number that appeared in an SMS, then in an email, then in a browser page within the same hour triggers a higher-confidence alert than any single signal would. All correlation runs locally in a 30-day rolling SQLite store.</p>
+        </div>
+      </article>
+
+      <!-- §06 — v2.0 -->
+      <article class="log-section" aria-labelledby="s6">
+        <div class="log-section-header">
+          <h2 id="s6">v2.0 — Behavioral baselining and B2B</h2>
+          <span class="log-section-num">§ 06 / 08</span>
+        </div>
+
+        <div class="milestone-meta">
+          <span class="milestone-tag">v2.0</span>
+          <span class="milestone-date">Q1 2027</span>
+        </div>
+
+        <p>The long game: Vakter learns what your Mac's normal looks like and, over time, flags anomalies that no static rule catches. Separately, a B2B SKU for small offices ships here — the same €29/Mac one-time model, with bulk pricing and a centralized visibility layer.</p>
+
+        <div class="feature-row">
+          <p class="feature-label">Behavioral baselining <span class="feature-tier feature-tier-paid">Paid</span></p>
+          <p class="feature-desc">Vakter captures inter-keystroke timing patterns and app-launch sequences over a 30-day baseline period. Anomalous activity — someone else at your keyboard, a script running under your user account — triggers a soft silent lock requiring Touch ID to continue. No keystroke content is stored; only timing metadata.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">Apple Endpoint Security Framework (if granted)</p>
+          <p class="feature-desc">Vakter will apply for Apple's Endpoint Security entitlement once revenue and track record support the application. If Apple grants it: process execution subscriptions and file-event subscriptions replace the current polling approach. Real-time rather than every-30-seconds. This depends on Apple — we will not claim it before it's confirmed.</p>
+        </div>
+
+        <div class="feature-row">
+          <p class="feature-label">B2B SKU</p>
+          <p class="feature-desc">€29/Mac one-time for small offices. Bulk pricing at ten or more Macs: €20/Mac. Same on-device architecture — no fleet telemetry — with a centralized dashboard for visibility across seats. For offices that can't justify CrowdStrike and won't send their Mac state to a vendor cloud.</p>
+        </div>
+      </article>
+
+      <!-- §07 — The contract -->
+      <article class="log-section" aria-labelledby="s7">
+        <div class="log-section-header">
+          <h2 id="s7">The contract that never changes</h2>
+          <span class="log-section-num">§ 07 / 08</span>
+        </div>
+
+        <p>These are not features we've "decided not to prioritize." They are things Vakter will not ship in any version, at any tier, for any price. The constraint is the product.</p>
+
+        <ul class="never-list">
+          <li><strong>No cloud LLM.</strong> Every analysis runs on your Mac using Apple Foundation Models. Verify by disconnecting from the internet — the analysis features still work. If we ever send a prompt to a remote model, that is a security breach, not a product decision.</li>
+          <li><strong>No telemetry.</strong> No usage data, no crash reports (opt-in Apple crash reporter only), no analytics, no "phone home" of any kind. The only outbound request Vakter makes is the daily Sparkle appcast check and the threat-feed bundle download — both one-way, signed, and verifiable.</li>
+          <li><strong>No accounts.</strong> No sign-in, no cloud dashboard, no synced preferences. Your Vakter state lives on your Mac. Period.</li>
+          <li><strong>No remote wipe.</strong> Apple Find My owns that surface. Vakter does not participate in remote device management.</li>
+          <li><strong>No hidden post-wipe tracking.</strong> Every legacy "hidden tracker" Mac app died trying to subvert Apple's security model. We didn't try. If your Mac gets wiped, the trail ends at your last iMessage evidence packet.</li>
+          <li><strong>No background screen recording or continuous photo capture.</strong> Photos fire once, on alarm, from the burst you configured. Nothing runs the camera between alarms.</li>
+          <li><strong>No user-submitted threat reports.</strong> Even consent-based telemetry is a slippery slope. Threat feed data comes from public aggregators (PhishTank, URLhaus, abuse.ch) curated server-side. Your queries never contribute to the feed.</li>
+          <li><strong>No subscription pricing on existing features.</strong> The €29 lifetime purchase covers everything from v1.5 through the v2.x line. A paid major version upgrade (v3.0, Bartender model) is the long-term sustainability plan — not converting existing customers to a recurring fee.</li>
+        </ul>
+      </article>
+
+      <!-- §08 — Roadmap honesty -->
+      <article class="log-section" aria-labelledby="s8" style="border-bottom: none;">
+        <div class="log-section-header">
+          <h2 id="s8">Roadmap honesty</h2>
+          <span class="log-section-num">§ 08 / 08</span>
+        </div>
+
+        <p>The dates above are targets, not commitments. A release marked "Q3 2026" may slip to Q4. The ordering — v1.5 then v1.6 then v1.7 — is stable; the calendar is not. When a date slips, the changelog page says so plainly.</p>
+
+        <p>The pivot from anti-theft alarm to on-device security companion is a real strategic commitment, not a vague "exciting things coming soon." The proposal document and task breakdown are public in the repository. The decision to never use a cloud LLM is structural: it's baked into the pricing (on-device Apple Foundation Models are free), the architecture (no XPC path to any remote model), and the brand contract above. It is not a preference that can be reversed by a roadmap update.</p>
+
+        <p>Paying €29 today means you receive every feature listed on this page as it ships, through the v2.x line. The B2B bulk discount, the Safari extension, the behavioral baselining, the threat feed — all covered. If you're waiting to see whether the pivot is real before purchasing: the changelog will show you. We'd rather earn that trust than ask you to assume it.</p>
+
+        <div class="callout">
+          <strong>Updated:</strong> May 2026. This page reflects the shipped state of v1.4.4 and the committed direction through v2.0. Section §01 is accurate as of today; all other sections describe unreleased software and are labeled accordingly.
+        </div>
+      </article>
+
+    </div><!-- .container -->
+  </div><!-- .prose -->
+
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h5>Product</h5>
+      <ul>
+        <li><a href="/#what-it-does">Features</a></li>
+        <li><a href="/#modes">Modes</a></li>
+        <li><a href="/#architecture">Architecture</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Trust</h5>
+      <ul>
+        <li><a href="/security/">Security</a></li>
+        <li><a href="/privacy/">Privacy</a></li>
+        <li><a href="/changelog/">Changelog</a></li>
+        <li><a href="/roadmap/" aria-current="page">Roadmap</a></li>
+        <li><a href="mailto:security@vakter.app">Disclosure</a></li>
+        <li><a href="/press/">Press kit</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Contact</h5>
+      <ul>
+        <li><a href="mailto:support@vakter.app">support@</a></li>
+        <li><a href="mailto:security@vakter.app">security@</a></li>
+        <li><a href="mailto:hi@vakter.app">hi@</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-meta">
+    <span class="footer-meta-mark">
+      <span class="brand-mark" aria-hidden="true" style="width: 18px; height: 18px; display: inline-block; border-radius: 4px; background-image: url(../assets/screenshots/AppIcon.png); background-size: cover; vertical-align: middle;"></span>
+      Vakter · vakter.app · © 2026
+    </span>
+    <span>Built on a Mac. Signed by Apple. Hosted on your disk.</span>
+  </div>
+</footer>
+
+</body>
+</html>
