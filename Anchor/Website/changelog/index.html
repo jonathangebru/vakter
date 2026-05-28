@@ -506,6 +506,97 @@ body::before {
   <div class="log-body">
     <div class="container">
 
+      <!-- ── v1.5-dev — in progress ── -->
+      <article class="release" id="v1.5-dev" aria-labelledby="v15dev-heading">
+
+        <div class="release-header">
+          <h2 class="release-version" id="v15dev-heading">v1.5-dev</h2>
+          <span class="release-date">in progress</span>
+        </div>
+
+        <div class="release-section-label">What's new in this cycle</div>
+
+        <ul class="change-list">
+          <li>
+            <strong>On-device security companion framing.</strong>
+            Vakter's positioning has sharpened. It is an on-device security
+            companion for your Mac — watching for physical threats today,
+            adding on-device analysis of digital threats starting in v1.5.
+            Nothing in that scope expansion changes the core contract: no
+            cloud, no accounts, no telemetry.
+          </li>
+          <li>
+            <strong>Pricing confirmed: €29 one-time, lifetime.</strong>
+            One payment covers all v1.x releases, including the features
+            listed here as coming. No subscription path is planned.
+          </li>
+          <li>
+            <strong>Roadmap page.</strong>
+            <a href="/roadmap/" style="color: var(--amber);">vakter.app/roadmap/</a>
+            now documents the planned v1.5 through v2.0 feature sequence,
+            with honest in-progress / planned labels for everything that
+            hasn't shipped.
+          </li>
+        </ul>
+
+        <div class="callout">
+          <strong>Brand contract.</strong> Vakter never uses a cloud model.
+          Every analysis runs on your Mac. Disconnect from the internet —
+          Vakter's analysis features still work. This applies to everything
+          listed below as coming.
+        </div>
+
+        <div class="pending-block" aria-label="Coming in v1.5">
+          <div class="release-section-label">Coming in v1.5</div>
+          <ul class="change-list">
+            <li>
+              <strong>Foundation Models Defenses explainer.</strong>
+              The existing Defenses checklist (20 system-posture checks) will
+              gain a plain-English explanation layer powered by Apple's
+              Foundation Models framework. Instead of "FileVault: off — Fix →",
+              you'll get a one-paragraph account of what that gap means for
+              your threat model, written on-device.
+              macOS 26+, Apple Silicon. No text leaves the machine.
+            </li>
+            <li>
+              <strong>Security chat panel.</strong>
+              An on-device chat interface for asking questions about your Mac's
+              posture — "is my setup actually protecting me if Find My is off?"
+              — answered by a Foundation Models agent with access to your local
+              Defenses scores. Questions and answers stay on your Mac.
+            </li>
+            <li>
+              <strong>Daily morning briefing.</strong>
+              A local notification each morning with a one-line summary of your
+              Mac's security posture: score, trend, and any check that degraded
+              overnight. Tap to open the Defenses tab. Weekly cadence as an
+              alternative for users who prefer less frequent nudges.
+            </li>
+          </ul>
+        </div>
+
+        <div class="pending-block" aria-label="Coming in v1.6">
+          <div class="release-section-label">Coming in v1.6</div>
+          <ul class="change-list">
+            <li>
+              <strong>Mail Watch — drag-an-email analysis.</strong>
+              Drag a suspicious email into Vakter to get an on-device
+              assessment: header analysis, link extraction, attachment
+              classification. The drag-and-drop demo ships in v1.6;
+              deeper integration follows in v2.0.
+              On-device only — email content is never transmitted.
+            </li>
+            <li>
+              <strong>ClickFix Paste Shield.</strong>
+              Already documented in the v1.6 entry below. Moving up for
+              clarity: the clipboard analysis feature is v1.6, not v1.5.
+            </li>
+          </ul>
+        </div>
+
+      </article>
+      <!-- /v1.5-dev -->
+
       <!-- ── Coming next: v1.6 ── -->
       <article class="release" id="v1.6" aria-labelledby="v16-heading">
 
@@ -736,6 +827,7 @@ body::before {
         <li><a href="/#modes">Modes</a></li>
         <li><a href="/#architecture">Architecture</a></li>
         <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/roadmap/">Roadmap</a></li>
       </ul>
     </div>
     <div class="footer-col">
