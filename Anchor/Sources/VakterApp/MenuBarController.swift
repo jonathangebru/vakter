@@ -310,6 +310,29 @@ final class MenuBarController {
         about.target = self
         menu.addItem(about)
 
+        // ── Upgrade affordance (free tier only) ──
+        //
+        // Sits between About and Quit so it reads as a natural progression
+        // ("see what Vakter is" → "buy the rest" → "leave"). The item is
+        // built only when the user is on the free tier — paid users never
+        // see it, by design (no nag-ware affordance once they've paid).
+        //
+        // Clicking opens https://vakter.app/upgrade in the user's default
+        // browser. The Stripe checkout lives there, NEVER inside Vakter —
+        // we don't render a credit-card field anywhere in this app. After
+        // payment Stripe (#56) emails the user a license key which they
+        // paste into Settings → Activate Vakter.
+        if !LicenseManager.isPaid() {
+            let upgrade = NSMenuItem(
+                title: "Upgrade Vakter\u{2026}",
+                action: #selector(openUpgradePage),
+                keyEquivalent: ""
+            )
+            upgrade.target = self
+            upgrade.toolTip = "Unlock Mail Watch, Messages Watch, Web Watch and the LLM chat panel \u{2014} \u{20AC}29 one-time."
+            menu.addItem(upgrade)
+        }
+
         let quit = NSMenuItem(title: "Quit Vakter", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
 
@@ -417,6 +440,24 @@ final class MenuBarController {
 
     @objc private func openAboutWindow() {
         aboutWindow.show()
+    }
+
+    /// Opens `vakter.app/upgrade` in the user's default browser.
+    ///
+    /// Stripe checkout lives on the website — by intent, NOT inside the
+    /// Vakter binary. Keeping payment off-device means we never handle
+    /// PCI-scoped data, and the user's browser session inherits all the
+    /// fraud-prevention work Stripe already does. After purchase the
+    /// user pastes the license key into Settings → Activate Vakter.
+    ///
+    /// If the URL fails to construct or open, we no-op silently — the
+    /// user can still type `vakter.app/upgrade` into their browser. We
+    /// don't surface an error UI because there's no actionable recovery
+    /// inside the app.
+    @objc private func openUpgradePage() {
+        guard let url = URL(string: "https://vakter.app/upgrade") else { return }
+        NSLog("[MenuBar] opening upgrade page in default browser")
+        NSWorkspace.shared.open(url)
     }
 
     // MARK: - Pareto-style security checks

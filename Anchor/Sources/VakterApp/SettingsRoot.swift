@@ -470,6 +470,7 @@ private struct GeneralTab: View {
             MenubarAppearanceSection()
             StealthOverlayContactCard()
             LaunchAtLoginSection()
+            ActivateVakterSection()
         }
     }
 
@@ -775,6 +776,185 @@ private struct StealthOverlayContactCard: View {
         // before we re-enable the button.
         DispatchQueue.main.asyncAfter(deadline: .now() + 8.2) {
             isPreviewing = false
+        }
+    }
+}
+
+// MARK: - Activate Vakter section
+//
+// License-key intake. Lives at the bottom of the General tab so it sits
+// near "Launch at login" — both are boring-but-foundational config the
+// user touches once. When the user is on the free tier the card shows
+// a TextField + Activate button; when already paid it collapses to a
+// single "Vakter Essential active" pill so the user has an at-a-glance
+// confirmation without an editable field tempting them to "fix" a
+// working install.
+//
+// Validation is delegated to `LicenseManager.activate(key:)` — UI here
+// just maps the three ActivationResult cases to user-facing feedback.
+// The key NEVER leaves this process, NEVER appears in NSLog, and is
+// NEVER copied to the clipboard. The field even uses `.textSelection
+// (.disabled)` for the success state so a casual screen-share doesn't
+// leak the key.
+//
+// Visual: matches the rest of GeneralTab — VakterCard + standard
+// spacing tokens.
+
+private struct ActivateVakterSection: View {
+
+    /// User input. Bound to a `SecureField`-like TextField (we don't
+    /// use SecureField because keys are intentionally human-readable
+    /// — it would create a worse paste-from-email experience). We
+    /// clear this after a successful activation so the key isn't
+    /// sitting in memory longer than necessary, and so subsequent
+    /// views of Settings don't display the secret.
+    @State private var inputKey: String = ""
+
+    /// The most-recent activation outcome. Drives the inline result
+    /// row beneath the field. `nil` means "the user hasn't tried to
+    /// activate anything yet this session" — distinct from a result
+    /// of `.rejectedMalformed` for an empty field.
+    @State private var lastResult: LicenseManager.ActivationResult? = nil
+
+    /// Cached on appear so the card renders the right shape from
+    /// frame zero. Refreshed after a successful activate.
+    @State private var currentTier: LicenseManager.Tier = .free
+
+    var body: some View {
+        VakterCard(
+            title: "Activate Vakter",
+            subtitle: currentTier == .free
+                ? "Paste your license key here after purchasing on vakter.app/upgrade. Keys arrive by email within a few minutes of payment."
+                : "Vakter is unlocked on this Mac. The license stays in your Keychain \u{2014} it never syncs to iCloud and never leaves this device."
+        ) {
+            // Two layouts: paid → confirmation pill only; free → field + button.
+            if currentTier == .free {
+                freeLayout
+            } else {
+                paidLayout
+            }
+        }
+        .onAppear {
+            currentTier = LicenseManager.currentTier()
+        }
+    }
+
+    // MARK: - Free-tier (entry) layout
+
+    private var freeLayout: some View {
+        VStack(alignment: .leading, spacing: VakterDesign.spacingM) {
+
+            // Field row. `TextField` (not `SecureField`) because license
+            // keys are designed to be readable — masking them turns a
+            // simple paste into a frustrating "did I get all 19
+            // characters" game. The field auto-trims + uppercases via
+            // LicenseManager.normalise() inside activate().
+            HStack(spacing: VakterDesign.spacingS) {
+                TextField("VKT-XXXX-XXXX-XXXX-XXXX", text: $inputKey)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13, design: .monospaced))
+                    .accessibilityLabel("License key")
+                    .onSubmit { tryActivate() }
+
+                Button("Activate") { tryActivate() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help("Validates the key locally and stores it in your Keychain. No network call is made.")
+            }
+
+            // Result row — only rendered after the first activate attempt
+            // this session. We don't want a blank checkmark/cross on
+            // first paint of the card.
+            if let result = lastResult {
+                resultRow(result)
+            }
+        }
+    }
+
+    /// Renders the success / failure inline message under the field.
+    /// Tone follows the rest of the app's status-pill vocabulary
+    /// (`.healthy` green, `.attention` red, `.neutral` grey).
+    @ViewBuilder
+    private func resultRow(_ result: LicenseManager.ActivationResult) -> some View {
+        switch result {
+        case .activated(let tier):
+            HStack(spacing: VakterDesign.spacingXS) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(VakterDesign.healthy)
+                Text(activatedMessage(for: tier))
+                    .font(.system(size: 12))
+                    .foregroundStyle(VakterDesign.healthy)
+            }
+        case .rejectedUnrecognised, .rejectedMalformed:
+            HStack(spacing: VakterDesign.spacingXS) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(VakterDesign.alarm)
+                Text("License key not recognised.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(VakterDesign.alarm)
+            }
+        }
+    }
+
+    /// User-facing copy for a successful activation. The Business tier
+    /// gets a slightly different sentence because it implies a fleet
+    /// install — useful confirmation for an IT admin walking through
+    /// 10 Macs.
+    private func activatedMessage(for tier: LicenseManager.Tier) -> String {
+        switch tier {
+        case .free:
+            // Dev key VAKTER-DEV-FREE explicitly hits this branch. The
+            // confirmation is intentionally subtle so we don't celebrate
+            // a no-op.
+            return "Free tier confirmed."
+        case .essential:
+            return "Vakter Essential is now active."
+        case .business:
+            return "Vakter Business is now active on this Mac."
+        }
+    }
+
+    // MARK: - Paid (post-activate) layout
+
+    private var paidLayout: some View {
+        HStack(spacing: VakterDesign.spacingS) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(VakterDesign.healthy)
+                .font(.system(size: 16))
+            Text(paidLabel)
+                .font(.system(size: 13, weight: .medium))
+            Spacer()
+            VakterStatusPill("active", tone: .healthy, icon: "checkmark.circle.fill")
+        }
+    }
+
+    private var paidLabel: String {
+        switch currentTier {
+        case .essential: return "Vakter Essential"
+        case .business:  return "Vakter Business (multi-seat)"
+        case .free:      return "Vakter Free"  // unreachable in paid layout
+        }
+    }
+
+    // MARK: - Activate action
+
+    /// Validates + stores the key via `LicenseManager.activate(key:)`.
+    /// On success: refresh `currentTier` (which flips the card to the
+    /// paid layout), and CLEAR the input field so the secret doesn't
+    /// linger in `@State`. On rejection: leave the field intact so the
+    /// user can correct a typo without re-typing.
+    private func tryActivate() {
+        let key = inputKey
+        let result = LicenseManager.activate(key: key)
+        lastResult = result
+        switch result {
+        case .activated:
+            inputKey = ""
+            currentTier = LicenseManager.currentTier()
+        case .rejectedUnrecognised, .rejectedMalformed:
+            // Intentionally keep the input value so the user can edit;
+            // the result row already explains the rejection.
+            break
         }
     }
 }
