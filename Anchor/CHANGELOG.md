@@ -8,8 +8,18 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### License grandfather migration — v1.4.x upgraders stay free (#78, PR #88)
+
+`Anchor/Sources/VakterShared/LicenseManager.swift` (+257), `Anchor/Sources/VakterApp/VakterApp.swift` (+15), `Anchor/Tests/VakterSharedTests/LicenseManagerTests.swift` (+164). Net diff: 3 files, +435 / -1.
+
+- New `Origin` enum (`.fresh` / `.upgraded`) tracks net-new v1.5 installs vs grandfathered v1.4.x upgraders.
+- `migrateFromV144IfNeeded()` is idempotent: writes `Origin.upgraded` only when v1.4.x marker present + Keychain empty. Never downgrades existing paid Essential keys.
+- New `isAIFeatureUnlocked()` delegates to `isPaid()` so grandfathered users (Tier.free + Origin.upgraded) stay locked out of v1.5 AI features. Anti-theft + Defenses checklist stay free forever — pricing contract preserved.
+- `isPaid()` semantics unchanged. 5 new tests bring LicenseManagerTests to 28 (was 23). Full suite 164/164 passes.
+- Banned words: 0.
 
 ### AI features page — on-device LLM brand contract (#76, PR #87)
 
