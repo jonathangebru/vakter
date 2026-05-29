@@ -57,15 +57,77 @@ public enum LicenseManager {
         case business
     }
 
+    // MARK: - Origin
+    //
+    // Tracks *how* the user arrived at their current license — independent
+    // of *what* they're entitled to (which is `Tier`). Specifically: did
+    // they install v1.5 fresh, or did they upgrade from v1.4.x?
+    //
+    // Why a separate enum (instead of e.g. a `.freeGrandfathered` Tier
+    // case):
+    //  1. Existing `isPaid()` + every Tier switch in the codebase stays
+    //     correct by construction. Adding a fourth Tier case would force
+    //     every switch (MenuBarController, future AI feature gates, etc.)
+    //     to grow a new arm, and the smallest miss could silently downgrade
+    //     a grandfathered user OR silently unlock paid features for them.
+    //  2. Cleanly separates "what you have access to" (Tier — feature gates
+    //     read this) from "where you came from" (Origin — analytics +
+    //     messaging read this). Single-responsibility per type.
+    //  3. The brand contract — "anti-theft stays free forever" — means a
+    //     v1.4.4 upgrader is conceptually a free user. Only the provenance
+    //     differs, so origin is metadata, not entitlement.
+    //
+    // Stored in Keychain under the same service but a different account
+    // so it lives alongside the license without leaking into UserDefaults
+    // (consistent with the rest of the license surface).
+    public enum Origin: String, Codable, Sendable, Equatable {
+        /// Net-new v1.5 install. The default for anyone who installed
+        /// Vakter after the v1.5 release.
+        case fresh
+        /// Upgraded from v1.4.x. Detected by the presence of v1.4.x-era
+        /// UserDefaults markers at first v1.5 launch. v1.4.4 owners are
+        /// grandfathered into the Free tier per the pricing contract;
+        /// this flag exists so the menubar / settings can render upgrade
+        /// affordances that acknowledge "thanks for being a v1.4 user"
+        /// rather than treating them as a brand-new install.
+        case upgraded
+    }
+
     // MARK: - Keychain item identity
     //
-    // Both kept private — only `LicenseManager` should know the exact
+    // All kept private — only `LicenseManager` should know the exact
     // Keychain coordinates. The service name is documented in the
     // ticket so support staff can recognise it in a user's Keychain
     // Access dump.
 
     private static let keychainService = "app.vakter.mac.license"
     private static let keychainAccount = "default"
+    /// Distinct account on the same service for the per-install origin
+    /// value (`Origin` enum). Kept on the license service so a `security
+    /// dump-keychain` audit pulls both rows together, and so deactivate /
+    /// "Sign out of this Mac" wipes both with one query if we ever add
+    /// that affordance.
+    private static let keychainOriginAccount = "origin"
+
+    /// UserDefaults flag that the v1.4.4 → v1.5 grandfather migration
+    /// has run on this account. Stored in UserDefaults (NOT Keychain)
+    /// because it is not a secret — it is operational state — and we
+    /// need a fast, side-effect-free way for `migrateFromV144IfNeeded`
+    /// to early-exit on every launch after the first. Idempotency
+    /// guarantee depends on this marker.
+    private static let migrationDoneKey = "vakter.license.migration.v144.done"
+
+    /// The UserDefaults key Vakter v1.4.x wrote when the user finished
+    /// the post-rebrand onboarding flow (see `OnboardingState` in
+    /// `Onboarding.swift` v1.4.4). Universally present on any Mac that
+    /// ran v1.4.4 past first-launch onboarding, and NOT something the
+    /// migration itself writes — so its presence at migration time is
+    /// a strong signal "this user existed before v1.5". Net-new v1.5
+    /// installs won't have it set when the migration check runs,
+    /// because the migration runs in `applicationDidFinishLaunching`
+    /// BEFORE the onboarding sheet is presented (which is the only
+    /// place this key is written).
+    private static let v144OnboardingMarkerKey = "vakter.onboarding.completed"
 
     // MARK: - Dev test keys
     //
@@ -141,6 +203,48 @@ public enum LicenseManager {
         }
     }
 
+    /// Whether AI / paid-tier features (Mail Watch, Messages Watch, Web
+    /// Watch, LLM chat panel) should be unlocked for the current user.
+    ///
+    /// This is the **single source of truth** every AI-feature surface
+    /// MUST call. It deliberately delegates to `isPaid()` so a
+    /// grandfathered v1.4.4 user — who has `Origin.upgraded` but
+    /// `Tier.free` — does NOT get paid features for free. The pricing
+    /// contract is "anti-theft stays free forever" (including for
+    /// upgraders) but AI features are gated by purchase.
+    ///
+    /// Why a dedicated method instead of just calling `isPaid()` at
+    /// every call site:
+    ///   1. Intent at the call site reads as "is THIS feature unlocked"
+    ///      rather than "is the user paid" — easier to grep, easier to
+    ///      audit.
+    ///   2. If the gating model ever changes (e.g. a v1.6 trial period
+    ///      that briefly unlocks AI for free users), we change one
+    ///      method body rather than every call site.
+    ///   3. Tests can verify the AI gate semantics independently of the
+    ///      generic isPaid() check.
+    public static func isAIFeatureUnlocked() -> Bool {
+        return isPaid()
+    }
+
+    /// The origin of this install — net-new v1.5 (`.fresh`) vs an
+    /// upgrade from v1.4.x (`.upgraded`). Defaults to `.fresh` if no
+    /// value is stored (which is the correct posture for any code path
+    /// that runs before `migrateFromV144IfNeeded()` has had a chance to
+    /// set it, or on a fresh install where the migration was a no-op
+    /// before we adopted the explicit "fresh" write below).
+    ///
+    /// Like `currentTier()`, this reads Keychain on every call rather
+    /// than caching, so a future "Reset all data" affordance immediately
+    /// reflects in callers without an app restart.
+    public static func currentOrigin() -> Origin {
+        guard let raw = readOrigin(),
+              let parsed = Origin(rawValue: raw) else {
+            return .fresh
+        }
+        return parsed
+    }
+
     /// Attempts to activate the given key. On success the key is
     /// persisted to Keychain and the resolved tier is returned. On
     /// failure no state is mutated.
@@ -187,9 +291,89 @@ public enum LicenseManager {
     /// Removes any stored license. The user reverts to `.free`. Public
     /// so a future "Deactivate" / "Sign out of this Mac" UI affordance
     /// can call it; not wired into any UI today.
+    ///
+    /// We deliberately do NOT clear the `Origin` row here — a v1.4.4
+    /// upgrader who later activates Essential and then deactivates is
+    /// still a v1.4.4 upgrader. Origin is install-provenance, not
+    /// session state.
     public static func deactivate() {
         deleteKey()
         NSLog("[LicenseManager] deactivated — tier reset to free")
+    }
+
+    /// One-shot migration: if this Mac was running Vakter v1.4.x and is
+    /// now booting v1.5 for the first time, grandfather the user into
+    /// the Free tier with `Origin.upgraded`. Net-new v1.5 installs are
+    /// left alone (their origin will be read as `.fresh`).
+    ///
+    /// MUST be called from `applicationDidFinishLaunching` BEFORE any
+    /// UI shows — the detection signal is the v1.4.x onboarding marker
+    /// in UserDefaults, and the v1.5 onboarding sheet writes to that
+    /// same key. If we ran the check after onboarding, a net-new user
+    /// would be misidentified as an upgrader on their second launch.
+    ///
+    /// Idempotency contract:
+    ///   - First call writes `migrationDoneKey = true` in UserDefaults
+    ///     regardless of whether the user was identified as an upgrader.
+    ///   - Subsequent calls see the flag and return immediately. No
+    ///     Keychain access, no UserDefaults writes, no log line on the
+    ///     hot path.
+    ///   - Calling this twice in a single launch is therefore a free
+    ///     no-op on the second call, as required by the unit-test
+    ///     contract.
+    ///
+    /// Detection rule (intentionally conservative — false negatives are
+    /// better than false positives, because a missed v1.4.4 user can
+    /// still pay €29 for AI features and a false grandfathered net-new
+    /// user shows no functional difference at v1.5, but DOES skew our
+    /// "how many upgraders did we have" analytics):
+    ///   - Keychain `app.vakter.mac.license` must be empty (any stored
+    ///     license — paid or otherwise — means the user has already
+    ///     interacted with v1.5's license surface; don't touch them).
+    ///   - UserDefaults `vakter.onboarding.completed` must be `true`
+    ///     (means v1.4.x ran onboarding to completion on this Mac).
+    ///
+    /// What we write when the rule matches:
+    ///   - `Origin.upgraded` to Keychain. We do NOT write a license
+    ///     key — there's no key to write; the user is on the free tier
+    ///     and `currentTier()` returns `.free` from "no key stored",
+    ///     which is exactly what we want for the grandfather case.
+    ///
+    /// What we write when the rule does NOT match (net-new install):
+    ///   - `Origin.fresh` to Keychain. Explicit so `currentOrigin()`
+    ///     returns a non-default value on a clean v1.5 install and
+    ///     analytics can distinguish "we wrote .fresh" from "the
+    ///     read defaulted because the row is missing".
+    public static func migrateFromV144IfNeeded() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: migrationDoneKey) else {
+            // Already ran. Hot-path no-op — no Keychain touch, no log.
+            return
+        }
+
+        // Mark done immediately. Even if the writes below partially
+        // fail (Keychain locked, etc.), we never want to re-run this
+        // detection: re-running risks misidentifying a now-onboarded
+        // v1.5 user as an upgrader.
+        defaults.set(true, forKey: migrationDoneKey)
+
+        let keychainEmpty = (readKey() == nil)
+        let v144MarkerPresent = defaults.bool(forKey: v144OnboardingMarkerKey)
+
+        if keychainEmpty && v144MarkerPresent {
+            writeOrigin(.upgraded)
+            NSLog("[LicenseManager] v1.4.x upgrader detected — origin=.upgraded, tier remains .free (grandfathered)")
+        } else {
+            // Either a net-new install OR an existing v1.5 user with a
+            // license already stored. In both cases the origin is
+            // .fresh (we never overwrite an existing licence's origin
+            // because this branch only runs when the migration-done
+            // flag was unset, which is itself a one-shot signal).
+            writeOrigin(.fresh)
+            NSLog("[LicenseManager] migration: net-new install, origin=.fresh (keychain empty=%@, v1.4 marker=%@)",
+                  keychainEmpty ? "yes" : "no",
+                  v144MarkerPresent ? "yes" : "no")
+        }
     }
 
     // MARK: - Validation
@@ -292,6 +476,54 @@ public enum LicenseManager {
         SecItemDelete(query as CFDictionary)
     }
 
+    // MARK: - Origin Keychain helpers (private)
+    //
+    // Same storage posture as the license key: per-device Keychain row,
+    // ThisDeviceOnly accessibility (so origin doesn't roam to a Mac
+    // that didn't run v1.4.4). The value is the `Origin.rawValue`
+    // string — small, stable, future-proof against adding new cases.
+
+    private static func readOrigin() -> String? {
+        let query: [String: Any] = [
+            kSecClass as String:        kSecClassGenericPassword,
+            kSecAttrService as String:  keychainService,
+            kSecAttrAccount as String:  keychainOriginAccount,
+            kSecMatchLimit as String:   kSecMatchLimitOne,
+            kSecReturnData as String:   true
+        ]
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status == errSecSuccess, let data = item as? Data else {
+            return nil
+        }
+        return String(data: data, encoding: .utf8)
+    }
+
+    @discardableResult
+    private static func writeOrigin(_ origin: Origin) -> Bool {
+        let data = origin.rawValue.data(using: .utf8) ?? Data()
+        deleteOrigin()
+        let query: [String: Any] = [
+            kSecClass as String:        kSecClassGenericPassword,
+            kSecAttrService as String:  keychainService,
+            kSecAttrAccount as String:  keychainOriginAccount,
+            kSecValueData as String:    data,
+            kSecAttrAccessible as String:
+                kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ]
+        let status = SecItemAdd(query as CFDictionary, nil)
+        return status == errSecSuccess
+    }
+
+    private static func deleteOrigin() {
+        let query: [String: Any] = [
+            kSecClass as String:        kSecClassGenericPassword,
+            kSecAttrService as String:  keychainService,
+            kSecAttrAccount as String:  keychainOriginAccount
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
     // MARK: - Test seam
     //
     // `resetForTests()` clears the Keychain entry. Exposed `internal`
@@ -299,5 +531,28 @@ public enum LicenseManager {
     // Tests use `@testable import VakterShared`.
     internal static func resetForTests() {
         deleteKey()
+        deleteOrigin()
+        // Also wipe the migration-done flag + the v1.4.x marker so each
+        // test starts from a "clean install" baseline. We touch BOTH so
+        // a test can independently set the v1.4.x marker to simulate an
+        // upgrader without first-launch tests leaking that signal into
+        // net-new-install tests.
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: migrationDoneKey)
+        defaults.removeObject(forKey: v144OnboardingMarkerKey)
+    }
+
+    /// Test seam: lets a test set the v1.4.x onboarding marker without
+    /// reaching into the (private) UserDefaults key constant from the
+    /// test file. Internal-only — production code never touches the
+    /// onboarding marker through `LicenseManager`; that's owned by
+    /// `OnboardingState` in the app target.
+    internal static func _testSetV144Marker(_ present: Bool) {
+        let defaults = UserDefaults.standard
+        if present {
+            defaults.set(true, forKey: v144OnboardingMarkerKey)
+        } else {
+            defaults.removeObject(forKey: v144OnboardingMarkerKey)
+        }
     }
 }
