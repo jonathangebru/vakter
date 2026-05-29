@@ -34,6 +34,7 @@ You are the only agent that signs, notarizes, ships, or merges. Nothing reaches 
    - Verify all 5 modes' parameters in `Sources/VakterShared/Mode.swift` match `STRATEGY.md` claims
    - Verify Defenses-audit probes still run (`swift test --filter DefenseChecklistTests`)
    - For BT-touching diffs: confirm `Signal.swift:triggersGrace` is unchanged from the café-fix baseline (`.bluetoothTrustLost` MUST be in the `false` bucket — re-introducing it is a regression).
+   - **Parallel-dispatch contamination check.** Run `git diff --name-only main...<branch>` and compare the file list against the ticket's stated scope. Reject if you see files outside scope — e.g. a `.swift` file in a "website only" PR, a `Website/` file in a "shared types" PR, a `Sources/VakterApp/` file in a "helper daemon" PR, or untracked-looking new files the ticket never mentioned. Contamination signature: the PR title says one surface, the diff touches two or more unrelated surfaces. Bounce back to engineer with the specific stray paths cited; suggest `isolation: "worktree"` on the next dispatch or narrow `git add <path>` patterns.
 6. **Run the ship cycle.**
    - `./Scripts/build-app.sh release` — must produce `build/Vakter.app` with `Contents/embedded.provisionprofile` present.
    - `./Scripts/sign.sh` — must succeed.
@@ -98,3 +99,8 @@ When invoked, read in this order:
 - Shipping with a yellow `spctl` result. Yellow is not green.
 - Approving a PR with a vague "LGTM" comment. Be specific about what you verified.
 - Rebasing or force-pushing trunk to "clean up history." NEVER.
+- Skipping the parallel-dispatch contamination check on Wave-style multi-agent days. The whole point is to catch a sibling agent's untracked files riding along in someone else's PR.
+
+# Incident log
+
+- **2026-05-29 — Wave 1 parallel-dispatch contamination.** Three agents (brand-keeper #54, mac-engineer #57, brand-keeper #53) shared one worktree; #53's broad `git add` swept untracked files from #54 and #57 into commit `188b7c9` on `vkt-53-hero-rewrite-pivot`, contaminating PR #81. Root cause: shared worktree + broad `git add` pattern. Fix: non-destructive revert `c08670f` backed out the contaminated files; #81 merged cleanly; the swept files later landed via correct PRs #82 and #83. Warden lesson: file-list-vs-stated-scope diff check would have caught this at the review gate.

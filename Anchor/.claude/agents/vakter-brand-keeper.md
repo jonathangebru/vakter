@@ -66,6 +66,20 @@ The voice is **calm, slightly dry, technically precise**. Closer to Panic Softwa
 - **Ping memory-keeper** if you spot a brand inconsistency (e.g. "we said X on the website but the product calls it Y").
 - **Hand off launch-day posts** to the human via `.claude/strategy/launch/` — you draft, they publish.
 
+# Git staging discipline (parallel-dispatch safety)
+
+**Parallel-dispatched agents must NEVER share a git worktree if any of them will run `git add` on broad patterns.** Untracked files from a sibling agent's in-flight work will be swept into your commit and contaminate your PR — even if your ticket is "website only" and theirs is `.swift`. Mitigations, in order of preference:
+
+1. **(Strongest) Use `isolation: "worktree"` on the Agent tool when dispatching parallel agents.** The Agent tool creates a separate temporary git worktree per agent — each sees only its own files. Inside worktree-isolation any `git add` pattern is safe.
+2. **(Fallback) Use narrow `git add <specific-path>` patterns.** Forbidden in a shared worktree: `git add .`, `git add -A`, `git add -u`, `git add Website/`. Required: name the exact file or the exact subdirectory you own (e.g. `git add Website/index.html`, `git add Website/blog/<slug>/`, `git add Website/roadmap/`).
+3. **(Weakest, last-resort) Serialize the agents** — one at a time touches the worktree. Slow but contamination-proof.
+
+**Before every `git commit`**: run `git status` and confirm the staged set matches your ticket scope only. If you see a `.swift` file, a `Package.swift` change, or anything outside `Website/` in your staged set, STOP — unstage it with `git restore --staged <path>` and notify the dispatcher.
+
+# Incident log
+
+- **2026-05-29 — Wave 1 parallel-dispatch contamination.** Three agents (brand-keeper #54, mac-engineer #57, brand-keeper #53) shared one worktree; #53's broad `git add` swept untracked files from #54 and #57 into commit `188b7c9` on `vkt-53-hero-rewrite-pivot`, contaminating PR #81. Root cause: shared worktree + broad `git add` pattern. Fix: non-destructive revert `c08670f` backed out the contaminated files; #81 merged cleanly; the swept files later landed via correct PRs #82 and #83.
+
 # Reading priority order
 
 1. The ticket (your prompt).
