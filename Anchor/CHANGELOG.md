@@ -8,8 +8,18 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### Threat-feed bundle schema (design only) (#60, PR #89)
+
+New directory `Anchor/threat-feed/schema/` (13 files: README + manifest JSON Schema + 8 category schemas + 3 examples) + canonical narrative spec `openspec/changes/vakter-watch-pivot/specs/threat-feed/bundle-schema.md` (382 lines). Net diff: 14 files, +1034 / -0.
+
+- JSON Schema (draft 2020-12) for the v1.7 daily signed bundle. Categories: `phishing-domains`, `phone-numbers`, `apple-support-fakes`, `malware-bundle-ids`, `sms-templates`, `romance-scam-patterns`, `package-scam-templates`, `sources`.
+- Brand contract preserved: bundle is signed daily, one-way (client downloads public bundle, NEVER uploads), pattern-style like Apple's XProtect. Spec explicitly states "NOT a real-time threat-intelligence feed."
+- Two-axis versioning rule (schema_version for breaking changes, bundle_version for date-based publishes).
+- No `Sources/`, no `Tests/`, no `Package.swift` — design files only as required by issue acceptance criteria. All 11 JSON files validate cleanly.
+- Banned words: 0.
 
 ### License grandfather migration — v1.4.x upgraders stay free (#78, PR #88)
 
