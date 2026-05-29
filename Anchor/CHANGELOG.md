@@ -8,8 +8,18 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### ExplainModule scaffold — single chokepoint for on-device LLM (#67, PR #90)
+
+New directory `Anchor/Sources/VakterShared/ExplainModule/` with 5 files (`ExplainModule.swift`, `ExplainRequest.swift`, `ExplainResponse.swift`, `ExplainAuditEntry.swift`, `ExplainError.swift`) + new tests in `Anchor/Tests/VakterSharedTests/ExplainModuleScaffoldTests.swift` (9 cases). Net diff: 6 files, +660 / -0.
+
+- Single chokepoint design: the only code path in the binary allowed to call Apple Foundation Models. Makes the brand contract ("Vakter never uses a cloud LLM") enforceable by code review — there is exactly one place to audit.
+- `ExplainResponse` is an enum with `.answer(...)` and `.unsure(reason:)` as first-class cases. `.unsure(reason:)` is NOT an error; it's a legitimate model outcome (`outOfScope`, `belowConfidence`, etc.).
+- All facade methods are stubs: `explain(...)` returns `.unsure(.outOfScope)`, `isModelAvailable()` returns `false`, `recentAuditEntries()` returns `[]`. No FoundationModels import yet — wiring lands in #69.
+- Full suite 173/173 passes. `swift build` clean.
+- Banned phrases (`OpenAI`, `Anthropic API`, `gpt-`, `claude-`): 0. "cloud LLM" appears only in disavowal contexts ("Vakter never uses a cloud LLM").
 
 ### Threat-feed bundle schema (design only) (#60, PR #89)
 
