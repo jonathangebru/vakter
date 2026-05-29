@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feed.vakter.app/schema/manifest.schema.json",
+  "title": "Vakter threat-feed manifest",
+  "description": "Table of contents for a Vakter daily threat-feed bundle. Canonical spec lives at openspec/changes/vakter-watch-pivot/specs/threat-feed/bundle-schema.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "bundle_version",
+    "published_at",
+    "feed_host",
+    "publisher_key_id",
+    "files",
+    "total_entry_count"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema axis. Current value: 1. Clients refuse bundles whose schema_version exceeds the highest version they know."
+    },
+    "bundle_version": {
+      "type": "string",
+      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(\\.\\d+)?$",
+      "description": "Date-based version, YYYY.MM.DD or YYYY.MM.DD.N for same-day re-publishes."
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 UTC timestamp when the bundle was signed. Must end in 'Z'."
+    },
+    "feed_host": {
+      "type": "string",
+      "const": "feed.vakter.app",
+      "description": "Publishing host. The client requires this exact value."
+    },
+    "publisher_key_id": {
+      "type": "string",
+      "pattern": "^vakter-feed-\\d{4}-q[1-4]$",
+      "description": "Identifier of the Ed25519 key that signed the tarball. Quarter-rotated."
+    },
+    "files": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/FileEntry" },
+      "description": "Exactly 8 entries — the 8 canonical category files."
+    },
+    "total_entry_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Sum of entry_count across files. Cross-checked at the client."
+    },
+    "previous_bundle_version": {
+      "type": "string",
+      "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}(\\.\\d+)?$",
+      "description": "Previous bundle's bundle_version. Absent for the first bundle ever published."
+    },
+    "previous_bundle_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Previous bundle's tarball sha256. Absent for the first bundle ever published."
+    }
+  },
+  "$defs": {
+    "FileEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sha256", "entry_count", "category"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*\\.(txt|json)$",
+          "description": "Filename inside the tarball. No path components."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Lowercase hex sha256 of the file's bytes."
+        },
+        "entry_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "For .txt files: non-comment, non-blank line count. For .json files: top-level array length."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "phishing-domains",
+            "phone-numbers",
+            "apple-support-fakes",
+            "malware-bundle-ids",
+            "sms-templates",
+            "romance-scam-patterns",
+            "package-scam-templates",
+            "sources"
+          ],
+          "description": "One of the 8 canonical category slugs. Unique across the files array."
+        }
+      }
+    }
+  }
+}

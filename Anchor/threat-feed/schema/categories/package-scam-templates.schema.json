@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feed.vakter.app/schema/categories/package-scam-templates.schema.json",
+  "title": "Vakter threat-feed — package-scam-templates.json",
+  "description": "Shipper-impersonation patterns spanning SMS, email, and web-push channels. Canonical spec: openspec/changes/vakter-watch-pivot/specs/threat-feed/bundle-schema.md",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "shipper", "channels", "pattern", "category", "source_id", "first_seen"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "shipper": {
+        "type": "string",
+        "enum": [
+          "usps",
+          "fedex",
+          "dhl",
+          "ups",
+          "royal-mail",
+          "la-poste",
+          "dpd",
+          "posti",
+          "australia-post",
+          "canada-post",
+          "correos",
+          "deutsche-post",
+          "evri",
+          "other"
+        ],
+        "description": "Closed vocabulary. Adding a shipper is a breaking change."
+      },
+      "channels": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "enum": ["sms", "email", "web-push"]
+        }
+      },
+      "pattern": {
+        "type": "string",
+        "minLength": 1,
+        "description": "ICU/POSIX-extended regex. Anchors and lookahead forbidden."
+      },
+      "category": {
+        "type": "string",
+        "const": "package-impersonation"
+      },
+      "source_id": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "first_seen": {
+        "type": "string",
+        "format": "date"
+      }
+    }
+  }
+}
