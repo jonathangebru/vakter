@@ -1,0 +1,12 @@
+# phishing-domains — Vakter threat feed example (2026.05.29)
+# Format: one lowercase domain per line. Optional trailing comment `# first-seen YYYY-MM-DD`.
+# Source attribution lives in sources.json — not inline.
+# Blank lines and lines starting with '#' are ignored by the parser.
+
+apple-id-verify.example       # first-seen 2026-05-12
+icloud-login.example          # first-seen 2026-05-14
+icloud-secure-update.example  # first-seen 2026-05-18
+appleid-reauth.example        # first-seen 2026-05-21
+support-applecare.example     # first-seen 2026-05-23
+
+# entry_count for this file = 5 (non-comment, non-blank lines).

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "bundle_version": "2026.05.29",
+  "published_at": "2026-05-29T06:00:00Z",
+  "feed_host": "feed.vakter.app",
+  "publisher_key_id": "vakter-feed-2026-q2",
+  "files": [
+    {
+      "name": "phishing-domains.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "entry_count": 12483,
+      "category": "phishing-domains"
+    },
+    {
+      "name": "phone-numbers.txt",
+      "sha256": "f1d2c43498a91c249afbf4d8996fb92427be41d4659b934da595991c7951c956",
+      "entry_count": 842,
+      "category": "phone-numbers"
+    },
+    {
+      "name": "apple-support-fakes.txt",
+      "sha256": "a2c3b54398b91c349a0c04d8996fc92427cf41e4669b935db695992d7a51d957",
+      "entry_count": 318,
+      "category": "apple-support-fakes"
+    },
+    {
+      "name": "malware-bundle-ids.txt",
+      "sha256": "b3d4c65498c92c459b1d14d8996fd92427d041e4679c935eb795993e7b51e958",
+      "entry_count": 1247,
+      "category": "malware-bundle-ids"
+    },
+    {
+      "name": "sms-templates.json",
+      "sha256": "c4e5d76598d93c569c2e24d8996fe92427e141e4689d936fb895994f7c51f959",
+      "entry_count": 184,
+      "category": "sms-templates"
+    },
+    {
+      "name": "romance-scam-patterns.json",
+      "sha256": "d5f6e87698e94c679d3f34d8996ff92427f241e4699e937fb95995978d520960",
+      "entry_count": 42,
+      "category": "romance-scam-patterns"
+    },
+    {
+      "name": "package-scam-templates.json",
+      "sha256": "e607f98798f95c789e4044d80001009242703421e470a938fba9959617e52196",
+      "entry_count": 67,
+      "category": "package-scam-templates"
+    },
+    {
+      "name": "sources.json",
+      "sha256": "f7180a98990a96c899f5154d81112019242714532e471b939fbb995718f52296",
+      "entry_count": 12,
+      "category": "sources"
+    }
+  ],
+  "total_entry_count": 15195,
+  "previous_bundle_version": "2026.05.28",
+  "previous_bundle_sha256": "0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b"
+}

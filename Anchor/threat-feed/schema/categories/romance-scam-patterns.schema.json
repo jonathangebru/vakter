@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://feed.vakter.app/schema/categories/romance-scam-patterns.schema.json",
+  "title": "Vakter threat-feed — romance-scam-patterns.json",
+  "description": "Narrative scoring rules for romance-scam conversations. Tags are a closed vocabulary scored by the client's local NLP layer (v1.7+). Canonical spec: openspec/changes/vakter-watch-pivot/specs/threat-feed/bundle-schema.md",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "narrative_tags", "minimum_signals", "category", "source_id", "first_seen"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "narrative_tags": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "enum": [
+            "overseas-worker",
+            "military-deployed",
+            "oil-rig-platform",
+            "delayed-meet",
+            "wire-request",
+            "crypto-investment",
+            "gift-card-request",
+            "medical-emergency",
+            "customs-fee",
+            "love-bomb-pace",
+            "isolation-pressure",
+            "platform-migration"
+          ],
+          "description": "Closed vocabulary. Adding a new tag is a breaking change (schema_version bump)."
+        }
+      },
+      "minimum_signals": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "How many tags must score above threshold for a match."
+      },
+      "category": {
+        "type": "string",
+        "const": "romance-scam"
+      },
+      "source_id": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "first_seen": {
+        "type": "string",
+        "format": "date"
+      }
+    }
+  }
+}
