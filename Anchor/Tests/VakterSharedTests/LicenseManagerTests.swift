@@ -229,4 +229,168 @@ final class LicenseManagerTests: XCTestCase {
         XCTAssertEqual(LicenseManager.normalise("\n\tabc\n"), "ABC")
         XCTAssertEqual(LicenseManager.normalise(""), "")
     }
+
+    // MARK: - v1.4.4 → v1.5 grandfather migration (Issue #78)
+    //
+    // The migration runs once per install at `applicationDidFinishLaunching`.
+    // It detects "this Mac ran v1.4.x" via the presence of the
+    // `vakter.onboarding.completed` UserDefaults marker (the only key
+    // v1.4.4 universally wrote past first-launch onboarding). When the
+    // detection fires AND the v1.5 Keychain license row is empty, the
+    // user is grandfathered into Free tier with `Origin.upgraded`. AI
+    // features still gate by `isAIFeatureUnlocked()`, which delegates
+    // to `isPaid()`, so a grandfathered user does NOT get paid features
+    // for free — the pricing contract is "anti-theft stays free
+    // forever" (which includes upgraders), not "all features stay
+    // free for upgraders".
+
+    /// Net-new v1.5 install: no Keychain row, no v1.4.x onboarding
+    /// marker. Migration must NOT grandfather — origin stays at .fresh,
+    /// tier stays at .free, isAIFeatureUnlocked() stays false.
+    func test_migrate_freshInstall_doesNotGrandfather() {
+        // Clean baseline asserted up-front so the test is self-explanatory
+        // even when read in isolation.
+        XCTAssertEqual(LicenseManager.currentTier(), .free)
+        XCTAssertEqual(LicenseManager.currentOrigin(), .fresh)
+
+        LicenseManager.migrateFromV144IfNeeded()
+
+        XCTAssertEqual(LicenseManager.currentOrigin(), .fresh,
+                       "net-new install must remain .fresh — NOT grandfathered")
+        XCTAssertEqual(LicenseManager.currentTier(), .free,
+                       "tier should remain .free on a fresh install")
+        XCTAssertFalse(LicenseManager.isAIFeatureUnlocked(),
+                       "AI features must remain locked on a fresh install")
+    }
+
+    /// v1.4.4 upgrader: Keychain license row is empty, but the v1.4.x
+    /// onboarding marker is present. Migration must grandfather into
+    /// Free tier with `Origin.upgraded` — anti-theft stays free, AI
+    /// features remain gated.
+    func test_migrate_v144MarkerPresent_keychainEmpty_grandfathers() {
+        // Simulate the v1.4.4 install posture: the marker that v1.4.4's
+        // OnboardingState writes on successful onboarding is present,
+        // and the v1.5 license Keychain row is empty.
+        LicenseManager._testSetV144Marker(true)
+        XCTAssertEqual(LicenseManager.currentTier(), .free,
+                       "precondition: no license stored")
+
+        LicenseManager.migrateFromV144IfNeeded()
+
+        XCTAssertEqual(LicenseManager.currentOrigin(), .upgraded,
+                       "v1.4.x marker + empty Keychain must produce Origin.upgraded")
+        XCTAssertEqual(LicenseManager.currentTier(), .free,
+                       "grandfathered user stays on the Free tier")
+        XCTAssertFalse(LicenseManager.isPaid(),
+                       "grandfathered user is NOT paid — Upgrade affordance must still show")
+        XCTAssertFalse(LicenseManager.isAIFeatureUnlocked(),
+                       "AI features must remain gated for grandfathered users — only anti-theft is free forever")
+    }
+
+    /// Calling `migrateFromV144IfNeeded()` twice must be a no-op the
+    /// second time. The first call grandfathers; the second must not
+    /// re-evaluate (because if it did, a v1.5 user who later completes
+    /// onboarding would be re-detected as an "upgrader" on every
+    /// subsequent launch).
+    func test_migrate_isIdempotent_secondCallIsNoOp() {
+        LicenseManager._testSetV144Marker(true)
+        LicenseManager.migrateFromV144IfNeeded()
+        XCTAssertEqual(LicenseManager.currentOrigin(), .upgraded,
+                       "first call should grandfather")
+
+        // Now simulate a sequence the second call must NOT react to:
+        // the user activates an Essential key. If the second migrate
+        // call wrongly re-ran detection it would (incorrectly) decide
+        // the user is now a fresh install and overwrite origin to
+        // .fresh — losing the upgrader provenance.
+        XCTAssertEqual(LicenseManager.activate(key: "VAKTER-DEV-ESSENTIAL"),
+                       .activated(.essential))
+
+        LicenseManager.migrateFromV144IfNeeded()
+
+        XCTAssertEqual(LicenseManager.currentOrigin(), .upgraded,
+                       "second call must not overwrite origin — origin is install-provenance, set once")
+        XCTAssertEqual(LicenseManager.currentTier(), .essential,
+                       "the activated Essential tier must survive the second migrate call")
+    }
+
+    /// Existing paid Essential license on disk + v1.4.x marker also
+    /// present (rare edge case: a user who paid for v1.5 on a Mac that
+    /// also previously ran v1.4.x). The migration MUST NOT downgrade
+    /// them — preserving paid state is the absolute priority.
+    func test_migrate_existingPaidEssential_isNotDowngraded() {
+        // Establish paid state BEFORE marking the v1.4.x signal — this
+        // mirrors the "user paid for v1.5, then we ship a build with
+        // the migration code" production sequence.
+        XCTAssertEqual(LicenseManager.activate(key: "VAKTER-DEV-ESSENTIAL"),
+                       .activated(.essential))
+        XCTAssertEqual(LicenseManager.currentTier(), .essential)
+
+        // Now stamp the v1.4.x marker to simulate "this Mac also ran
+        // v1.4.x at some point."
+        LicenseManager._testSetV144Marker(true)
+
+        LicenseManager.migrateFromV144IfNeeded()
+
+        XCTAssertEqual(LicenseManager.currentTier(), .essential,
+                       "paid Essential license must survive migration — never downgrade a paying user")
+        XCTAssertTrue(LicenseManager.isPaid(),
+                      "isPaid() must continue to report true for the paid user")
+        XCTAssertTrue(LicenseManager.isAIFeatureUnlocked(),
+                      "AI features must remain unlocked for the paid user")
+        // Migration sees the non-empty Keychain and routes through the
+        // "not a v1.4.x upgrader" branch — origin stays .fresh. This is
+        // intentional: a paid v1.5 user is conceptually a fresh install
+        // even if the Mac also happened to run v1.4.x in the past, because
+        // the grandfather flow is for "I never paid, am I locked out?" —
+        // a paid user is by definition not locked out.
+        XCTAssertEqual(LicenseManager.currentOrigin(), .fresh,
+                       "paid user with non-empty Keychain is treated as a fresh install for origin purposes")
+    }
+
+    /// The single source of truth for AI-feature gating. This is the
+    /// contract every AI surface MUST observe, so it gets its own test
+    /// independent of `isPaid()` to lock the relationship in.
+    ///
+    /// Specifically: `.free` AND grandfathered (`Origin.upgraded` with
+    /// `Tier.free`) both block AI; `.essential` and `.business` both
+    /// unlock AI.
+    func test_isAIFeatureUnlocked_freeAndGrandfatheredBothLocked() {
+        // 1. Net-new install on the Free tier — locked.
+        XCTAssertEqual(LicenseManager.currentTier(), .free)
+        XCTAssertFalse(LicenseManager.isAIFeatureUnlocked(),
+                       "fresh Free tier must lock AI")
+
+        // 2. Grandfathered v1.4.x upgrader on Free tier — STILL locked.
+        //    This is the load-bearing assertion for the pricing contract:
+        //    "anti-theft stays free forever" does NOT mean "AI stays
+        //    free for upgraders." Upgraders see the same Upgrade
+        //    affordance as fresh users.
+        LicenseManager._testSetV144Marker(true)
+        LicenseManager.migrateFromV144IfNeeded()
+        XCTAssertEqual(LicenseManager.currentOrigin(), .upgraded)
+        XCTAssertEqual(LicenseManager.currentTier(), .free)
+        XCTAssertFalse(LicenseManager.isAIFeatureUnlocked(),
+                       "grandfathered (Origin.upgraded + Tier.free) must lock AI")
+
+        // 3. Essential — unlocked.
+        XCTAssertEqual(LicenseManager.activate(key: "VAKTER-DEV-ESSENTIAL"),
+                       .activated(.essential))
+        XCTAssertTrue(LicenseManager.isAIFeatureUnlocked(),
+                      "Essential tier must unlock AI")
+
+        // 4. Business — unlocked.
+        XCTAssertEqual(LicenseManager.activate(key: "VAKTER-DEV-BUSINESS"),
+                       .activated(.business))
+        XCTAssertTrue(LicenseManager.isAIFeatureUnlocked(),
+                      "Business tier must unlock AI")
+
+        // 5. Defensive: dev-Free key resolves to Tier.free and AI is
+        //    locked (the dev key is just a deterministic way to set the
+        //    Free tier; it must not accidentally unlock AI).
+        XCTAssertEqual(LicenseManager.activate(key: "VAKTER-DEV-FREE"),
+                       .activated(.free))
+        XCTAssertFalse(LicenseManager.isAIFeatureUnlocked(),
+                       "VAKTER-DEV-FREE must NOT unlock AI features")
+    }
 }

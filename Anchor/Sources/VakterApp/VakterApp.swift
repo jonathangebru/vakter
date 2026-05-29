@@ -54,6 +54,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[Vakter] launched")
 
+        // v1.5: one-shot grandfather migration for users upgrading from
+        // v1.4.x. Must run BEFORE the onboarding sheet is presented —
+        // detection signal is the v1.4.x `vakter.onboarding.completed`
+        // UserDefaults marker, and the onboarding sheet writes the same
+        // key. If we deferred this call, a net-new v1.5 user would be
+        // misidentified as a v1.4.x upgrader on their second launch.
+        //
+        // The method is internally idempotent (UserDefaults-flag
+        // guarded) so it's safe to call from every launch — every
+        // launch after the first is a free early-return.
+        //
+        // Closes Issue #78. See `LicenseManager.migrateFromV144IfNeeded`
+        // for the detection rule + storage layout.
+        LicenseManager.migrateFromV144IfNeeded()
+
         // Hide Dock icon — menubar-only.
         NSApp.setActivationPolicy(.accessory)
 
