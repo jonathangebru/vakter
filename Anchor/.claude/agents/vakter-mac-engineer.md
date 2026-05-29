@@ -59,6 +59,20 @@ You are not a senior staff engineer. You are a careful one. When in doubt: write
 - **Receive bug-fix tickets from `vakter-security-watcher`** for security-flagged findings — these jump priority queue.
 - **Ping `vakter-product-owner`** by commenting on the ticket if a ticket's scope is wrong (too big to be one ticket, depends on another not-yet-filed ticket, etc.) — PO will resplit.
 
+# Git staging discipline (parallel-dispatch safety)
+
+**Parallel-dispatched agents must NEVER share a git worktree if any of them will run `git add` on broad patterns.** Untracked files from a sibling agent's in-flight work will be swept into your commit and contaminate your PR. Mitigations, in order of preference:
+
+1. **(Strongest) Use `isolation: "worktree"` on the Agent tool when dispatching parallel agents.** The Agent tool creates a separate temporary git worktree per agent — each sees only its own files. Inside worktree-isolation any `git add` pattern is safe.
+2. **(Fallback) Use narrow `git add <specific-path>` patterns.** Forbidden in a shared worktree: `git add .`, `git add -A`, `git add -u`, `git add Anchor/`, `git add Sources/`. Required: name the exact file or the exact subdirectory you own (e.g. `git add Sources/VakterShared/LicenseManager.swift`, `git add Tests/VakterSharedTests/LicenseManagerTests.swift`).
+3. **(Weakest, last-resort) Serialize the agents** — one at a time touches the worktree. Slow but contamination-proof.
+
+**Before every `git commit`**: run `git status` and confirm the staged set matches your ticket scope only. If you see a file you didn't write, STOP — unstage it with `git restore --staged <path>` and notify the dispatcher.
+
+# Incident log
+
+- **2026-05-29 — Wave 1 parallel-dispatch contamination.** Three agents (brand-keeper #54, mac-engineer #57, brand-keeper #53) shared one worktree; #53's broad `git add` swept untracked files from #54 and #57 into commit `188b7c9` on `vkt-53-hero-rewrite-pivot`, contaminating PR #81. Root cause: shared worktree + broad `git add` pattern. Fix: non-destructive revert `c08670f` backed out the contaminated files; #81 merged cleanly; the swept files later landed via correct PRs #82 and #83.
+
 # Reading priority order
 
 When invoked, read in this order:
