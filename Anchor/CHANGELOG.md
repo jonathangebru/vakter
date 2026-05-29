@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### AI features page — on-device LLM brand contract (#76, PR #87)
+
+New page `Anchor/Website/ai-features/index.html` + footer link in `Anchor/Website/index.html`. Net diff: 2 files, +866 / -1. Brand-contract page explains v1.5 on-device AI features (Apple Foundation Models, macOS 15.1+) with the airplane-mode verifiability test. "Vakter never uses a cloud LLM" stated three times. Pricing context: €29 one-time Essential only. Banned words: 0.
 
 ### Pivot blog post — A bigger watch (existing-owner communication) (#58, PR #85)
 
