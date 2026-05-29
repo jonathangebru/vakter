@@ -8,8 +8,22 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55)
-**Remaining before v1.5:** #56 (Stripe webhook — needs-human), #58 (blog post)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58)
+**Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### Pivot blog post — A bigger watch (existing-owner communication) (#58, PR #85)
+
+`Anchor/Website/blog/2026-05-vakter-watch-pivot/index.html` (new, 762 lines), `Anchor/Website/blog/index.html` (new, 444 lines), and `Anchor/Website/index.html` (footer Trust column +1 line). Net diff: 3 files, +1207 / -0.
+
+- Pivot blog post for existing v1.4.4 owners (~874 prose words, within 600-1200 target). Title: "A bigger watch — Vakter's next chapter".
+- Anti-theft-stays-free framing: stated in opening paragraph and Pricing section ("If you own Vakter today, your licence covers the Free tier permanently. Anti-theft, the Defenses checklist, the on-device LLM explainer — all yours, no action required, no expiry.").
+- Fear ladder: "physical theft sits near the bottom — somewhere around seventh place" anchors why the watch widens.
+- Brand-contract callout (amber): "Vakter never uses a cloud LLM" + airplane-mode verification test ("disconnect from the internet. Analysis features still work. That's the test. That's the contract.").
+- Pricing: €29 one-time Essential, "No subscription. No renewal. No trial that converts automatically." Lifetime-of-product framing compared to Bartender / CleanShot / Hazel.
+- Roadmap link present; v1.6 / v1.7 / v1.8 timing labeled honestly.
+- Blog index page (Notes) at `/blog/` listing the one post.
+- Footer Trust column on Website/index.html gains `<a href="./blog/">Notes</a>`.
+- Banned words: 0.
 
 ### Security page brand-contract callout + v1.5-dev changelog stub (#55, PR #84)
 
