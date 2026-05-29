@@ -8,8 +8,18 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57)
-**Remaining before v1.5:** #55 (security/changelog page), #56 (Stripe webhook — needs-human), #58 (blog post)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55)
+**Remaining before v1.5:** #56 (Stripe webhook — needs-human), #58 (blog post)
+
+### Security page brand-contract callout + v1.5-dev changelog stub (#55, PR #84)
+
+`Anchor/Website/security/index.html` and `Anchor/Website/changelog/index.html`. Net diff: 2 files, +104 / -0.
+
+- Security page: amber brand-contract callout block placed between page lead and §1 Process model — "Every analysis runs on your Mac. Vakter never uses a cloud model." Explicit airplane-mode verifiability claim. Existing §1, §5, §10 cloud references remain consistent with the contract — no edits needed there.
+- Changelog page: new `v1.5-dev` entry (status: in progress) prepended above v1.6. Sections: "What's new in this cycle" (on-device companion framing, €29 lifetime confirmation, roadmap page live), "Brand contract" callout, "Coming in v1.5" pending block (Foundation Models Defenses explainer, security chat panel, daily morning briefing), "Coming in v1.6" pending block (Mail Watch drag-an-email, ClickFix Paste Shield cross-reference).
+- All "coming" items labeled explicitly as pending. Zero false-shipping claims.
+- Footer Product column gains `/roadmap/` link on both pages.
+- Banned words: 0.
 
 ### Website hero now leads with the lid-close audio-override moat (#53, PR #81)
 
