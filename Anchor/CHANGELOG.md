@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68), #94 (ticket #70)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68), #94 (ticket #70), #96 (ticket #61)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### Threat-feed publisher — Ed25519 signing + GitHub Actions cron (#61, PR #96)
+
+New `.github/workflows/threat-feed-publish.yml` (daily 03:00 UTC cron + workflow_dispatch dry-run default) + `Anchor/threat-feed/publisher/` Swift package (Main/Manifest/Publisher/Signer/Sources/Tar, 11 tests) + `Anchor/threat-feed/keys/threat-feed-public.pem` (public half ONLY — `-----BEGIN PUBLIC KEY-----`) + `Anchor/threat-feed/sources/apple-support-fakes-manual.txt` (28-line seed) + `.gitignore` defensive entries (`threat-feed-private.pem`, `*-private.pem`, `*.key`). Net diff: 13 files, +2244 / -0. Publisher builds clean; 11/11 publisher tests pass. **Security gate: zero private-key material in diff** — all 13 `PRIVATE KEY` mentions are docs/code-parsing logic; zero `BEGIN PRIVATE KEY` real-key blocks (only doc-comment templates + parser branches + a deliberately-malformed test fixture).
 
 ### Confidence schema — 5-band Likert + backward-compat coercion (#70, PR #94)
 
