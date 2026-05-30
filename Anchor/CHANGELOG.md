@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### Public `/feed/` threat-feed docs page (#66, PR #92)
+
+New `Anchor/Website/feed/index.html` (~1196 words) + 1-line footer link from `Anchor/Website/index.html`. Brand contract enforced: "signed daily one-way" / Ed25519 / €29 lifetime, all 8 category slugs covered. Banned phrases (`real-time`/`subscription`/`/yr`/`founder's tier`/`in-app billing`): 0.
 
 ### ExplainModule scaffold — single chokepoint for on-device LLM (#67, PR #90)
 
