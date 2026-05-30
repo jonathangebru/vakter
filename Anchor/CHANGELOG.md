@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68), #94 (ticket #70), #96 (ticket #61)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68), #94 (ticket #70), #96 (ticket #61), #95 (ticket #62)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### Threat-feed client — one-way download + Ed25519 verify + atomic swap (#62, PR #95)
+
+New `Anchor/Sources/VakterShared/ThreatFeed/` (6 files: `ThreatFeedManifest.swift`, `ThreatFeedBundle.swift`, `ThreatFeedClient.swift`, `ThreatFeedVerifier.swift`, `ThreatFeedPublicKey.swift`, `ThreatFeedStorage.swift`) + `Anchor/Tests/VakterSharedTests/ThreatFeedClientTests.swift` (20 cases). Net diff: 7 files, +1548 / -0. **CRITICAL placeholder gate PASS:** `ThreatFeedPublicKey.publicKeyBase64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="` (44 chars; decodes to exactly 32 zero-bytes). Guard test `test_productionPublicKeyConstant_isPlaceholderUntilTicket61Lands` present. Production key will be replaced via the #61 publisher README runbook (the agent-generated ephemeral key in #96's worktree is NOT used). Atomic-swap design documented in `ThreatFeedClient`. `swift build` clean; 20/20 ThreatFeedClientTests pass. Package.swift untouched (CryptoKit is implicit on Apple platforms).
 
 ### Threat-feed publisher — Ed25519 signing + GitHub Actions cron (#61, PR #96)
 
