@@ -29,6 +29,18 @@ spikes/07-audio-mix/mix_test
 .env.local
 *.local
 
+# Threat-feed publisher — Ed25519 private keys MUST NEVER be committed.
+# The public key (threat-feed-public.pem) is committed; private keys live
+# in GitHub Actions secrets only. See Anchor/threat-feed/publisher/README.md.
+Anchor/threat-feed/keys/threat-feed-private.pem
+Anchor/threat-feed/keys/*-private.pem
+Anchor/threat-feed/keys/*.key
+
+# Publisher local build / dry-run output
+Anchor/threat-feed/publisher/.build/
+Anchor/threat-feed/publisher/out/
+Anchor/threat-feed/publisher/Package.resolved
+
 # Editor
 .idea/
 .vscode/
