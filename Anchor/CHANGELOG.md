@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### PII redaction pipeline + adversarial test suite (#68, PR #93)
+
+New `Anchor/Sources/VakterShared/ExplainModule/PIIRedactor.swift` + `RedactionPattern.swift` + `Anchor/Tests/VakterSharedTests/PIIRedactorTests.swift`. Additive `redactInput(_:)` facade method on `ExplainModule` (0 deletions, 20 additions at end of actor body). Net diff: 4 files, +1734 / -0. 14 pattern categories (email/phone/ssn/creditCard/iban/ipAddress/macAddress/gpsCoordinate/filePath/bundleIdentifier/url/apiToken/accountNumber/socialHandle); Luhn validation on creditCard candidates; per-call timer budget 50ms. Full suite 311/311 passes (133 new). Test fixtures use only synthetic PII (555-prefix phones, example.com emails, invalid-prefix SSNs, test-card PANs like 4111111111).
 
 ### FoundationModels bridge + macOS 14 fallback (#69, PR #91)
 
