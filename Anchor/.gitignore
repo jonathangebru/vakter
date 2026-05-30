@@ -10,6 +10,17 @@ DerivedData/
 Package.resolved
 .swiftpm/
 
+# xcodegen-generated artefacts. `iOS/project.yml` is the source of truth;
+# every dev regenerates these locally via `cd iOS && xcodegen generate`.
+# Committing them would invite drift between project.yml and the
+# materialised plists/projects. The watchOS Info.plist sits under
+# WatchOS/VakterWatch/ because xcodegen writes it next to the sources
+# (the project.yml `info.path` is relative to the xcodegen .yml location).
+iOS/VakterCompanion.xcodeproj/
+iOS/VakterCompanion/Info.plist
+iOS/VakterCompanion/VakterCompanion.entitlements
+WatchOS/VakterWatch/Info.plist
+
 # Notarisation artefacts
 *.zip
 
