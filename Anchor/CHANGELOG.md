@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### FoundationModels bridge + macOS 14 fallback (#69, PR #91)
+
+New `Anchor/Sources/VakterShared/ExplainModule/FoundationModelsBridge.swift` + `FoundationModelsAvailability.swift` + `Anchor/Tests/VakterSharedTests/FoundationModelsBridgeTests.swift`. Net diff: 3 files, +747 / -0. `#if canImport(FoundationModels)` + `@available(macOS 15.1, *)` guards everywhere FM is touched; macOS 14 path returns `.unsure(.modelUnavailable)`. `swift build` clean; full suite 193/193 passes (20 new tests). Banned phrases (`OpenAI`/`Anthropic API`/`gpt-`/`claude-`): 0. "cloud LLM" appears only in disavowal comments.
 
 ### Public `/feed/` threat-feed docs page (#66, PR #92)
 
