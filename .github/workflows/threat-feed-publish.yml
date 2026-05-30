@@ -1,0 +1,175 @@
+# Vakter — daily signed threat-feed publish job (ticket #61).
+#
+# Runs every day at 03:00 UTC, pulls upstream sources via the Swift
+# publisher CLI, signs the tarball with the Ed25519 key in GitHub Secrets,
+# uploads the bundle as a workflow artifact, and (when configured) deploys
+# to Cloudflare Pages.
+#
+# HUMAN ACTION REQUIRED before this workflow can do a real publish:
+#   1. Generate the Ed25519 key:
+#        openssl genpkey -algorithm Ed25519 -out priv.pem
+#   2. Set repo secret `THREAT_FEED_ED25519_PRIVATE` to the PEM contents.
+#   3. (Optional, for Cloudflare deploy) set repo secrets
+#      `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and repo variable
+#      `CLOUDFLARE_PAGES_PROJECT` (the Pages project name).
+# Until those secrets exist, scheduled runs upload an artifact and stop;
+# manual `workflow_dispatch` runs default to --dry-run so the pipeline
+# stays exercised in PR review without needing the key.
+#
+# See Anchor/threat-feed/publisher/README.md for full operator docs.
+
+name: threat-feed-publish
+
+on:
+  schedule:
+    # 03:00 UTC every day. Cloudflare Pages publishes within a minute of
+    # this finishing, so end-users see new bundles by 03:05 UTC.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Skip live network + use ephemeral signing key"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: build, sign, and deploy
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    env:
+      OUTPUT_DIR: ${{ github.workspace }}/out/v1
+      # Quarter rotation: vakter-feed-YYYY-qN. Workflow computes the
+      # current quarter at run time so we never publish a stale key id.
+      PUBLISHER_KEY_ID_PREFIX: "vakter-feed"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Swift toolchain
+        run: swift --version
+
+      - name: Resolve current publisher key id
+        id: keyid
+        run: |
+          YEAR=$(date -u +"%Y")
+          MONTH=$(date -u +"%m")
+          case "$MONTH" in
+            01|02|03) Q="q1" ;;
+            04|05|06) Q="q2" ;;
+            07|08|09) Q="q3" ;;
+            10|11|12) Q="q4" ;;
+          esac
+          KEY_ID="vakter-feed-${YEAR}-${Q}"
+          echo "key_id=$KEY_ID" >> "$GITHUB_OUTPUT"
+          echo "Using publisher_key_id=$KEY_ID"
+
+      - name: Build publisher
+        working-directory: Anchor/threat-feed/publisher
+        run: swift build -c release
+
+      - name: Run publisher tests
+        working-directory: Anchor/threat-feed/publisher
+        run: swift test --parallel
+
+      - name: Pick run mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ inputs.dry_run }}"
+          else
+            # Scheduled runs: dry-run unless the signing secret is set.
+            if [ -n "${{ secrets.THREAT_FEED_ED25519_PRIVATE }}" ]; then
+              MODE="false"
+            else
+              MODE="true"
+            fi
+          fi
+          echo "dry_run=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Run mode dry_run=$MODE"
+
+      - name: Publish bundle (dry-run)
+        if: steps.mode.outputs.dry_run == 'true'
+        working-directory: ${{ github.workspace }}
+        run: |
+          ./Anchor/threat-feed/publisher/.build/release/vakter-threat-feed-publisher \
+            --dry-run \
+            --out "$OUTPUT_DIR" \
+            --key-id "${{ steps.keyid.outputs.key_id }}" \
+            --apple-fakes-path "Anchor/threat-feed/sources/apple-support-fakes-manual.txt"
+
+      - name: Publish bundle (live)
+        if: steps.mode.outputs.dry_run == 'false'
+        working-directory: ${{ github.workspace }}
+        env:
+          THREAT_FEED_ED25519_PRIVATE: ${{ secrets.THREAT_FEED_ED25519_PRIVATE }}
+        run: |
+          ./Anchor/threat-feed/publisher/.build/release/vakter-threat-feed-publisher \
+            --out "$OUTPUT_DIR" \
+            --key-id "${{ steps.keyid.outputs.key_id }}" \
+            --apple-fakes-path "Anchor/threat-feed/sources/apple-support-fakes-manual.txt"
+
+      - name: Show bundle layout
+        run: |
+          echo "::group::out/v1 layout"
+          ls -la "$OUTPUT_DIR"
+          echo "::endgroup::"
+          echo "::group::bundle dir"
+          ls -la "$OUTPUT_DIR"/feed-*/ || true
+          echo "::endgroup::"
+          echo "::group::manifest.json"
+          cat "$OUTPUT_DIR"/feed-*/manifest.json | python3 -m json.tool || true
+          echo "::endgroup::"
+
+      - name: Verify signature against committed public key
+        if: steps.mode.outputs.dry_run == 'false'
+        run: |
+          set -e
+          TARBALL="$(find "$OUTPUT_DIR" -maxdepth 1 -name 'feed-*.tar.gz' | head -n 1)"
+          SIG="$(find "$OUTPUT_DIR" -maxdepth 1 -name 'feed-*.sig' | head -n 1)"
+          openssl pkeyutl \
+            -verify \
+            -pubin \
+            -inkey Anchor/threat-feed/keys/threat-feed-public.pem \
+            -rawin \
+            -in "$TARBALL" \
+            -sigfile "$SIG"
+
+      - name: Upload bundle as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: threat-feed-bundle
+          path: |
+            out/v1/feed-*.tar.gz
+            out/v1/feed-*.sig
+            out/v1/latest.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Deploy to Cloudflare Pages
+        if: |
+          steps.mode.outputs.dry_run == 'false' &&
+          env.CLOUDFLARE_API_TOKEN != '' &&
+          env.CLOUDFLARE_ACCOUNT_ID != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT_NAME: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: |
+          # Cloudflare Pages direct-upload via wrangler. The Pages project
+          # must already exist (human setup). `out/v1` is published flat
+          # under `https://feed.vakter.app/<file>`.
+          npm install -g wrangler
+          wrangler pages deploy "$OUTPUT_DIR" \
+            --project-name "$PROJECT_NAME" \
+            --branch main \
+            --commit-dirty=true
