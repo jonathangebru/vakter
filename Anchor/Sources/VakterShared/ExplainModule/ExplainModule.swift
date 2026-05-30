@@ -119,4 +119,25 @@ public actor ExplainModule {
         _ = limit
         return []
     }
+
+    /// Run the shared ``PIIRedactor`` over `input` and return the
+    /// redacted text plus a per-category summary.
+    ///
+    /// This is the defence-in-depth pass described in the type-level
+    /// docs: every Watch domain (Mail, Messages, Web, Mac) is
+    /// expected to run its own domain-aware redactor first, and then
+    /// this generic pass acts as the second belt before any prompt
+    /// reaches Apple Foundation Models.
+    ///
+    /// Exposed as a facade method (rather than asking callers to
+    /// construct ``PIIRedactor`` themselves) so the brand contract
+    /// "every model-bound string flows through ExplainModule" stays
+    /// enforceable by code review. The implementation is intentionally
+    /// thin — see ``PIIRedactor`` for the actual rule catalog.
+    ///
+    /// Added in #68; pre-existing facade methods are untouched so
+    /// #69 / #70 / #71 can land in parallel without conflicts.
+    public func redactInput(_ input: String) -> RedactionResult {
+        return PIIRedactor().redact(input)
+    }
 }
