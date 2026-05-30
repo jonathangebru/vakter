@@ -8,8 +8,12 @@ Technical changelog maintained by the release warden. User-facing changelog live
 
 These entries are merged to main as Wave 1 of the Watch Pivot (Epic #52). They are NOT a release. No version bump, no sign/notarize/ship cycle. They ride with v1.5 when that release is gated.
 
-**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68)
+**PRs merged this cycle:** #81 (ticket #53), #82 (ticket #54), #83 (ticket #57), #84 (ticket #55), #85 (ticket #58), #87 (ticket #76), #88 (ticket #78), #89 (ticket #60), #90 (ticket #67), #92 (ticket #66), #91 (ticket #69), #93 (ticket #68), #94 (ticket #70)
 **Remaining before v1.5:** #56 (Stripe webhook — needs-human)
+
+### Confidence schema — 5-band Likert + backward-compat coercion (#70, PR #94)
+
+MODIFIES `Anchor/Sources/VakterShared/ExplainModule/ExplainResponse.swift` (+5-band Likert + factory coercion) + new `Anchor/Tests/VakterSharedTests/ExplainConfidenceTests.swift` (21 cases). Net diff: 2 files, +620 / -7. Backward-compat verified: pre-existing `low`/`medium`/`high` JSON still decodes (`test_scaffoldEraJSON_*` cases pass). All 9 pre-existing ExplainModuleScaffoldTests still pass. ExplainModule.swift NOT touched. `swift build` clean.
 
 ### PII redaction pipeline + adversarial test suite (#68, PR #93)
 
