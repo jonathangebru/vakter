@@ -83,12 +83,14 @@ jobs:
 
       - name: Pick run mode
         id: mode
+        env:
+          THREAT_FEED_ED25519_PRIVATE: ${{ secrets.THREAT_FEED_ED25519_PRIVATE }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             MODE="${{ inputs.dry_run }}"
           else
             # Scheduled runs: dry-run unless the signing secret is set.
-            if [ -n "${{ secrets.THREAT_FEED_ED25519_PRIVATE }}" ]; then
+            if [ -n "$THREAT_FEED_ED25519_PRIVATE" ]; then
               MODE="false"
             else
               MODE="true"
