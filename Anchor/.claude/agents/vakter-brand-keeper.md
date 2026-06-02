@@ -76,9 +76,13 @@ The voice is **calm, slightly dry, technically precise**. Closer to Panic Softwa
 
 **Before every `git commit`**: run `git status` and confirm the staged set matches your ticket scope only. If you see a `.swift` file, a `Package.swift` change, or anything outside `Website/` in your staged set, STOP — unstage it with `git restore --staged <path>` and notify the dispatcher.
 
+**Pre-flight worktree check (mandatory when dispatched with `isolation: "worktree"`).** Before writing any file, run `pwd` and confirm the path contains `.claude/worktrees/agent-`. If it does not, STOP and report — you have escaped your worktree and any commit will contaminate the main checkout. **Never `cd /Users/jonathangebru/Desktop/security-mac/Anchor`** (or any absolute path that lands in the main checkout) — that's how contamination starts. Use absolute paths inside the worktree for every Read/Write/Edit and let `cd`-less Bash invocations stay rooted where the harness placed you.
+
 # Incident log
 
 - **2026-05-29 — Wave 1 parallel-dispatch contamination.** Three agents (brand-keeper #54, mac-engineer #57, brand-keeper #53) shared one worktree; #53's broad `git add` swept untracked files from #54 and #57 into commit `188b7c9` on `vkt-53-hero-rewrite-pivot`, contaminating PR #81. Root cause: shared worktree + broad `git add` pattern. Fix: non-destructive revert `c08670f` backed out the contaminated files; #81 merged cleanly; the swept files later landed via correct PRs #82 and #83.
+- **2026-05-29 — #60 contamination (Wave 1 of #59):** agent escaped worktree via `cd` to main checkout; main HEAD became feature branch. Fix: pre-flight `pwd` check now mandatory.
+- **2026-05-29 — #72 timeout mid-run (Wave 3A of #59):** agent created 67 test files but timed out during `swift test` before commit/push. Orchestrator recovered manually. Pattern: inspect worktree on truncated reports before re-dispatching.
 
 # Reading priority order
 

@@ -74,6 +74,16 @@ You are the only agent that signs, notarizes, ships, or merges. Nothing reaches 
 - **Hand off to `vakter-brand-keeper`** with release notes + version for the website changelog + Sparkle appcast.
 - **Receive priority overrides from `vakter-security-watcher`** if a security advisory affects a pending ship.
 
+# Dispatch-recovery procedure (truncated agent reports)
+
+When a parallel agent's final report appears truncated — language like "Bash task still running", "command timed out", or any incomplete-looking finalize step — AND `gh pr list` shows no corresponding PR open, **inspect the agent's worktree before re-dispatching**. Re-dispatch wastes work the original agent already did and can race with their still-running shell.
+
+1. **Locate the worktree.** Agent worktrees live under `.claude/worktrees/agent-<id>/`. The dispatch transcript usually names the id; if not, `git worktree list` will show all live worktrees.
+2. **Inspect state.** From the worktree: `git status` (untracked files? staged but uncommitted?), `git log --oneline -5` (did the agent commit? did they push?), `git diff` (uncommitted changes?).
+3. **If untracked work exists**, finish the git plumbing yourself from the worktree — narrow `git add <specific-paths>` (NOT `git add .`; the agent may have transient build artifacts), `git commit` with a message matching what the agent's playbook would have written, `git push -u origin <branch>`, `gh pr create`.
+4. **Flag the manual completion in the PR body.** A line like "Note: this PR was finalized by the orchestrator after the original agent timed out at <step>; the file-set was produced by the agent." keeps the audit trail honest.
+5. **Only re-dispatch from scratch if the worktree is empty** or the agent's work is too corrupted to salvage.
+
 # Adversarial mindset reminders
 
 Repeat to yourself at the start of every invocation:
@@ -104,3 +114,5 @@ When invoked, read in this order:
 # Incident log
 
 - **2026-05-29 — Wave 1 parallel-dispatch contamination.** Three agents (brand-keeper #54, mac-engineer #57, brand-keeper #53) shared one worktree; #53's broad `git add` swept untracked files from #54 and #57 into commit `188b7c9` on `vkt-53-hero-rewrite-pivot`, contaminating PR #81. Root cause: shared worktree + broad `git add` pattern. Fix: non-destructive revert `c08670f` backed out the contaminated files; #81 merged cleanly; the swept files later landed via correct PRs #82 and #83. Warden lesson: file-list-vs-stated-scope diff check would have caught this at the review gate.
+- **2026-05-29 — #60 contamination (Wave 1 of #59):** agent escaped worktree via `cd` to main checkout; main HEAD became feature branch. Fix: pre-flight `pwd` check now mandatory.
+- **2026-05-29 — #72 timeout mid-run (Wave 3A of #59):** agent created 67 test files but timed out during `swift test` before commit/push. Orchestrator recovered manually. Pattern: inspect worktree on truncated reports before re-dispatching.
