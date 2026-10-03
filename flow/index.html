@@ -1,0 +1,1262 @@
+<title>FLOW</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* ------------------------------------------------------------------
+   FLOW — design plan
+   Subject: Franky Rizardo's weekly radio show and touring club night.
+   Layout: a night-out ledger. Giant condensed titles hang left, dated
+   rows run right on hairlines; the posters are the only full colour.
+   Colour: warm near-black ("house lights down"), bone-white type, and one
+   accent taken from the red neon tube on the FLOW show cover. The accent
+   means "signal" and appears only on the countdown's seconds and the
+   waveform's light chase.
+   Light theme: a flyer printed in black ink on cool off-white stock; the
+   accent deepens to a fluoro-ink red so it still reads on paper.
+   Type: Big Shoulders Display (industrial condensed, for titles and
+   numbers) / Hanken Grotesk (body) / DM Mono (dates, codes, labels).
+   ------------------------------------------------------------------ */
+:root {
+  --bg: #0d0b0c;
+  --surface: #171314;
+  --fg: #f2eeeb;
+  --muted: #9b9293;
+  --line: #2c2627;
+  --accent: #ff2d43;
+
+  --font-display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
+  --font-body: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --logo-filter: none;
+  --grain-filter: invert(1);
+  --grain-opacity: .055;
+  --shadow: 0 40px 80px -40px rgb(0 0 0 / .9);
+  --gutter: clamp(16px, 4.5vw, 56px);
+  --i-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='square'%3E%3Cpath d='M4 12 11.5 4.5M5.5 4h6.5v6.5'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #edece8;
+    --surface: #e2e0db;
+    --fg: #121011;
+    --muted: #5a5354;
+    --line: #cbc7c1;
+    --accent: #cc0f27;
+    --logo-filter: invert(1);
+    --grain-filter: none;
+    --grain-opacity: .07;
+    --shadow: 0 40px 70px -45px rgb(40 20 20 / .55);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #edece8;
+  --surface: #e2e0db;
+  --fg: #121011;
+  --muted: #5a5354;
+  --line: #cbc7c1;
+  --accent: #cc0f27;
+  --logo-filter: invert(1);
+  --grain-filter: none;
+  --grain-opacity: .07;
+  --shadow: 0 40px 70px -45px rgb(40 20 20 / .55);
+  color-scheme: light;
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+h1, h2, h3, h4 { text-wrap: balance; margin: 0; }
+p { margin: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+button, input { font: inherit; color: inherit; }
+::selection { background: var(--fg); color: var(--bg); }
+:where(a, button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip {
+  position: absolute; left: var(--gutter); top: -100px; z-index: 200;
+  background: var(--fg); color: var(--bg); padding: .6rem 1rem;
+  font: 500 .8rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .14em;
+  text-decoration: none;
+}
+.skip:focus { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+
+.grain {
+  position: fixed; inset: 0; z-index: 150; pointer-events: none;
+  background: url("img/grain.gif") repeat;
+  background-size: 480px auto;
+  opacity: var(--grain-opacity);
+  filter: var(--grain-filter);
+}
+@media (prefers-reduced-motion: reduce) { .grain { display: none; } }
+
+.page {
+  padding-inline: var(--gutter);
+  overflow-x: clip;
+}
+.wrap { max-width: 1360px; margin-inline: auto; }
+
+/* ---------- shared type ---------- */
+.eyebrow, .lbl {
+  font: 500 .75rem/1.4 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  color: var(--muted);
+}
+.eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: .6em; }
+.sec-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: clamp(4rem, 14vw, 11.5rem);
+  line-height: .8;
+  letter-spacing: -.012em;
+  margin-top: .9rem;
+}
+.sec-title--md { font-size: clamp(3.25rem, 9vw, 6.5rem); }
+.ar {
+  display: inline-block; width: .78em; height: .78em; flex: none;
+  background: currentColor;
+  -webkit-mask: var(--i-arrow) center / contain no-repeat;
+  mask: var(--i-arrow) center / contain no-repeat;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.ar--down { transform: rotate(135deg); }
+a:hover > .ar:not(.ar--down), a:focus-visible > .ar:not(.ar--down) { transform: translate(2px, -2px); }
+a:hover > .ar--down { transform: rotate(135deg) translate(2px, -2px); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6em;
+  min-height: 46px; padding: 0 1.25em;
+  font: 500 .78rem/1 var(--font-mono);
+  text-transform: uppercase; letter-spacing: .14em;
+  text-decoration: none; white-space: nowrap;
+  border: 1px solid var(--fg); border-radius: 2px;
+  background: transparent; color: var(--fg);
+  cursor: pointer;
+  transition: background-color .2s, color .2s, border-color .2s;
+}
+.btn:hover { background: var(--fg); color: var(--bg); }
+.btn--solid { background: var(--fg); color: var(--bg); }
+.btn--solid:hover { background: transparent; color: var(--fg); }
+.btn--quiet { border-color: var(--line); }
+.btn--quiet:hover { border-color: var(--fg); }
+.btn--sm { min-height: 38px; padding: 0 .95em; font-size: .7rem; }
+.btn--lg { min-height: 60px; padding: 0 1.6em; font-size: .9rem; }
+
+/* ---------- header ---------- */
+.site-header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 100;
+  margin-inline: calc(var(--gutter) * -1);
+  padding-inline: var(--gutter);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+.bar { display: flex; align-items: center; gap: clamp(.75rem, 2vw, 2rem); min-height: 68px; max-width: 1360px; margin-inline: auto; }
+.logo { display: block; flex: none; padding-block: 6px; }
+.logo img { height: 28px; width: auto; filter: var(--logo-filter); }
+.nav { display: none; margin-left: auto; }
+.nav ul { display: flex; gap: clamp(1rem, 2.4vw, 2.25rem); }
+.nav a, .mnav a {
+  text-decoration: none;
+  font: 600 .8rem/1 var(--font-body);
+  text-transform: uppercase; letter-spacing: .14em;
+  display: inline-flex; align-items: center; gap: .4em;
+}
+.nav a { padding-block: .5rem; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .3s cubic-bezier(.2,.7,.2,1); }
+.nav a:hover { background-size: 100% 1px; }
+.nav .ar { width: .62em; height: .62em; opacity: .6; }
+.bar-actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+.icon-btn {
+  width: 42px; height: 42px; display: inline-grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 2px; background: transparent; cursor: pointer;
+  transition: border-color .2s;
+}
+.icon-btn:hover { border-color: var(--fg); }
+.icon-btn svg { width: 18px; height: 18px; }
+.mnav { border-top: 1px solid var(--line); padding-block: 1rem 1.5rem; max-width: 1360px; margin-inline: auto; }
+.mnav ul { display: grid; }
+.mnav a { font: 800 2.4rem/1 var(--font-display); letter-spacing: 0; padding-block: .55rem; }
+.mnav .ar { width: .5em; height: .5em; }
+@media (min-width: 900px) {
+  .nav { display: block; }
+  .nav + .bar-actions { margin-left: 0; }
+  .menu-btn, .mnav { display: none; }
+}
+
+/* ---------- hero ---------- */
+.hero { padding-block: clamp(2.5rem, 6vw, 5.5rem) clamp(3.5rem, 7vw, 6rem); }
+.hero-grid { display: grid; gap: clamp(2.5rem, 5vw, 5rem); grid-template-columns: minmax(0, 1fr); }
+.hero-copy { min-width: 0; display: grid; gap: clamp(1.5rem, 3vw, 2.25rem); align-content: start; }
+.live { width: .55rem; height: .55rem; border-radius: 50%; background: var(--fg); position: relative; flex: none; }
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: clamp(3rem, 10.5vw, 8.75rem);
+  line-height: .84;
+  letter-spacing: -.01em;
+}
+.hero-title .ln { display: block; }
+.hero-title .ln + .ln { color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 1.5rem; margin: 0; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.facts > div { min-width: 0; }
+.facts dt { font: 500 .7rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: .16em; color: var(--muted); }
+.facts dd { margin: .3rem 0 0; font-weight: 500; line-height: 1.35; }
+@media (min-width: 640px) { .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.countdown { display: grid; gap: .8rem; }
+.cd { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 40rem; }
+.cd-cell { min-width: 0; padding-inline: clamp(.5rem, 1.6vw, 1.1rem); border-left: 1px solid var(--line); }
+.cd-cell:first-child { padding-left: 0; border-left: 0; }
+.cd-num {
+  display: block;
+  font: 800 clamp(3rem, 11vw, 6.25rem)/.9 var(--font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+.cd-num .dg { display: inline-block; width: .52em; text-align: center; }
+.cd-cell--sec .cd-num { color: var(--accent); }
+.cd-unit { display: block; margin-top: .5rem; font: 500 .68rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .18em; color: var(--muted); }
+.cd-foot { font: 400 .78rem/1.5 var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.hero-ctas { display: flex; flex-wrap: wrap; gap: .75rem; }
+.lineup { font-size: .95rem; color: var(--muted); max-width: 46rem; }
+.lineup b { font-weight: 600; color: var(--fg); }
+
+.hero-poster { margin: 0; position: relative; justify-self: start; width: min(100%, 30rem); }
+.hero-poster .frame { position: relative; overflow: hidden; box-shadow: var(--shadow); background: var(--surface); aspect-ratio: 4 / 5; max-width: 100%; }
+.hero-poster img { width: 100%; height: 100%; object-fit: cover; }
+.hero-poster figcaption { margin-top: .8rem; display: flex; justify-content: space-between; gap: 1rem; }
+@media (min-width: 900px) {
+  .hero-grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); align-items: end; }
+  .hero-poster { justify-self: end; }
+}
+
+/* the one orchestrated load moment: title settles while a beam crosses the poster */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-title .ln { animation: settle 1s cubic-bezier(.16,.8,.2,1) both; }
+  .hero-title .ln + .ln { animation-delay: .08s; }
+  .hero-poster .frame::after {
+    content: ""; position: absolute; inset: -20% -60%;
+    background: linear-gradient(100deg, transparent 40%, rgb(255 255 255 / .28) 50%, transparent 60%);
+    transform: translateX(-70%);
+    animation: beam 1.8s .35s cubic-bezier(.3,.6,.2,1) forwards;
+    pointer-events: none;
+  }
+  .live::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    border: 1px solid var(--fg);
+    animation: ping 2.4s ease-out infinite;
+  }
+}
+@keyframes settle { from { transform: translateY(.18em); letter-spacing: .03em; opacity: .4; } to { transform: none; letter-spacing: -.01em; opacity: 1; } }
+@keyframes beam { to { transform: translateX(70%); } }
+@keyframes ping { 0% { transform: scale(1); opacity: .8; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+
+/* ---------- sections ---------- */
+.section { padding-block: clamp(4rem, 8vw, 7rem); border-top: 1px solid var(--line); }
+main [id] { scroll-margin-top: 84px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.5rem 2rem; margin-bottom: clamp(2rem, 5vw, 4rem); }
+.sec-head > * { min-width: 0; }
+.sec-note { font: 500 .8rem/1.5 var(--font-mono); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); max-width: 22rem; }
+.more-link {
+  display: inline-flex; align-items: center; gap: .55em; margin-top: 2.5rem;
+  font: 500 .8rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .16em;
+  text-decoration: none; padding-bottom: .35rem; border-bottom: 1px solid var(--fg);
+}
+
+/* segmented filter */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 2px; padding: 3px; gap: 3px; flex-wrap: wrap; }
+.seg button {
+  border: 0; background: transparent; cursor: pointer;
+  font: 500 .72rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .14em;
+  padding: .75rem .9rem; border-radius: 1px; color: var(--muted);
+  display: inline-flex; gap: .5em; align-items: baseline;
+  transition: color .2s, background-color .2s;
+}
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.seg .n { font-variant-numeric: tabular-nums; opacity: .7; }
+
+/* ---------- events timeline ---------- */
+.month { display: grid; grid-template-columns: minmax(0, 1fr); }
+.month + .month { margin-top: clamp(2rem, 4vw, 3rem); }
+.month-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-bottom: .9rem; border-bottom: 1px solid var(--fg); }
+.month-head h3 { font: 800 clamp(1.5rem, 3vw, 2rem)/1 var(--font-display); text-transform: uppercase; letter-spacing: .01em; }
+.month-head span { font: 400 .72rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .16em; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.ev {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-areas: "thumb date" "thumb main" "meta meta";
+  column-gap: 1rem; row-gap: .35rem;
+  padding-block: 1.1rem;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  isolation: isolate;
+}
+.ev::before {
+  content: ""; position: absolute; inset: 0 calc(var(--gutter) * -.5); z-index: -1;
+  background: var(--surface); opacity: 0; transition: opacity .25s;
+}
+.ev:hover::before { opacity: 1; }
+.ev-date { grid-area: date; min-width: 0; display: flex; align-items: baseline; gap: .6rem; }
+.ev-day { font: 800 1.9rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.ev-dow { font: 500 .72rem/1.2 var(--font-mono); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.ev-thumb { grid-area: thumb; display: block; overflow: hidden; aspect-ratio: 4 / 5; background: var(--surface); align-self: start; max-width: 100%; }
+.ev-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.2,.7,.2,1), filter .4s; }
+.ev:hover .ev-thumb img { transform: scale(1.06); }
+.ev.is-soldout .ev-thumb img { filter: grayscale(1) contrast(.9); }
+.ev.is-soldout:hover .ev-thumb img { filter: none; }
+.ev-main { grid-area: main; min-width: 0; }
+.ev-name { font: 800 clamp(1.45rem, 3.2vw, 2.25rem)/1 var(--font-display); text-transform: uppercase; letter-spacing: .005em; }
+.ev-name a { text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 2px no-repeat; transition: background-size .35s cubic-bezier(.2,.7,.2,1); }
+.ev:hover .ev-name a, .ev-name a:focus-visible { background-size: 100% 2px; }
+.ev-place { margin-top: .35rem; font-size: .95rem; color: var(--fg); }
+.ev-place .cc { font: 500 .72rem/1 var(--font-mono); letter-spacing: .12em; color: var(--muted); margin-left: .35em; }
+.ev-lineup { margin-top: .35rem; font-size: .85rem; color: var(--muted); }
+.ev-meta { grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; padding-top: .6rem; }
+.ev-prov { font: 400 .74rem/1.35 var(--font-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); min-width: 0; flex: 1 1 8rem; }
+.ev-prov b { display: block; font-weight: 500; color: var(--fg); }
+.ev-status { flex: none; }
+.ev-cta { flex: none; }
+@media (min-width: 760px) {
+  .ev {
+    grid-template-columns: 5.5rem 5.25rem minmax(0, 1fr) auto;
+    grid-template-areas: "date thumb main meta";
+    column-gap: clamp(1.25rem, 2.5vw, 2.25rem);
+    align-items: center;
+  }
+  .ev-date { flex-direction: column; align-items: flex-start; gap: .3rem; }
+  .ev-day { font-size: 3.4rem; line-height: .85; }
+  .ev-meta { padding-top: 0; flex-wrap: nowrap; gap: 1.5rem; }
+  .ev-prov { flex: none; width: 10rem; }
+  .ev-status { width: 7.5rem; }
+  .ev-cta { width: 7.75rem; display: flex; justify-content: flex-end; }
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: .45em;
+  font: 500 .68rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .14em;
+  padding: .5em .8em; border: 1px solid currentColor; border-radius: 999px; white-space: nowrap;
+}
+.pill--available { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.pill--soldout { color: var(--muted); border-color: var(--line); }
+.pill--announced { color: var(--fg); border-style: dashed; }
+.empty { padding: 2rem 0; color: var(--muted); border-bottom: 1px solid var(--line); }
+
+/* ---------- listen ---------- */
+.listen-grid { display: grid; gap: clamp(2rem, 5vw, 5rem); grid-template-columns: minmax(0, 1fr); align-items: start; }
+.cover { margin: 0; max-width: 34rem; }
+.cover img { width: 100%; aspect-ratio: 1; object-fit: cover; box-shadow: var(--shadow); }
+.listen-body { min-width: 0; display: grid; gap: 1.5rem; }
+.ep-big { font: 900 clamp(4.5rem, 15vw, 10rem)/.8 var(--font-display); text-transform: uppercase; letter-spacing: -.015em; font-variant-numeric: tabular-nums; }
+.ep-big small { display: block; font-size: .32em; font-weight: 800; letter-spacing: .04em; color: var(--muted); margin-bottom: .2em; }
+.listen-lede { max-width: 36rem; color: var(--muted); }
+.listen-lede strong { color: var(--fg); font-weight: 600; }
+.wave-wrap { position: relative; border-block: 1px solid var(--line); padding-block: .9rem; }
+#wave { display: block; width: 100%; height: 92px; }
+.wave-cap { display: flex; justify-content: space-between; gap: 1rem; margin-top: .6rem; font: 400 .68rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .16em; color: var(--muted); }
+.platforms li + li { border-top: 1px solid var(--line); }
+.platforms a {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .25rem 1rem;
+  padding-block: 1rem; text-decoration: none;
+  transition: padding-left .3s cubic-bezier(.2,.7,.2,1);
+}
+.platforms a:hover { padding-left: .6rem; }
+.platforms .pname { font: 800 clamp(1.6rem, 3.6vw, 2.3rem)/1 var(--font-display); text-transform: uppercase; letter-spacing: .01em; }
+.platforms .pdesc { grid-column: 1; font: 400 .72rem/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.platforms .ar { grid-row: 1 / span 2; grid-column: 2; width: 1.15rem; height: 1.15rem; }
+.platforms-wrap { border-block: 1px solid var(--fg); }
+.listen-foot { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; }
+.listen-foot .more-link { margin-top: 0; }
+@media (min-width: 900px) {
+  .listen-grid { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
+  .cover { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 96px); }
+}
+
+/* ---------- archive ---------- */
+.archive-tools { display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; }
+.search { flex: 1 1 18rem; max-width: 32rem; min-width: 0; display: grid; gap: .5rem; }
+.search-box { position: relative; }
+.search-box svg { position: absolute; left: 1rem; top: 50%; translate: 0 -50%; width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+.input {
+  width: 100%; min-width: 0; height: 54px;
+  padding: 0 1rem; border: 1px solid var(--line); border-radius: 2px;
+  background: var(--surface); color: var(--fg);
+  font: 400 1rem/1 var(--font-body);
+  transition: border-color .2s;
+}
+.input::placeholder { color: var(--muted); }
+.input:hover { border-color: var(--muted); }
+.input:focus-visible { border-color: var(--fg); outline-offset: 2px; }
+.search .input { padding-left: 2.85rem; font-family: var(--font-mono); font-size: .95rem; }
+.input[aria-invalid="true"] { border-color: var(--fg); border-style: dashed; }
+.count { font: 400 .75rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.eps { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: clamp(2rem, 5vw, 4.5rem); border-top: 1px solid var(--fg); }
+@media (min-width: 900px) { .eps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ep { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 1.1rem; padding-block: 1.05rem; border-bottom: 1px solid var(--line); }
+.ep-no {
+  font: 500 clamp(1.9rem, 4.5vw, 2.6rem)/1 var(--font-mono);
+  font-variant-numeric: tabular-nums; letter-spacing: -.04em;
+  color: var(--muted); transition: color .25s;
+  min-width: 3.3ch;
+}
+.ep:hover .ep-no { color: var(--fg); }
+.ep-info { min-width: 0; display: grid; gap: .15rem; }
+.ep-title { font-weight: 600; }
+.ep-date { font: 400 .74rem/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag { display: inline-block; margin-left: .5rem; vertical-align: .15em; font: 500 .6rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .14em; padding: .35em .55em; border: 1px solid var(--fg); border-radius: 999px; }
+.ep-link { display: inline-flex; align-items: center; gap: .45em; font: 500 .72rem/1 var(--font-mono); text-transform: uppercase; letter-spacing: .14em; text-decoration: none; padding: .7rem 0 .7rem .5rem; }
+.ep-link:hover { text-decoration: underline; text-underline-offset: .3em; }
+.archive-foot { display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: center; justify-content: space-between; margin-top: 2rem; }
+.archive-foot .more-link { margin-top: 0; }
+
+/* ---------- people & shop strip ---------- */
+.strip { display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--fg); }
+@media (min-width: 820px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } .strip > * + * { border-left: 1px solid var(--line); } }
+.panel { min-width: 0; padding-block: clamp(2rem, 4vw, 3rem); display: grid; gap: 1.1rem; align-content: start; }
+.strip > .panel + .panel { border-top: 1px solid var(--line); }
+@media (min-width: 820px) {
+  .strip > .panel + .panel { border-top: 0; padding-left: clamp(1.5rem, 4vw, 3.5rem); }
+  .strip > .panel:first-child { padding-right: clamp(1.5rem, 4vw, 3.5rem); }
+}
+.panel-title { font: 900 clamp(3rem, 7.5vw, 5.75rem)/.85 var(--font-display); text-transform: uppercase; letter-spacing: -.01em; }
+.panel-title a { text-decoration: none; display: inline-flex; align-items: flex-start; gap: .12em; }
+.panel-title .ar { width: .32em; height: .32em; margin-top: .12em; }
+.panel p { color: var(--muted); max-width: 30rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* ---------- newsletter + share ---------- */
+.duo { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(3rem, 6vw, 6rem); }
+@media (min-width: 980px) { .duo { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); } }
+.duo > section { min-width: 0; }
+.nl-lede { margin-top: 1.25rem; color: var(--muted); max-width: 32rem; }
+.form { margin-top: 2rem; display: grid; gap: 1rem; max-width: 36rem; }
+.field-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+.field-row .input { flex: 1 1 14rem; }
+.field-row .btn { min-height: 54px; flex: 0 0 auto; }
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: start; font-size: .92rem; color: var(--muted); }
+.check input { width: 20px; height: 20px; margin: .15rem 0 0; accent-color: var(--fg); }
+.check a { color: var(--fg); text-underline-offset: .2em; }
+.err { font: 500 .78rem/1.4 var(--font-mono); color: var(--fg); padding-left: .9rem; border-left: 2px solid var(--fg); }
+.fine { margin-top: 1.25rem; font-size: .85rem; color: var(--muted); max-width: 36rem; }
+.fine a { color: var(--fg); text-underline-offset: .2em; }
+.nl-success { margin-top: 2rem; padding-block: 1.5rem; border-block: 1px solid var(--fg); max-width: 36rem; }
+.nl-success .big { font: 900 clamp(2.5rem, 7vw, 4.25rem)/.9 var(--font-display); text-transform: uppercase; color: var(--fg); }
+.nl-success p + p { margin-top: .9rem; color: var(--muted); }
+.nl-success:focus { outline: none; }
+
+.share-lede { margin-top: 1.25rem; color: var(--muted); max-width: 28rem; }
+.share-actions { margin-top: 2rem; display: grid; gap: 1.25rem; max-width: 30rem; }
+.btn--wa { justify-content: space-between; width: 100%; }
+.btn--wa svg { width: 22px; height: 22px; }
+.copy-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+.copy-row .input { flex: 1 1 12rem; font-family: var(--font-mono); font-size: .82rem; color: var(--muted); }
+.copy-row .btn { min-height: 54px; }
+.status { min-height: 1.4em; font: 500 .75rem/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: .12em; }
+
+/* ---------- footer ---------- */
+.site-footer { border-top: 1px solid var(--fg); padding-block: clamp(3rem, 7vw, 6rem) clamp(2rem, 4vw, 3rem); }
+.foot-logo { width: min(100%, 64rem); filter: var(--logo-filter); opacity: .95; }
+.foot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.5rem 2rem; margin-top: clamp(2.5rem, 6vw, 4.5rem); }
+@media (min-width: 820px) { .foot-grid { grid-template-columns: 1.6fr 1fr 1fr 1fr; } }
+.foot-grid > * { min-width: 0; }
+.foot-col ul { display: grid; gap: .55rem; margin-top: 1rem; }
+.foot-col a { text-decoration: none; display: inline-flex; align-items: center; gap: .4em; }
+.foot-col a:hover { text-decoration: underline; text-underline-offset: .25em; }
+.foot-col .ar { width: .62em; height: .62em; opacity: .6; }
+.foot-col .socials { display: flex; flex-wrap: wrap; gap: .5rem; }
+.foot-col .socials a { width: 46px; height: 46px; display: inline-grid; place-items: center; border: 1px solid var(--line); border-radius: 2px; transition: border-color .2s, background-color .2s, color .2s; }
+.foot-col .socials a:hover { border-color: var(--fg); background: var(--fg); color: var(--bg); text-decoration: none; }
+.socials svg { width: 20px; height: 20px; }
+.foot-social { grid-column: 1 / -1; }
+@media (min-width: 820px) { .foot-social { grid-column: auto; } }
+.legal { margin-top: clamp(2.5rem, 5vw, 4rem); padding-top: 1.25rem; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; justify-content: space-between; gap: .75rem 2rem; font: 400 .74rem/1.5 var(--font-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.legal a { color: var(--fg); text-underline-offset: .25em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+</style>
+
+<div class="grain" aria-hidden="true"></div>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="page">
+  <header class="site-header">
+    <div class="bar">
+      <a class="logo" href="#next" aria-label="FLOW, back to top">
+        <img src="img/FLOW-logowhite.png" width="1707" height="626" alt="FLOW">
+      </a>
+      <nav class="nav" aria-label="Main">
+        <ul>
+          <li><a href="#events">Events</a></li>
+          <li><a href="#listen">Radio</a></li>
+          <li><a href="https://shop.listentoflow.com/" target="_blank" rel="noopener">Shop <span class="ar" aria-hidden="true"></span></a></li>
+          <li><a href="https://www.frankyrizardo.com/" target="_blank" rel="noopener">Franky Rizardo <span class="ar" aria-hidden="true"></span></a></li>
+        </ul>
+      </nav>
+      <div class="bar-actions">
+        <a class="btn btn--solid btn--sm" href="#events">Tickets</a>
+        <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch to light theme">
+          <svg id="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+          <svg id="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        </button>
+        <button class="icon-btn menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path id="menu-ico" d="M4 8h16M4 16h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="mnav" id="mnav" aria-label="Mobile" hidden>
+      <ul>
+        <li><a href="#events">Events</a></li>
+        <li><a href="#listen">Radio</a></li>
+        <li><a href="#episodes">Episodes</a></li>
+        <li><a href="https://shop.listentoflow.com/" target="_blank" rel="noopener">Shop <span class="ar" aria-hidden="true"></span></a></li>
+        <li><a href="https://www.frankyrizardo.com/" target="_blank" rel="noopener">Franky Rizardo <span class="ar" aria-hidden="true"></span></a></li>
+        <li><a href="#newsletter">Newsletter</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- 1. Next up -->
+    <section class="hero" id="next" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live" aria-hidden="true"></span><span>Next up</span><span aria-hidden="true">/</span><span id="hero-kicker">ADE 2026 · Amsterdam</span></p>
+          <h1 class="hero-title" id="hero-title"><span class="ln">LTF Records</span><span class="ln">ADE Label Night</span></h1>
+
+          <dl class="facts">
+            <div><dt>Date</dt><dd id="hero-date">Thu 22 Oct 2026</dd></div>
+            <div><dt>Time</dt><dd id="hero-time">21:00–02:00</dd></div>
+            <div><dt>Venue</dt><dd id="hero-venue">Palladium, Amsterdam</dd></div>
+            <div><dt>Tickets</dt><dd id="hero-prov">Weeztix · Available</dd></div>
+          </dl>
+
+          <div class="countdown">
+            <p class="eyebrow" id="cd-label">Doors open in</p>
+            <div class="cd" id="countdown" role="timer" aria-label="Doors open in 19 days">
+              <div class="cd-cell" aria-hidden="true"><span class="cd-num" data-u="d">19</span><span class="cd-unit">Days</span></div>
+              <div class="cd-cell" aria-hidden="true"><span class="cd-num" data-u="h">00</span><span class="cd-unit">Hours</span></div>
+              <div class="cd-cell" aria-hidden="true"><span class="cd-num" data-u="m">00</span><span class="cd-unit">Min</span></div>
+              <div class="cd-cell cd-cell--sec" aria-hidden="true"><span class="cd-num" data-u="s">00</span><span class="cd-unit">Sec</span></div>
+            </div>
+            <p class="cd-foot" id="cd-foot">Counting to Thu 22 Oct 2026, 21:00 Amsterdam time</p>
+          </div>
+
+          <p class="lineup" id="hero-lineup"><b>Line-up (A–Z)</b> Ammo Avenue, Cassimm, Charlotte Moss, Chico Rose, Desmond, Easttown, Ferra Black, Perfect Timing, Summum</p>
+
+          <div class="hero-ctas">
+            <a class="btn btn--solid btn--lg" id="hero-tickets" href="https://www.listentoflow.com/tickets/" target="_blank" rel="noopener">Get tickets <span class="ar" aria-hidden="true"></span></a>
+            <a class="btn btn--quiet btn--lg" href="#listen">Latest episode · FLOW 655 <span class="ar ar--down" aria-hidden="true"></span></a>
+          </div>
+        </div>
+
+        <figure class="hero-poster">
+          <div class="frame">
+            <img id="hero-img" src="img/ltf-ade-label-night.jpg" width="960" height="1200" alt="Poster for LTF Records Label Night, Thursday 22 October at Palladium Amsterdam">
+          </div>
+          <figcaption><span class="lbl">Official poster</span><a class="lbl" id="hero-event-link" href="https://www.listentoflow.com/events/ltf-records-ade-label-night/" target="_blank" rel="noopener">Event page</a></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 2. Events -->
+    <section class="section" id="events" aria-labelledby="events-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <p class="eyebrow">Franky Rizardo presents FLOW · Tour 2026–27</p>
+            <h2 class="sec-title" id="events-title">Events</h2>
+          </div>
+          <div class="seg" role="group" aria-label="Filter events">
+            <button type="button" data-filter="upcoming" aria-pressed="true">Upcoming <span class="n" data-count="upcoming"></span></button>
+            <button type="button" data-filter="onsale" aria-pressed="false">On sale <span class="n" data-count="onsale"></span></button>
+            <button type="button" data-filter="all" aria-pressed="false">All <span class="n" data-count="all"></span></button>
+          </div>
+        </div>
+        <div id="event-list" aria-live="polite"></div>
+        <p class="empty" id="events-empty" hidden>No events match this filter right now. Switch to All to see every date.</p>
+        <a class="more-link" href="https://www.listentoflow.com/events/" target="_blank" rel="noopener">View all events <span class="ar" aria-hidden="true"></span></a>
+      </div>
+    </section>
+
+    <!-- 3. Listen -->
+    <section class="section" id="listen" aria-labelledby="listen-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <p class="eyebrow">Franky Rizardo presents FLOW · Radio show &amp; podcast</p>
+            <h2 class="sec-title" id="listen-title">Radio</h2>
+          </div>
+          <p class="sec-note">New episode every Monday</p>
+        </div>
+
+        <div class="listen-grid">
+          <figure class="cover">
+            <img src="img/show-cover.jpg" width="1000" height="1000" alt="FLOW show artwork: the FLOW wordmark stretched into a red neon wave" loading="lazy">
+          </figure>
+          <div class="listen-body">
+            <p class="eyebrow">Latest episode · Mon 27.04.26</p>
+            <h3 class="ep-big"><small>Franky Rizardo presents</small>FLOW 655</h3>
+            <p class="listen-lede"><strong>FLOW 655 – 27.04.26.</strong> The weekly FLOW radio show, hosted by Franky Rizardo. Stream it on SoundCloud, follow the podcast on Apple, or keep the FLOW playlist running on Spotify.</p>
+
+            <div class="wave-wrap">
+              <canvas id="wave" role="img" aria-label="Decorative waveform graphic, not an audio player"></canvas>
+              <div class="wave-cap" aria-hidden="true"><span>FLOW 655</span><span>Signal</span></div>
+            </div>
+
+            <div class="platforms-wrap">
+              <ul class="platforms">
+                <li><a href="https://soundcloud.com/listen-to-flow" target="_blank" rel="noopener"><span class="pname">SoundCloud</span><span class="pdesc">Full episodes · listen-to-flow</span><span class="ar" aria-hidden="true"></span></a></li>
+                <li><a href="https://podcasts.apple.com/nl/podcast/franky-rizardo-presents-flow/id718852025" target="_blank" rel="noopener"><span class="pname">Apple Podcasts</span><span class="pdesc">Follow the podcast</span><span class="ar" aria-hidden="true"></span></a></li>
+                <li><a href="http://spoti.fi/34edP4n" target="_blank" rel="noopener"><span class="pname">Spotify</span><span class="pdesc">FLOW playlist</span><span class="ar" aria-hidden="true"></span></a></li>
+                <li><a href="https://www.youtube.com/channel/UCk-Y0EnxsODGky-7pspbhuA" target="_blank" rel="noopener"><span class="pname">YouTube</span><span class="pdesc">FLOW channel</span><span class="ar" aria-hidden="true"></span></a></li>
+              </ul>
+            </div>
+            <div class="listen-foot">
+              <a class="more-link" href="https://www.listentoflow.com/shows/flow-655-27-04-26/" target="_blank" rel="noopener">Episode page <span class="ar" aria-hidden="true"></span></a>
+              <a class="more-link" href="#episodes">Browse episodes <span class="ar ar--down" aria-hidden="true"></span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Episodes archive -->
+    <section class="section" id="episodes" aria-labelledby="episodes-title">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <p class="eyebrow">Episodes 600–655 · Every Monday</p>
+            <h2 class="sec-title" id="episodes-title">Archive</h2>
+          </div>
+        </div>
+        <div class="archive-tools">
+          <div class="search">
+            <label class="lbl" for="ep-search">Search by number or date</label>
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+              <input class="input" id="ep-search" type="search" placeholder="640, 12.01.26, March 2026" autocomplete="off" spellcheck="false" aria-describedby="ep-count">
+            </div>
+          </div>
+          <p class="count" id="ep-count" aria-live="polite"></p>
+        </div>
+        <ol class="eps" id="ep-list"></ol>
+        <p class="empty" id="ep-empty" hidden></p>
+        <div class="archive-foot">
+          <button class="btn" id="ep-more" type="button">Show more</button>
+          <a class="more-link" href="https://www.listentoflow.com/shows/" target="_blank" rel="noopener">Full archive (26 pages) <span class="ar" aria-hidden="true"></span></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Franky + shop -->
+    <section class="section" id="franky" aria-label="Franky Rizardo and the FLOW shop">
+      <div class="wrap strip">
+        <div class="panel">
+          <p class="eyebrow">The host</p>
+          <h2 class="panel-title"><a href="https://www.frankyrizardo.com/" target="_blank" rel="noopener">Franky Rizardo<span class="ar" aria-hidden="true"></span></a></h2>
+          <p>DJ, producer and the voice behind FLOW. Tour dates, music and news on frankyrizardo.com.</p>
+          <div class="chips">
+            <a class="btn btn--quiet btn--sm" href="https://www.instagram.com/frankyrizardo/" target="_blank" rel="noopener">Instagram</a>
+            <a class="btn btn--quiet btn--sm" href="https://www.facebook.com/FrankyRizardo/" target="_blank" rel="noopener">Facebook</a>
+            <a class="btn btn--quiet btn--sm" href="https://twitter.com/FrankyRizardo" target="_blank" rel="noopener">X</a>
+            <a class="btn btn--quiet btn--sm" href="https://www.tiktok.com/@frankyrizardo" target="_blank" rel="noopener">TikTok</a>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="eyebrow">Fashion</p>
+          <h2 class="panel-title"><a href="https://shop.listentoflow.com/" target="_blank" rel="noopener">FLOW Shop<span class="ar" aria-hidden="true"></span></a></h2>
+          <p>Official FLOW apparel and merchandise, from the club to the street.</p>
+          <div class="chips">
+            <a class="btn btn--sm" href="https://shop.listentoflow.com/" target="_blank" rel="noopener">shop.listentoflow.com <span class="ar" aria-hidden="true"></span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 + 7. Newsletter and share -->
+    <div class="section">
+      <div class="wrap duo">
+        <section id="newsletter" aria-labelledby="nl-title">
+          <p class="eyebrow">Newsletter</p>
+          <h2 class="sec-title sec-title--md" id="nl-title">Be first in line</h2>
+          <p class="nl-lede">Ticket drops, new events and show news, straight to your inbox.</p>
+          <form class="form" id="nl-form" novalidate>
+            <label class="lbl" for="nl-email">Email address</label>
+            <div class="field-row">
+              <input class="input" id="nl-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" aria-describedby="nl-email-err">
+              <button class="btn btn--solid" type="submit">Subscribe</button>
+            </div>
+            <p class="err" id="nl-email-err" hidden></p>
+            <div class="check">
+              <input id="nl-consent" name="consent" type="checkbox" aria-describedby="nl-consent-err">
+              <label for="nl-consent">I agree to the <a href="https://www.listentoflow.com/terms-conditions/" target="_blank" rel="noopener">Terms &amp; Conditions</a> and the <a href="https://www.listentoflow.com/privacy-policy/" target="_blank" rel="noopener">Privacy Policy</a>.</label>
+            </div>
+            <p class="err" id="nl-consent-err" hidden></p>
+          </form>
+          <div class="nl-success" id="nl-success" role="status" tabindex="-1" hidden>
+            <p class="big">You're on the list</p>
+            <p id="nl-success-msg">Thanks for signing up.</p>
+          </div>
+          <p class="fine">This demo form doesn't send your address anywhere. To actually subscribe, use the <a href="https://www.listentoflow.com/subscribe/" target="_blank" rel="noopener">signup on listentoflow.com</a>.</p>
+        </section>
+
+        <section id="share" aria-labelledby="share-title">
+          <p class="eyebrow">Share</p>
+          <h2 class="sec-title sec-title--md" id="share-title">Bring the crew</h2>
+          <p class="share-lede">Send FLOW to the group chat and sort out who's coming to which night.</p>
+          <div class="share-actions">
+            <a class="btn btn--solid btn--lg btn--wa" id="wa-link" href="https://wa.me/?text=FLOW%20%E2%80%93%20Franky%20Rizardo%20presents%20FLOW.%20Events%2C%20radio%20shows%20and%20more%3A%20https%3A%2F%2Fwww.listentoflow.com%2F" target="_blank" rel="noopener">
+              <span>Share on WhatsApp</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3.6 20.4l1.2-4.1A8.6 8.6 0 1 1 8 19.3z"/><path d="M9.1 7.9c-.4 0-.9.5-.9 1.3 0 2.5 3.2 5.7 5.7 5.7.8 0 1.3-.5 1.3-.9l-.1-.6-1.7-.8-.9.9c-1-.4-2.1-1.5-2.5-2.5l.9-.9-.8-1.7z" fill="currentColor" stroke-width="1"/></svg>
+            </a>
+            <div>
+              <label class="lbl" for="share-url">Page link</label>
+              <div class="copy-row" style="margin-top:.5rem">
+                <input class="input" id="share-url" type="text" readonly value="https://www.listentoflow.com/">
+                <button class="btn" id="copy-btn" type="button">Copy link</button>
+              </div>
+            </div>
+            <p class="status" id="copy-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <img class="foot-logo" src="img/FLOW-logowhite.png" width="1707" height="626" alt="FLOW" loading="lazy">
+      <div class="foot-grid">
+        <div class="foot-col foot-social">
+          <p class="lbl">Follow FLOW</p>
+          <ul class="socials">
+            <li><a href="https://www.facebook.com/listentoflow" target="_blank" rel="noopener" aria-label="FLOW on Facebook">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M17 3h-2.8A4.2 4.2 0 0 0 10 7.2V10H7v4h3v7h4v-7h3l.8-4H14V7.6c0-.5.3-.8.8-.8H17z"/></svg></a></li>
+            <li><a href="https://www.instagram.com/listentoflow/" target="_blank" rel="noopener" aria-label="FLOW on Instagram">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none"/></svg></a></li>
+            <li><a href="https://www.tiktok.com/@listentoflow" target="_blank" rel="noopener" aria-label="FLOW on TikTok">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h3c.3 2.2 1.7 3.6 4 3.9v3.2a7.4 7.4 0 0 1-4-1.3v6.4A5.8 5.8 0 1 1 11.2 9.4v3.3a2.6 2.6 0 1 0 2.8 2.6z"/></svg></a></li>
+            <li><a href="https://twitter.com/ListenToFlow" target="_blank" rel="noopener" aria-label="FLOW on X">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h4.5L20 20h-4.5z"/><path d="M19.5 4l-6.4 7M4.5 20l6.4-7" stroke-linecap="round"/></svg></a></li>
+            <li><a href="https://www.youtube.com/channel/UCk-Y0EnxsODGky-7pspbhuA" target="_blank" rel="noopener" aria-label="FLOW on YouTube">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 16.8a24 24 0 0 1 0-9.6 2 2 0 0 1 1.4-1.4 50 50 0 0 1 16 0 2 2 0 0 1 1.4 1.4 24 24 0 0 1 0 9.6 2 2 0 0 1-1.4 1.4 50 50 0 0 1-16 0 2 2 0 0 1-1.4-1.4z"/><path d="M10 9.2v5.6l4.8-2.8z" fill="currentColor"/></svg></a></li>
+            <li><a href="https://podcasts.apple.com/nl/podcast/franky-rizardo-presents-flow/id718852025" target="_blank" rel="noopener" aria-label="FLOW on Apple Podcasts">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="10.2" r="2.1" fill="currentColor" stroke="none"/><path d="M8.3 14.6a5.6 5.6 0 1 1 7.4 0"/><path d="M5.6 17.6a9.4 9.4 0 1 1 12.8 0"/><path d="M12 14.2v6.3" stroke-width="2.6"/></svg></a></li>
+          </ul>
+        </div>
+        <nav class="foot-col" aria-label="Go to">
+          <p class="lbl">Go to</p>
+          <ul>
+            <li><a href="#events">Events</a></li>
+            <li><a href="#listen">Radio</a></li>
+            <li><a href="https://www.listentoflow.com/tickets/" target="_blank" rel="noopener">Tickets <span class="ar" aria-hidden="true"></span></a></li>
+            <li><a href="#newsletter">Newsletter</a></li>
+          </ul>
+        </nav>
+        <div class="foot-col">
+          <p class="lbl">Shop</p>
+          <ul>
+            <li><a href="https://shop.listentoflow.com/" target="_blank" rel="noopener">Fashion shop <span class="ar" aria-hidden="true"></span></a></li>
+            <li><a href="https://www.frankyrizardo.com/" target="_blank" rel="noopener">Franky Rizardo <span class="ar" aria-hidden="true"></span></a></li>
+          </ul>
+        </div>
+        <div class="foot-col">
+          <p class="lbl">Info</p>
+          <ul>
+            <li><a href="https://www.listentoflow.com/terms-conditions/" target="_blank" rel="noopener">Terms <span class="ar" aria-hidden="true"></span></a></li>
+            <li><a href="https://www.listentoflow.com/privacy-policy/" target="_blank" rel="noopener">Privacy <span class="ar" aria-hidden="true"></span></a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="legal"><span>© 2026 FLOW · Original site <a href="https://www.listentoflow.com/" target="_blank" rel="noopener">listentoflow.com</a></span><span>Franky Rizardo presents FLOW</span></p>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var $ = function (id) { return document.getElementById(id); };
+  var reduceMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  var lightMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : { matches: false };
+
+  /* ---------- helpers ---------- */
+  var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var MON_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function ymd(s) {
+    var p = s.split("-").map(Number);
+    var d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    return { y: p[0], m: p[1] - 1, d: p[2], dow: d.getUTCDay() };
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function ext(a) { a.target = "_blank"; a.rel = "noopener"; return a; }
+  function arrow(down) { var s = el("span", "ar" + (down ? " ar--down" : "")); s.setAttribute("aria-hidden", "true"); return s; }
+
+  /* ---------- theme ---------- */
+  var THEME_KEY = "flow-theme";
+  try {
+    var saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  } catch (e) { /* storage unavailable */ }
+  function effectiveTheme() {
+    var t = root.getAttribute("data-theme");
+    if (t === "light" || t === "dark") return t;
+    return lightMQ.matches ? "light" : "dark";
+  }
+  var themeBtn = $("theme-btn");
+  function syncThemeBtn() {
+    var cur = effectiveTheme();
+    $("ico-sun").hidden = cur !== "dark";
+    $("ico-moon").hidden = cur !== "light";
+    themeBtn.setAttribute("aria-label", cur === "dark" ? "Switch to light theme" : "Switch to dark theme");
+  }
+  themeBtn.addEventListener("click", function () {
+    var next = effectiveTheme() === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* ignore */ }
+    syncThemeBtn();
+    if (wave) wave.recolor();
+  });
+  if (lightMQ.addEventListener) lightMQ.addEventListener("change", function () { syncThemeBtn(); if (wave) wave.recolor(); });
+  syncThemeBtn();
+
+  /* ---------- mobile menu ---------- */
+  var menuBtn = $("menu-btn"), mnav = $("mnav"), menuIco = $("menu-ico");
+  function setMenu(open) {
+    mnav.hidden = !open;
+    menuBtn.setAttribute("aria-expanded", String(open));
+    menuBtn.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    menuIco.setAttribute("d", open ? "M6 6l12 12M18 6 6 18" : "M4 8h16M4 16h16");
+  }
+  menuBtn.addEventListener("click", function () { setMenu(mnav.hidden); });
+  mnav.addEventListener("click", function (e) { if (e.target.closest("a")) setMenu(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !mnav.hidden) { setMenu(false); menuBtn.focus(); }
+  });
+
+  /* ---------- events data ---------- */
+  var TICKETS = "https://www.listentoflow.com/tickets/";
+  var EVENTS = [
+    { name: "LTF Records – ADE Label Night", date: "2026-10-22", start: "2026-10-22T21:00:00+02:00", end: "2026-10-23T02:00:00+02:00", time: "21:00–02:00", tzName: "Amsterdam",
+      venue: "Palladium", city: "Amsterdam", cc: "NL", provider: "Weeztix", status: "available", kicker: "ADE 2026 · Amsterdam",
+      img: "img/ltf-ade-label-night.jpg", url: "https://www.listentoflow.com/events/ltf-records-ade-label-night/",
+      lineupLabel: "Line-up (A–Z)", lineup: ["Ammo Avenue", "Cassimm", "Charlotte Moss", "Chico Rose", "Desmond", "Easttown", "Ferra Black", "Perfect Timing", "Summum"],
+      alt: "Poster for LTF Records Label Night, Thursday 22 October at Palladium Amsterdam" },
+    { name: "FLOW ADE Gashouder", date: "2026-10-24", start: "2026-10-24T14:00:00+02:00", end: "2026-10-24T22:00:00+02:00", time: "14:00–22:00", tzName: "Amsterdam",
+      venue: "Gashouder", city: "Amsterdam", cc: "NL", provider: "", status: "soldout", kicker: "ADE 2026 · Amsterdam",
+      img: "img/flow-ade-gashouder.jpg", url: "https://www.listentoflow.com/events/flow-ade-gashouder/",
+      lineupLabel: "In order of appearance", lineup: ["Franky Rizardo (extended set)", "Cloonee", "Mason Collective", "Easttown b2b AAT", "Grace Arribas"],
+      alt: "Poster for FLOW ADE Gashouder, 24 October 2026, 14:00 to 22:00" },
+    { name: "FLOW Factory Basel", date: "2026-12-02", start: "2026-12-02T00:00:00-05:00", end: "2026-12-03T06:00:00-05:00", tzName: "Miami",
+      venue: "Factory Town", city: "Miami", cc: "US", provider: "", status: "available", kicker: "Miami Art Week",
+      img: "img/flow-factory-basel.jpg", url: "https://www.listentoflow.com/events/flow-factory-basel/", alt: "Poster for FLOW Factory Basel at Factory Town, Miami" },
+    { name: "FLOW Austin", date: "2026-12-03", start: "2026-12-03T00:00:00-06:00", end: "2026-12-04T06:00:00-06:00", tzName: "Austin",
+      venue: "The Concourse Project", city: "Austin", cc: "US", provider: "ItsFramework", status: "soldout", kicker: "Texas",
+      img: "img/flow-austin.jpg", url: "https://www.listentoflow.com/events/flow-austin/", alt: "Poster for FLOW Austin at The Concourse Project" },
+    { name: "FLOW Argentina", date: "2026-12-07", start: "2026-12-07T00:00:00-03:00", end: "2026-12-08T06:00:00-03:00", tzName: "Córdoba",
+      venue: "La Fabrica", city: "Córdoba", cc: "AR", provider: "Paseshow", status: "available", kicker: "South America",
+      img: "img/flow-argentina.jpg", url: "https://www.listentoflow.com/events/flow-argentina/", alt: "Poster for FLOW Argentina at La Fabrica, Córdoba" },
+    { name: "FLOW Brazil", date: "2026-12-11", start: "2026-12-11T00:00:00-03:00", end: "2026-12-12T06:00:00-03:00", tzName: "São Paulo",
+      venue: "", city: "São Paulo", cc: "BR", provider: "Ingresse", status: "available", kicker: "South America",
+      img: "img/flow-brazil.jpg", url: "https://www.listentoflow.com/events/flow-brazil/", alt: "Poster for FLOW Brazil, São Paulo" },
+    { name: "FLOW Peru", date: "2026-12-12", start: "2026-12-12T00:00:00-05:00", end: "2026-12-13T06:00:00-05:00", tzName: "Lima",
+      venue: "", city: "Lima", cc: "PE", provider: "Ticketmaster Peru", status: "available", kicker: "South America",
+      img: "img/flow-peru.jpg", url: "https://www.listentoflow.com/events/flow-peru/", alt: "Poster for FLOW Peru, Lima" },
+    { name: "FLOW x Luxor Live", date: "2027-03-23", start: "2027-03-23T00:00:00+01:00", end: "2027-03-24T06:00:00+01:00", tzName: "Arnhem",
+      venue: "Luxor Live", city: "Arnhem", cc: "NL", provider: "", status: "announced", note: "More info coming soon", kicker: "Arnhem",
+      img: "img/Foto-luxor-square.jpg", url: "https://www.listentoflow.com/events/flow-x-luxor-live-2/", alt: "A packed crowd under red stage lights at Luxor Live, Arnhem" }
+  ];
+  EVENTS.forEach(function (e) { e.t0 = Date.parse(e.start); e.t1 = Date.parse(e.end); e.ymd = ymd(e.date); });
+  EVENTS.sort(function (a, b) { return a.t0 - b.t0; });
+  var STATUS = { available: "Available", soldout: "Sold out", announced: "Announced" };
+  function longDate(e) { var p = e.ymd; return DOW[p.dow] + " " + p.d + " " + MON[p.m] + " " + p.y; }
+  function place(e) { return e.venue ? e.venue + ", " + e.city : e.city; }
+
+  /* ---------- hero: next up + countdown ---------- */
+  function nextEvent(now) {
+    for (var i = 0; i < EVENTS.length; i++) if (EVENTS[i].t1 > now) return EVENTS[i];
+    return null;
+  }
+  var heroEvent = null;
+  function renderHero(e) {
+    heroEvent = e;
+    var title = $("hero-title");
+    title.textContent = "";
+    var parts = e.name.split(" – ");
+    if (parts.length < 2) { var m = e.name.match(/^(FLOW(?: x)?)\s+(.*)$/); parts = m ? [m[1], m[2]] : [e.name]; }
+    parts.forEach(function (p) { title.appendChild(el("span", "ln", p)); });
+    $("hero-kicker").textContent = e.kicker || e.city;
+    $("hero-date").textContent = longDate(e);
+    $("hero-time").textContent = e.time || "To be announced";
+    $("hero-venue").textContent = place(e) + ", " + e.cc;
+    $("hero-prov").textContent = e.status === "announced" ? (e.note || "Announced") : (e.provider ? e.provider + " · " : "") + STATUS[e.status];
+    var img = $("hero-img");
+    if (img.getAttribute("src") !== e.img) img.setAttribute("src", e.img);
+    img.alt = e.alt || "Poster for " + e.name;
+    $("hero-event-link").href = e.url;
+    var lu = $("hero-lineup");
+    lu.textContent = "";
+    if (e.lineup) {
+      lu.appendChild(el("b", null, e.lineupLabel));
+      lu.appendChild(document.createTextNode(" " + e.lineup.join(", ")));
+      lu.hidden = false;
+    } else { lu.hidden = true; }
+    var t = $("hero-tickets");
+    t.firstChild.nodeValue = e.status === "available" ? (e.provider ? "Tickets via " + e.provider + " " : "Get tickets ") : e.status === "soldout" ? "Sold out · Event info " : "More info soon ";
+    t.href = e.status === "available" ? TICKETS : e.url;
+    $("cd-label").textContent = e.time ? "Doors open in" : "Event day in";
+    $("cd-foot").textContent = "Counting to " + longDate(e) + ", " + (e.time ? e.time.split("–")[0] : "00:00") + " " + e.tzName + " time";
+  }
+  var cdNums = {};
+  Array.prototype.forEach.call(document.querySelectorAll(".cd-num"), function (n) { cdNums[n.getAttribute("data-u")] = n; });
+  function setDigits(node, str) {
+    if (node.getAttribute("data-v") === str) return;
+    node.setAttribute("data-v", str);
+    node.textContent = "";
+    for (var i = 0; i < str.length; i++) node.appendChild(el("span", "dg", str[i]));
+  }
+  var lastAria = "";
+  function tick() {
+    var now = Date.now();
+    var e = nextEvent(now);
+    if (!e) { $("next").hidden = true; return; }
+    if (e !== heroEvent) renderHero(e);
+    var diff = Math.max(0, e.t0 - now);
+    var s = Math.floor(diff / 1000);
+    var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+    setDigits(cdNums.d, pad(d));
+    setDigits(cdNums.h, pad(h));
+    setDigits(cdNums.m, pad(m));
+    setDigits(cdNums.s, pad(sec));
+    var label = diff === 0 ? "Happening now" : $("cd-label").textContent + " " + d + " days, " + h + " hours and " + m + " minutes";
+    if (diff === 0) $("cd-label").textContent = "Happening now";
+    if (label !== lastAria) { $("countdown").setAttribute("aria-label", label); lastAria = label; }
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  /* ---------- events list ---------- */
+  var filter = "upcoming";
+  var listHost = $("event-list");
+  function filtered(f, now) {
+    return EVENTS.filter(function (e) {
+      if (f === "all") return true;
+      if (f === "onsale") return e.status === "available" && e.t1 > now;
+      return e.t1 > now;
+    });
+  }
+  function eventRow(e) {
+    var li = el("li", "ev is-" + e.status);
+    var date = el("div", "ev-date");
+    date.appendChild(el("span", "ev-day", pad(e.ymd.d)));
+    date.appendChild(el("span", "ev-dow", DOW[e.ymd.dow] + " · " + MON[e.ymd.m]));
+    li.appendChild(date);
+
+    var thumb = ext(el("a", "ev-thumb"));
+    thumb.href = e.url; thumb.tabIndex = -1; thumb.setAttribute("aria-hidden", "true");
+    var img = el("img"); img.src = e.img; img.alt = ""; img.loading = "lazy"; img.width = 960; img.height = 1200;
+    thumb.appendChild(img);
+    li.appendChild(thumb);
+
+    var main = el("div", "ev-main");
+    var h = el("h4", "ev-name");
+    var a = ext(el("a", null, e.name)); a.href = e.url;
+    h.appendChild(a);
+    main.appendChild(h);
+    var p = el("p", "ev-place", place(e));
+    p.appendChild(el("span", "cc", e.cc));
+    main.appendChild(p);
+    if (e.lineup) main.appendChild(el("p", "ev-lineup", e.lineup.join(" · ")));
+    li.appendChild(main);
+
+    var meta = el("div", "ev-meta");
+    var prov = el("p", "ev-prov");
+    if (e.status === "announced") { prov.appendChild(el("b", null, e.note)); prov.appendChild(document.createTextNode("Tickets TBA")); }
+    else if (e.provider) { prov.appendChild(document.createTextNode("Tickets via")); prov.appendChild(el("b", null, e.provider)); }
+    else if (e.status === "available") { prov.appendChild(document.createTextNode("Tickets via")); prov.appendChild(el("b", null, "listentoflow.com")); }
+    else { prov.appendChild(document.createTextNode("Tickets")); prov.appendChild(el("b", null, "No longer on sale")); }
+    meta.appendChild(prov);
+    var st = el("div", "ev-status");
+    st.appendChild(el("span", "pill pill--" + e.status, STATUS[e.status]));
+    meta.appendChild(st);
+    var cta = el("div", "ev-cta");
+    var b = ext(el("a", "btn btn--sm" + (e.status === "available" ? " btn--solid" : " btn--quiet")));
+    b.href = e.status === "available" ? TICKETS : e.url;
+    b.appendChild(document.createTextNode(e.status === "available" ? "Tickets " : "Details "));
+    b.appendChild(arrow());
+    b.setAttribute("aria-label", (e.status === "available" ? "Tickets for " : "Details for ") + e.name);
+    cta.appendChild(b);
+    meta.appendChild(cta);
+    li.appendChild(meta);
+    return li;
+  }
+  function renderEvents() {
+    var now = Date.now();
+    ["upcoming", "onsale", "all"].forEach(function (f) {
+      var c = document.querySelector('[data-count="' + f + '"]');
+      if (c) c.textContent = filtered(f, now).length;
+    });
+    var list = filtered(filter, now);
+    listHost.textContent = "";
+    $("events-empty").hidden = list.length > 0;
+    var groups = [];
+    list.forEach(function (e) {
+      var key = e.ymd.y + "-" + e.ymd.m;
+      var g = groups[groups.length - 1];
+      if (!g || g.key !== key) { g = { key: key, label: MON_FULL[e.ymd.m] + " " + e.ymd.y, items: [] }; groups.push(g); }
+      g.items.push(e);
+    });
+    groups.forEach(function (g) {
+      var wrap = el("div", "month");
+      var head = el("div", "month-head");
+      head.appendChild(el("h3", null, g.label));
+      head.appendChild(el("span", null, g.items.length + (g.items.length === 1 ? " date" : " dates")));
+      wrap.appendChild(head);
+      var ol = el("ol");
+      g.items.forEach(function (e) { ol.appendChild(eventRow(e)); });
+      wrap.appendChild(ol);
+      listHost.appendChild(wrap);
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (btn) {
+    btn.addEventListener("click", function () {
+      filter = btn.getAttribute("data-filter");
+      Array.prototype.forEach.call(document.querySelectorAll(".seg button"), function (o) { o.setAttribute("aria-pressed", String(o === btn)); });
+      renderEvents();
+    });
+  });
+  renderEvents();
+
+  /* ---------- episodes archive ---------- */
+  var KNOWN = { 655: "27.04.26", 651: "30.03.26", 649: "16.03.26", 646: "23.02.26", 644: "09.02.26", 642: "26.01.26", 641: "19.01.26", 640: "12.01.26", 639: "05.01.26", 637: "22.12.25" };
+  var LATEST = 655, OLDEST = 600, BASE = Date.UTC(2026, 3, 27), WEEK = 7 * 864e5;
+  var EPISODES = [];
+  for (var n = LATEST; n >= OLDEST; n--) {
+    var dt = new Date(BASE - (LATEST - n) * WEEK);
+    var dd = pad(dt.getUTCDate()), mm = pad(dt.getUTCMonth() + 1), yyyy = dt.getUTCFullYear(), yy = String(yyyy).slice(2);
+    var code = KNOWN[n] || (dd + "." + mm + "." + yy);
+    var known = !!KNOWN[n];
+    var longD = DOW_FULL[dt.getUTCDay()] + " " + dt.getUTCDate() + " " + MON_FULL[dt.getUTCMonth()] + " " + yyyy;
+    EPISODES.push({
+      n: n, code: code, long: longD,
+      url: known ? "https://www.listentoflow.com/shows/flow-" + n + "-" + code.replace(/\./g, "-") + "/" : "https://www.listentoflow.com/shows/",
+      hay: ["flow " + n, n, code, code.replace(/\./g, "-"), dd + "." + mm + "." + yyyy, dd + "/" + mm + "/" + yyyy, longD, MON[dt.getUTCMonth()] + " " + yyyy].join(" | ").toLowerCase()
+    });
+  }
+  var PAGE = 12, shown = PAGE, query = "";
+  var epList = $("ep-list"), epMore = $("ep-more"), epCount = $("ep-count"), epEmpty = $("ep-empty");
+  function matches(ep, q) {
+    if (!q) return true;
+    var toks = q.toLowerCase().replace(/flow\s*/g, "").split(/\s+/).filter(Boolean);
+    if (!toks.length) return true;
+    return toks.every(function (t) { return ep.hay.indexOf(t) !== -1; });
+  }
+  function renderEpisodes(focusFrom) {
+    var list = EPISODES.filter(function (ep) { return matches(ep, query); });
+    var vis = list.slice(0, shown);
+    epList.textContent = "";
+    var firstNew = null;
+    vis.forEach(function (ep, i) {
+      var li = el("li", "ep");
+      li.appendChild(el("span", "ep-no", String(ep.n)));
+      var info = el("div", "ep-info");
+      var t = el("span", "ep-title", "FLOW " + ep.n + " – " + ep.code);
+      if (ep.n === LATEST) t.appendChild(el("span", "tag", "Latest"));
+      info.appendChild(t);
+      info.appendChild(el("span", "ep-date", ep.long));
+      li.appendChild(info);
+      var a = ext(el("a", "ep-link", "Listen "));
+      a.href = ep.url;
+      a.setAttribute("aria-label", "Listen to FLOW " + ep.n + ", " + ep.long);
+      a.appendChild(arrow());
+      li.appendChild(a);
+      epList.appendChild(li);
+      if (focusFrom != null && i === focusFrom) firstNew = a;
+    });
+    epEmpty.hidden = list.length > 0;
+    if (!list.length) epEmpty.textContent = "No episode matches “" + query + "”. Try a number like 640 or a date like 12.01.26.";
+    epMore.hidden = shown >= list.length;
+    var left = list.length - vis.length;
+    epMore.textContent = "Show " + Math.min(PAGE, left) + " more";
+    epCount.textContent = query ? list.length + (list.length === 1 ? " match" : " matches") : "Showing " + vis.length + " of " + list.length + " episodes";
+    if (firstNew) firstNew.focus();
+  }
+  $("ep-search").addEventListener("input", function (e) { query = e.target.value.trim(); shown = PAGE; renderEpisodes(); });
+  epMore.addEventListener("click", function () { var from = shown; shown += PAGE; renderEpisodes(from); });
+  renderEpisodes();
+
+  /* ---------- newsletter ---------- */
+  var form = $("nl-form");
+  function showErr(id, input, msg) {
+    var p = $(id);
+    p.textContent = msg || "";
+    p.hidden = !msg;
+    input.setAttribute("aria-invalid", msg ? "true" : "false");
+  }
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = $("nl-email"), consent = $("nl-consent");
+    var v = email.value.trim();
+    var bad = false;
+    if (!v) { showErr("nl-email-err", email, "Enter your email address."); bad = true; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { showErr("nl-email-err", email, "That doesn't look like an email address. Check for a missing @ or domain."); bad = true; }
+    else showErr("nl-email-err", email, "");
+    if (!consent.checked) { showErr("nl-consent-err", consent, "Tick the box to agree to the terms and privacy policy."); bad = true; }
+    else showErr("nl-consent-err", consent, "");
+    if (bad) { (email.getAttribute("aria-invalid") === "true" ? email : consent).focus(); return; }
+    $("nl-success-msg").textContent = v + " is noted on this page only. This demo doesn't send it anywhere, so finish signing up on listentoflow.com/subscribe.";
+    form.hidden = true;
+    var ok = $("nl-success");
+    ok.hidden = false;
+    ok.focus();
+  });
+
+  /* ---------- share ---------- */
+  var here = location.href;
+  var waText = "FLOW – Franky Rizardo presents FLOW. Events, radio shows and more: " + here;
+  $("wa-link").href = "https://wa.me/?text=" + encodeURIComponent(waText);
+  var urlField = $("share-url");
+  urlField.value = here;
+  var copyStatus = $("copy-status");
+  function fallbackCopy() {
+    urlField.focus();
+    urlField.select();
+    try { urlField.setSelectionRange(0, urlField.value.length); } catch (e) { /* ignore */ }
+    copyStatus.textContent = "Link selected. Press Ctrl+C or Cmd+C to copy.";
+  }
+  $("copy-btn").addEventListener("click", function () {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(here).then(function () {
+          copyStatus.textContent = "Link copied";
+        }, fallbackCopy);
+      } else { fallbackCopy(); }
+    } catch (e) { fallbackCopy(); }
+  });
+
+  /* ---------- waveform (decorative) ---------- */
+  var wave = (function () {
+    var c = $("wave");
+    if (!c || !c.getContext) return null;
+    var ctx = c.getContext("2d");
+    var W = 0, H = 0, dpr = 1, amps = [], col = {}, raf = 0, onScreen = true, start = performance.now();
+    function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+    function envelope(x) {
+      // intro, build, breakdown, drop, outro: the shape of a club mix
+      var e = .35 + .45 * Math.min(1, x / .28);
+      if (x > .5 && x < .6) e *= .45 + 4 * Math.abs(x - .55);
+      if (x >= .6 && x < .9) e = .95;
+      if (x >= .9) e = .95 - (x - .9) * 6;
+      return Math.max(.12, e);
+    }
+    function build() {
+      var r = rng(655);
+      var count = Math.max(24, Math.floor(W / 5));
+      amps = [];
+      for (var i = 0; i < count; i++) {
+        var x = i / (count - 1);
+        var beat = i % 4 === 0 ? 1 : .82;
+        amps.push(envelope(x) * beat * (.55 + .45 * r()));
+      }
+    }
+    function recolor() {
+      var cs = getComputedStyle(root);
+      col.base = cs.getPropertyValue("--muted").trim() || "#999";
+      col.hot = cs.getPropertyValue("--accent").trim() || "#f33";
+      if (!raf) draw(performance.now());
+    }
+    function resize() {
+      var r = c.getBoundingClientRect();
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = Math.max(1, r.width); H = Math.max(1, r.height);
+      c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+      build();
+      if (!raf) draw(performance.now());
+    }
+    function draw(now) {
+      var t = (now - start) / 1000;
+      var still = reduceMQ.matches;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      var n = amps.length, step = W / n, bw = Math.max(1.5, step * .58), mid = H * .62;
+      var band = still ? .62 : ((t / 11) % 1.3) - .15;
+      for (var i = 0; i < n; i++) {
+        var x = i / (n - 1);
+        var a = amps[i] * (still ? 1 : 1 + .07 * Math.sin(t * 2.1 + i * .37));
+        var up = a * mid * .96, down = a * (H - mid) * .8;
+        var px = i * step + (step - bw) / 2;
+        ctx.globalAlpha = .38;
+        ctx.fillStyle = col.base;
+        ctx.fillRect(px, mid - up, bw, up);
+        ctx.globalAlpha = .18;
+        ctx.fillRect(px, mid + 2, bw, down);
+        var k = Math.max(0, 1 - Math.abs(x - band) / .1);
+        if (k > 0) {
+          ctx.fillStyle = col.hot;
+          ctx.globalAlpha = k;
+          ctx.fillRect(px, mid - up, bw, up);
+          ctx.globalAlpha = k * .35;
+          ctx.fillRect(px, mid + 2, bw, down);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    function loop(now) { draw(now); raf = requestAnimationFrame(loop); }
+    function run() {
+      var should = onScreen && !document.hidden && !reduceMQ.matches;
+      if (should && !raf) raf = requestAnimationFrame(loop);
+      if (!should && raf) { cancelAnimationFrame(raf); raf = 0; draw(performance.now()); }
+    }
+    recolor();
+    resize();
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(c);
+    else window.addEventListener("resize", resize);
+    if (window.IntersectionObserver) new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; run(); }).observe(c);
+    document.addEventListener("visibilitychange", run);
+    if (reduceMQ.addEventListener) reduceMQ.addEventListener("change", run);
+    run();
+    return { recolor: recolor };
+  })();
+})();
+</script>
